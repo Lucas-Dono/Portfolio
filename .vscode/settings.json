@@ -1,0 +1,35 @@
+{
+    "bitoAI.codeCompletion.enableAutoCompletion": false,
+    "cursor.general.globalCursorIgnoreList": [
+        "**/credentials.json",
+        "**/credentials.*.json",
+        "**/secret.json",
+        "**/secrets.json",
+        "**/*.key",
+        "**/*.pem",
+        "**/*.pfx",
+        "**/*.p12",
+        "**/*.crt",
+        "**/*.cer",
+        "**/id_rsa",
+        "**/id_dsa",
+        "**/.ssh/id_*"
+    ],
+    "sql.linter.dialect": "postgresql",
+    "sql-formatter.dialect": "postgresql",
+    "mssql.format.dialect": "postgresql",
+    "mssql.connections": [
+        {
+            "server": "localhost",
+            "database": "portfolio",
+            "user": "postgres",
+            "password": "",
+            "dialect": "postgresql",
+            "port": 5433
+        }
+    ],
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    }
+}

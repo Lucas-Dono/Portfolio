@@ -1,0 +1,450 @@
+/* Estilos para la sección About */
+.about-section {
+  /* padding: 100px 0; */ /* Eliminamos padding base si se controla por breakpoint */
+  position: relative;
+  overflow: hidden;
+  padding: 100px 0; /* Mantenemos un padding base */
+
+  @media (max-width: 992px) {
+    padding: 90px 0; /* Reducir ligeramente en lg */
+  }
+
+  @media (max-width: 768px) {
+    padding: 70px 0; /* Reducir más en tablets */
+  }
+
+  @media (max-width: 480px) {
+    padding: 50px 0; /* Reducción significativa en móviles */
+  }
+}
+
+/* Contenedor principal */
+.content-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  position: relative;
+  z-index: 5;
+
+  @media (max-width: 480px) {
+    padding: 0 1rem; /* Reduce padding for very small screens */
+  }
+}
+
+/* Título y divisor */
+.header-container {
+  text-align: center;
+  margin-bottom: 5rem;
+
+  @media (max-width: 768px) {
+    margin-bottom: 3.5rem; /* Reducir en tablets */
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: 2.5rem; /* Reducir aún más en móviles */
+  }
+}
+
+.section-title {
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #00FFFF 0%, #FFFF00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.15);
+
+  @media (max-width: 768px) {
+    font-size: clamp(2rem, 7vw, 3rem); /* Slightly smaller title on mobile */
+    margin-bottom: 1rem;
+  }
+}
+
+.divider {
+  width: 120px;
+  height: 4px;
+  background: linear-gradient(135deg, #00FFFF 0%, #FFFF00 100%);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  border-radius: 2px;
+  margin: 0 auto;
+  position: relative;
+
+  @media (max-width: 480px) {
+    width: 80px; /* Más corto en móviles */
+    height: 3px; /* Menos grosor */
+  }
+}
+
+.divider::before, .divider::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  background: #FFFF00;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  box-shadow: 0 0 5px rgba(255, 255, 0, 0.4);
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+/* Contenido principal */
+.about-content {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) 2fr;
+  gap: 4rem;
+  margin-bottom: 5rem;
+
+@media (max-width: 992px) {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  @media (max-width: 768px) {
+    gap: 0;
+    margin-bottom: 3.5rem;
+  }
+
+  @media (max-width: 480px) {
+    gap: 0;
+    margin-bottom: 3rem;
+  }
+}
+
+/* Contenedor de imagen */
+.about-image {
+  position: relative;
+
+  @media (max-width: 992px) {
+    max-width: 350px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+.image-container {
+  position: relative;
+  max-width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+  transition: transform 0.5s ease, box-shadow 0.5s ease;
+}
+
+.image-container:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+.image-container img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform: scale(1.02); /* Ligero zoom para evitar bordes */
+}
+
+.image-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 3px solid transparent;
+  border-image: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);
+  border-image-slice: 1;
+  z-index: 1;
+  opacity: 0.8;
+  pointer-events: none;
+
+  @media (max-width: 480px) {
+    border-width: 2px; /* Borde más fino en móviles */
+  }
+}
+
+/* Estilos de texto */
+.about-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.text-paragraph {
+  margin-bottom: 1.8rem;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+
+  @media (max-width: 768px) {
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+    line-height: 1.8; /* Incrementar line-height para mejor lectura */
+  }
+  
+  @media (max-width: 480px) {
+    line-height: 1.75; /* Mantener un buen line-height */
+  }
+}
+
+.highlight {
+  font-size: 1.5rem;
+  color: white;
+  font-weight: 500;
+  line-height: 1.5;
+  margin-bottom: 2rem;
+  position: relative;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 0, 255, 0.02);
+  border-radius: 6px;
+  padding: 1.2rem;
+
+  @media (max-width: 768px) {
+    font-size: 1.2rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.05rem;
+    background: transparent;
+    padding: 0.5rem;
+    box-shadow: none;
+    margin-bottom: 1.2rem;
+    border-radius: 4px;
+  }
+}
+
+.highlight::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, #FF00FF, #00FFFF);
+  box-shadow: 0 0 5px rgba(255, 0, 255, 0.4);
+}
+
+/* Estadísticas */
+.stats-container {
+  display: flex;
+  gap: 3rem;
+  margin-top: 3rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+
+  @media (max-width: 992px) {
+    margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+    flex-direction: column;
+    gap: 2rem;
+    padding: 1.5rem;
+  }
+
+  @media (max-width: 480px) {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.2rem;
+  }
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+}
+
+.stat-number {
+  font-size: clamp(2rem, 9vw, 3rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  text-shadow: 0 0 5px rgba(255, 0, 255, 0.2);
+}
+
+.stat-label {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+    letter-spacing: 0.03em;
+  }
+}
+
+/* Sección de tecnologías */
+.tech-section {
+  margin-top: 4rem;
+  text-align: center;
+  position: relative; /* Asegurar que sea el contexto de posicionamiento */
+  overflow: hidden; /* Prevenir cualquier desbordamiento inesperado del ::after */
+
+  @media (max-width: 768px) {
+    margin-top: 3rem;
+  }
+}
+
+.tech-title {
+  font-size: 2.2rem;
+  margin-bottom: 3rem;
+  background: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  display: inline-block;
+
+  @media (max-width: 768px) {
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.6rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+.tech-title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 3px;
+  background: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);
+  border-radius: 3px;
+}
+
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1.8rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); /* Smaller min size */
+    gap: 1.2rem;
+  }
+
+  @media (max-width: 480px) {
+    display: flex; 
+    flex-wrap: nowrap; 
+    overflow-x: auto; 
+    gap: 1rem;
+    padding-bottom: 1.5rem; 
+    scroll-snap-type: x mandatory; 
+    scrollbar-width: none; 
+    -ms-overflow-style: none; 
+    position: static; /* Quitar position relative para que no sea contexto del ::after */
+    
+    &::-webkit-scrollbar { /* Mover ocultar scrollbar aquí */
+      display: none;
+    }
+  }
+}
+
+/* Posicionar el degradado respecto a .tech-section */
+@media (max-width: 480px) {
+  .tech-section::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 50px; /* Un poco más ancho */
+    /* Apuntar al fondo del contenedor principal */
+    background: linear-gradient(to right, rgba(10, 10, 10, 0), rgba(10, 10, 10, 1) 80%); 
+    pointer-events: none;
+    /* Ajustar top/bottom para que no cubra el título si es necesario */
+    /* top: altura_del_titulo; */ 
+    z-index: 2; /* Asegurar que esté sobre los items pero debajo de otros elementos UI */
+  }
+}
+
+.tech-item {
+  background-color: rgba(17, 17, 17, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+
+  @media (max-width: 480px) {
+    min-width: calc(25% - 0.75rem); /* Ajustar para que quepan ~4 items (100% / 4 = 25%, restar gap) */
+    flex: 0 0 auto; 
+    scroll-snap-align: center;
+    padding: 1.2rem 0.8rem;
+  }
+}
+
+.tech-icon {
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+  transition: transform 0.3s ease;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.tech-item:hover .tech-icon {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
+}
+
+.tech-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.3));
+  transition: transform 0.3s ease;
+}
+
+.tech-item:hover .tech-name {
+  color: white;
+  text-shadow: none;
+}
+
+.tech-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  transition: all 0.3s ease;
+  text-align: center;
+} 

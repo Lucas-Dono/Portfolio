@@ -1,0 +1,101 @@
+# Plan de Desarrollo para la IA Asistente del Portfolio (v4.2 - Clasificador Local + OpenAI)
+
+## 1. Objetivo General
+
+Crear una IA asistente integrada en el portfolio (`Chat.tsx`) que:
+- Sea **conversacional e inteligente** (usando GPT-4.1-mini).
+- Pueda **proporcionar información relevante** sobre Lucas Dono (habilidades, proyectos, contacto).
+- Pueda **ejecutar acciones dentro de la página** (navegar a secciones).
+- Ofrezca una **experiencia de usuario fluida y sorprendente**.
+- Sea **económica** en su uso de API.
+- Tenga una **arquitectura clara, mantenible y escalable**.
+
+## 2. Componentes Principales (Revisado)
+
+- **Frontend (`Chat.tsx`):**
+    - Interfaz de chat (input, historial, botón de envío).
+    - Gestión del estado del chat (mensajes, estado de carga).
+    - Envío de mensajes del usuario al Backend.
+    - Recepción y muestra de respuestas de la IA.
+    - **Interpretación y ejecución de comandos de acción** recibidos de la IA.
+    - Funciones auxiliares (ej: scroll suave).
+- **Backend (`server.js` - Orquestador):**
+    - Endpoint `POST /api/chat`.
+    - Llama al **Modelo Clasificador** (local o API separada) para obtener intención/tema.
+    - Construye dinámicamente el prompt para OpenAI basado en la clasificación.
+    - **Proxy seguro para la API de OpenAI:** Llama a `gpt-4o-mini` (una sola vez por mensaje).
+    - Devuelve respuesta al frontend.
+- **Modelo Clasificador (Potencialmente Local):**
+    - Modelo pequeño y rápido (ej: Llama 3.1 8B, Phi-3-mini, Mistral 7B - quantizado).
+    - Tarea: Clasificar `message` + `history` en categorías predefinidas.
+    - Prompt específico para clasificación.
+- **Modelo IA Principal (OpenAI):**
+    - Modelo: `gpt-4o-mini`.
+    - Prompt de Sistema Base (ultra-conciso).
+    - Recibe contexto adicional inyectado por el backend.
+- **Base de Conocimiento (Modular):**
+    - Resúmenes concisos y actualizados del contenido del portfolio (Sobre Mí, Proyectos, Contacto, etc.). Se incluirán en el prompt de sistema.
+
+## 3. Flujo de Interacción (Revisado con Clasificador)
+
+1.  **Usuario:** Escribe mensaje.
+2.  **Frontend:** Envía `{ message, history: ultimos_4_a_6_mensajes }` al backend `/api/chat`.
+3.  **Backend (`/api/chat`):**
+    - **Llama al Modelo Clasificador:** `categoria = classifyWithLocalLLM(message, history)`.
+    - **Construcción Dinámica del Prompt (OpenAI):**
+        - Carga Prompt Sistema Base.
+        - *Si `categoria` sugiere detalles*: Inyecta `KNOWLEDGE_FRAGMENTS` relevante.
+        - *Opcional*: Añadir pista de contexto basado en `categoria`.
+        - Añade `history`.
+        - Añade `message`.
+    - **Llama a OpenAI API (UNA SOLA VEZ):** `gpt-4o-mini`, prompt dinámico.
+    - Devuelve respuesta al Frontend.
+4.  **Frontend:** Procesa respuesta (texto + `[ACTION:...]`), actualiza UI, ejecuta acción.
+
+## 4. Diseño de Prompts y Conocimiento (Revisado)
+
+*   **Prompt para Modelo Clasificador:** (Como tu ejemplo, definiremos categorías específicas para el portfolio).
+*   **Prompt Sistema Base (OpenAI):** (Ultra-conciso, sin cambios).
+*   **Fragmentos de Conocimiento Detallado (Backend):** (Sin cambios).
+*   **Lógica de Inyección (Backend):** Basada en la `categoria` devuelta por el clasificador.
+
+## 5. Diseño del Backend (`POST /api/chat`) (Revisado v4.2)
+
+- **Lógica:**
+    1. Validar input.
+    2. **`categoria = await callClassifierService(message, history);`** // Llama al clasificador (local/remoto)
+    3. Leer `OPENAI_API_KEY`.
+    4. `systemPromptContent = BASE_SYSTEM_PROMPT;`
+    5. `relevantKnowledge = getKnowledgeForCategory(categoria);` // Obtiene fragmento si aplica
+    6. `if (relevantKnowledge) { systemPromptContent += "\n\nContexto Adicional:\n" + relevantKnowledge; }`
+    7. Construir `messages` para OpenAI.
+    8. Llamar a OpenAI API.
+    9. Devolver respuesta.
+- **Dependencias:** `openai`, + dependencias para llamar/hostear el clasificador local (ej: `axios` si es HTTP local, o librerías de inferencia).
+
+## 6. Diseño del Frontend (`Chat.tsx`) (Estable)
+
+- **Funciones:**
+    - `handleSendMessage`: Envía historial más largo (`messages.slice(-N)`).
+    - *Opcional:* `handleLocalIntent`.
+    - ...resto igual...
+
+## 7. Próximos Pasos Concretos (Revisado v4.2)
+
+1.  **Confirmar IDs y Redactar Resúmenes/Fragmentos:** (Sigue #1)
+2.  **Definir Categorías de Clasificación:** Crear la lista exhaustiva de categorías que el clasificador debe usar (ej: `Saludo`, `Consulta_Proyecto_P1`, `Solicitud_Navegacion_Contacto`, etc.).
+3.  **Seleccionar y Configurar Modelo Clasificador Local:** Elegir modelo (Llama, Phi-3), método de ejecución (Ollama, LM Studio, etc.) y probarlo localmente con el prompt de clasificación.
+4.  **Implementar Backend (v1):**
+    - Endpoint `/api/chat`.
+    - **Integración con Clasificador Local:** Llamada al servicio/proceso del clasificador.
+    - Lógica de construcción dinámica del prompt basada en categoría.
+    - Llamada a OpenAI (Proxy).
+5.  **Implementar Frontend (v1):** (Igual que antes).
+6.  **Pruebas Integradas:** Probar el flujo completo, medir latencia y coste de OpenAI.
+7.  **Refinamiento Iterativo:** Ajustar prompt clasificador, categorías, prompt OpenAI, `max_tokens`.
+8.  **Optimización:** Mejorar rendimiento del clasificador local si es necesario.
+
+---
+
+¿Revisamos este plan? ¿Hay algo que quieras añadir, quitar o modificar antes de empezar con los próximos pasos? 
+

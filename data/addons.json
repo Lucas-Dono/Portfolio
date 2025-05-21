@@ -1,0 +1,48 @@
+[
+  {
+    "id": "seo-basico",
+    "name": "SEO Básico",
+    "description": "Optimización básica para motores de búsqueda",
+    "price": 12000,
+    "oneTime": true,
+    "createdAt": "2025-05-18T03:35:08.776Z",
+    "updatedAt": "2025-05-18T03:35:08.776Z"
+  },
+  {
+    "id": "seo-avanzado",
+    "name": "SEO Avanzado",
+    "description": "Optimización completa para motores de búsqueda y seguimiento",
+    "price": 25000,
+    "oneTime": true,
+    "createdAt": "2025-05-18T03:35:08.777Z",
+    "updatedAt": "2025-05-18T03:35:08.777Z"
+  },
+  {
+    "id": "mantenimiento-mensual",
+    "name": "Mantenimiento Mensual",
+    "description": "Mantenimiento y actualización de tu sitio web",
+    "price": 8000,
+    "oneTime": false,
+    "duration": "mes",
+    "createdAt": "2025-05-18T03:35:08.777Z",
+    "updatedAt": "2025-05-18T03:35:08.777Z"
+  },
+  {
+    "id": "blog-basico",
+    "name": "Blog Básico",
+    "description": "Integración de un blog básico en tu sitio web",
+    "price": 15000,
+    "oneTime": true,
+    "createdAt": "2025-05-18T03:35:08.778Z",
+    "updatedAt": "2025-05-18T03:35:08.778Z"
+  },
+  {
+    "id": "blog-avanzado",
+    "name": "Blog Avanzado",
+    "description": "Blog completo con categorías, etiquetas y búsqueda",
+    "price": 25000,
+    "oneTime": true,
+    "createdAt": "2025-05-18T03:35:08.778Z",
+    "updatedAt": "2025-05-18T03:35:08.778Z"
+  }
+]

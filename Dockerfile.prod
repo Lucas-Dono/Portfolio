@@ -1,0 +1,63 @@
+# Etapa de construcción
+FROM node:20-alpine AS builder
+
+# Instalar dependencias necesarias para compilación
+RUN apk add --no-cache python3 make g++
+
+WORKDIR /app
+
+# Copiar primero los archivos de configuración para aprovechar la caché de Docker
+COPY package*.json ./
+COPY tsconfig*.json ./
+
+# Instalar TODAS las dependencias, incluyendo las de desarrollo necesarias para compilar
+RUN npm ci --legacy-peer-deps
+
+# Copiar el código fuente y compilar
+COPY . .
+RUN npm run build
+
+# Etapa final con imagen mínima
+FROM node:20-alpine
+
+# Crear usuario sin privilegios para ejecutar la aplicación
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Crear directorios necesarios y establecer permisos
+RUN mkdir -p /app/logs /app/uploads && \
+    chown -R appuser:appgroup /app
+
+WORKDIR /app
+
+# Copiar los directorios y archivos necesarios
+COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
+COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
+COPY --from=builder --chown=appuser:appgroup /app/package.json ./
+COPY --from=builder --chown=appuser:appgroup /app/server.js ./
+COPY --from=builder --chown=appuser:appgroup /app/init-db.sql ./
+COPY --from=builder --chown=appuser:appgroup /app/src ./src
+COPY --from=builder --chown=appuser:appgroup /app/routes ./routes
+COPY --from=builder --chown=appuser:appgroup /app/controllers ./controllers
+COPY --from=builder --chown=appuser:appgroup /app/models ./models
+COPY --from=builder --chown=appuser:appgroup /app/config ./config
+COPY --from=builder --chown=appuser:appgroup /app/utils ./utils
+COPY --from=builder --chown=appuser:appgroup /app/templates ./templates
+COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations
+COPY --from=builder --chown=appuser:appgroup /app/public ./public
+COPY --from=builder --chown=appuser:appgroup /app/security ./security
+
+# Configurar variables de entorno para producción
+ENV NODE_ENV=production
+
+# Exponer puertos
+EXPOSE 5001
+
+# Cambiar al usuario sin privilegios
+USER appuser
+
+# Configurar health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5001/health || exit 1
+
+# Comando para iniciar la aplicación
+CMD ["node", "server.js"] 

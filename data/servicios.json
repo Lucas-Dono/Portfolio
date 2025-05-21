@@ -1,0 +1,89 @@
+[
+  {
+    "id": "landing-page",
+    "title": "Landing Page",
+    "description": "Una página web de aterrizaje para tu negocio",
+    "features": [
+      "Diseño profesional",
+      "Responsive design",
+      "Optimización SEO básica",
+      "1 formulario de contacto"
+    ],
+    "isPaquete": false,
+    "price": 34999,
+    "originalPrice": null,
+    "createdAt": "2025-05-18T03:35:08.770Z",
+    "updatedAt": "2025-05-18T18:09:58.539Z"
+  },
+  {
+    "id": "basic-website",
+    "title": "Sitio Web Básico",
+    "description": "Un sitio web completo para tu negocio",
+    "features": [
+      "Hasta 5 páginas",
+      "Diseño personalizado",
+      "Responsive design",
+      "Optimización SEO",
+      "Formulario de contacto"
+    ],
+    "isPaquete": false,
+    "price": 45000,
+    "originalPrice": 60000,
+    "createdAt": "2025-05-18T03:35:08.773Z",
+    "updatedAt": "2025-05-18T03:35:08.773Z"
+  },
+  {
+    "id": "premium-website",
+    "title": "Sitio Web Premium",
+    "description": "Sitio web avanzado con todas las funcionalidades",
+    "features": [
+      "Hasta 10 páginas",
+      "Diseño personalizado premium",
+      "Responsive design",
+      "SEO avanzado",
+      "Blog integrado",
+      "Integración con redes sociales",
+      "Sistema de newsletter"
+    ],
+    "isPaquete": false,
+    "price": 85000,
+    "originalPrice": 110000,
+    "createdAt": "2025-05-18T03:35:08.774Z",
+    "updatedAt": "2025-05-18T03:35:08.774Z"
+  },
+  {
+    "id": "paquete-emprendedor",
+    "title": "Paquete Emprendedor",
+    "description": "Todo lo que necesitas para empezar tu negocio online",
+    "features": [
+      "Landing page",
+      "Configuración de dominio",
+      "Email profesional",
+      "Integración con redes sociales",
+      "Google My Business"
+    ],
+    "isPaquete": true,
+    "price": 49999,
+    "originalPrice": 62499,
+    "createdAt": "2025-05-18T03:35:08.774Z",
+    "updatedAt": "2025-05-18T18:10:21.515Z"
+  },
+  {
+    "id": "paquete-profesional",
+    "title": "Paquete Profesional",
+    "description": "Solución completa para negocios establecidos",
+    "features": [
+      "Sitio web hasta 8 páginas",
+      "Blog integrado",
+      "SEO avanzado",
+      "Email marketing",
+      "Posicionamiento en Google",
+      "Mantenimiento por 3 meses"
+    ],
+    "isPaquete": true,
+    "price": 95000,
+    "originalPrice": 120000,
+    "createdAt": "2025-05-18T03:35:08.775Z",
+    "updatedAt": "2025-05-18T03:35:08.775Z"
+  }
+]
