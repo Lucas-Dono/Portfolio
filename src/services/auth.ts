@@ -1,7 +1,8 @@
 import { oauthConfig } from '../config/oauth';
+import { API_BASE_URL, getApiUrl } from '../config/apiConfig';
 
 // URL base para la API
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_URL = API_BASE_URL;
 
 // Token storage keys
 const TOKEN_KEY = 'auth_token';
@@ -136,7 +137,7 @@ export const loginWithCredentials = async (
   password: string
 ): Promise<AuthResponse> => {
   try {
-    const response = await fetch(`${API_URL}/auth/login`, {
+    const response = await fetch(getApiUrl('/auth/login'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -171,7 +172,7 @@ export const registerUser = async (
   termsAccepted: boolean = false
 ): Promise<AuthResponse> => {
   try {
-    const response = await fetch(`${API_URL}/auth/register`, {
+    const response = await fetch(getApiUrl('/auth/register'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -208,7 +209,7 @@ export const loginWithGoogle = async (tokenResponse: any, termsAccepted: boolean
     // Si no hay token y no es una solicitud con termsAccepted
     if (!tokenResponse || !tokenResponse.access_token) {
       // En este caso es un flujo normal de inicio de sesión con Google (no una respuesta a términos)
-      const googleAuthUrl = `${API_URL}/auth/google/login?callback=${encodeURIComponent(window.location.origin + '/html/auth-callback.html')}`;
+      const googleAuthUrl = getApiUrl('/auth/google/login?callback=' + encodeURIComponent(window.location.origin + '/html/auth-callback.html'));
       console.log('🔗 Abriendo URL de autenticación:', googleAuthUrl);
 
       // Crear una promesa que se resolverá cuando la ventana de autenticación se complete
@@ -278,7 +279,7 @@ export const loginWithGoogle = async (tokenResponse: any, termsAccepted: boolean
 
     // Si llegamos aquí, es porque tenemos un token (ya sea en la llamada original o después de aceptar términos)
     console.log('🔄 Enviando token a API con termsAccepted:', termsAccepted);
-    const response = await fetch(`${API_URL}/auth/google`, {
+    const response = await fetch(getApiUrl('/auth/google'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -335,7 +336,7 @@ export const loginWithGoogle = async (tokenResponse: any, termsAccepted: boolean
 // Autenticación con GitHub
 export const loginWithGithub = async (code: string, termsAccepted: boolean = false): Promise<AuthResponse> => {
   try {
-    const response = await fetch(`${API_URL}/auth/github`, {
+    const response = await fetch(getApiUrl('/auth/github'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -379,7 +380,7 @@ export const getCurrentUser = async (): Promise<AuthUser> => {
     // Intentar usar el usuario del localStorage primero si existe
     const cachedUser = getUser();
 
-    const response = await fetch(`${API_URL}/auth/me`, {
+    const response = await fetch(getApiUrl('/auth/me'), {
       headers: {
         'Authorization': `Bearer ${token}`
       }

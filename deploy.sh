@@ -1,63 +1,72 @@
 #!/bin/bash
 
-# Script de despliegue para CircuitPrompt
-# Para ejecutar: chmod +x deploy.sh && ./deploy.sh
+# Script para desplegar en el servidor de Donweb con CloudPanel
 
-set -e  # Detener script si hay algún error
-
-echo "🚀 Iniciando despliegue de CircuitPrompt..."
-
-# Verificar si estamos en producción
-if [ "$NODE_ENV" != "production" ]; then
-  echo "⚙️ Configurando entorno de producción..."
-  export NODE_ENV=production
-fi
-
-# Verificar Node.js
-node_version=$(node -v)
-echo "📋 Usando Node.js $node_version"
-
-# Instalar dependencias
-echo "📦 Instalando dependencias..."
-npm ci --only=production
-
-# Construir la aplicación
-echo "🏗️ Construyendo la aplicación..."
+# Generar build de producción 
+echo "🔨 Generando build de producción..."
 npm run build
 
-# Verificar que el build se haya generado correctamente
-if [ ! -d "./dist" ]; then
-  echo "❌ Error: No se encontró la carpeta 'dist'. La compilación ha fallado."
-  exit 1
-fi
+# Empaquetar archivos para transferir
+echo "📦 Empaquetando archivos para transferir..."
+tar -czf deploy-package.tar.gz dist server.js .env.prod node_modules package.json process.json
 
-# Instalar PM2 si no está instalado
-if ! command -v pm2 &> /dev/null; then
-  echo "📦 Instalando PM2..."
-  npm install -g pm2
-fi
+# Transferir al servidor
+echo "📤 Transfiriendo archivos al servidor..."
+scp deploy-package.tar.gz circuitprompt@circuitprompt.com.ar:/home/circuitprompt/
 
-# Verificar si la aplicación ya está en PM2
-if pm2 list | grep -q "circuitprompt"; then
-  echo "🔄 Reiniciando aplicación en PM2..."
-  pm2 restart circuitprompt
-else
+# Conectar al servidor para desplegar
+echo "🚀 Conectando al servidor para desplegar..."
+ssh circuitprompt@circuitprompt.com.ar << 'ENDSSH'
+  cd /home/circuitprompt
+  
+  # Descomprimir paquete
+  echo "📂 Descomprimiendo paquete..."
+  tar -xzf deploy-package.tar.gz
+  
+  # Mover archivos a la carpeta de la aplicación
+  echo "🔄 Moviendo archivos a la carpeta de la aplicación..."
+  
+  # Crear el directorio de la aplicación si no existe
+  mkdir -p /home/circuitprompt/portfolio
+  
+  # Mover los archivos al directorio de la aplicación
+  cp -r dist /home/circuitprompt/portfolio/
+  cp server.js /home/circuitprompt/portfolio/
+  cp .env.prod /home/circuitprompt/portfolio/.env
+  cp -r node_modules /home/circuitprompt/portfolio/
+  cp package.json /home/circuitprompt/portfolio/
+  cp process.json /home/circuitprompt/portfolio/
+  
+  # Entrar en el directorio de la aplicación
+  cd /home/circuitprompt/portfolio
+  
+  # Verificar si PM2 está instalado, instalarlo si no lo está
+  if ! command -v pm2 &> /dev/null; then
+    echo "🔧 Instalando PM2..."
+    npm install -g pm2
+  fi
+  
+  # Detener la aplicación existente si está corriendo
+  echo "🛑 Deteniendo aplicación existente si está corriendo..."
+  pm2 stop portfolio || true
+  
+  # Iniciar la aplicación con PM2
   echo "🚀 Iniciando aplicación con PM2..."
-  pm2 start server.js --name circuitprompt
-fi
+  NODE_ENV=production pm2 start process.json
+  
+  # Guardar la configuración de PM2
+  pm2 save
+  
+  # Limpiar archivos temporales
+  echo "🧹 Limpiando archivos temporales..."
+  cd /home/circuitprompt
+  rm deploy-package.tar.gz
+  
+  echo "✅ Despliegue completado!"
+ENDSSH
 
-# Guardar configuración de PM2
-echo "💾 Guardando configuración de PM2..."
-pm2 save
+# Eliminar el paquete local
+echo "🧹 Limpiando archivos temporales locales..."
+rm deploy-package.tar.gz
 
-# Imprimir estado
-echo "✅ Despliegue completado. La aplicación está en ejecución."
-echo "🌐 La aplicación debería estar accesible en https://circuitprompt.com.ar"
-echo ""
-echo "📊 Estado de PM2:"
-pm2 status
-
-echo ""
-echo "🔍 Para ver logs: pm2 logs circuitprompt"
-echo "🔄 Para reiniciar: pm2 restart circuitprompt"
-echo "🛑 Para detener: pm2 stop circuitprompt" 
+echo "✅ Proceso de despliegue completado!" 

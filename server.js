@@ -85,9 +85,11 @@ app.use((req, res, next) => {
 const corsOrigins = [
   process.env.CORS_FRONT,
   process.env.CORS_BACK,
+  'https://circuitprompt.com.ar',
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:5173', // Vite usa este puerto por defecto
+  'http://localhost:5001',
   'http://127.0.0.1:5173', // También incluir 127.0.0.1
   'https://www.mercadopago.com',
   'https://api.mercadopago.com',
@@ -105,6 +107,11 @@ app.use(cors({
   origin: function (origin, callback) {
     // Permitir solicitudes sin origen (como aplicaciones móviles o curl)
     if (!origin) return callback(null, true);
+
+    // En producción, permitir explícitamente el dominio principal
+    if (origin === 'https://circuitprompt.com.ar') {
+      return callback(null, true);
+    }
 
     // Permitir todos los orígenes en desarrollo para facilitar pruebas
     if (process.env.NODE_ENV !== 'production') {
