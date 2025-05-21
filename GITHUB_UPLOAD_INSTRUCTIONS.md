@@ -29,7 +29,7 @@ Después de crear el repositorio en GitHub, te mostrará un conjunto de comandos
 cd /home/Lucas/Documentos/Portfolio/portfolio
 
 # Conecta tu repositorio local con el remoto en GitHub
-git remote add origin https://github.com/TU_USUARIO/portfolio-private.git
+git remote add origin https://https://github.com/Lucas-Dono/Portfolio
 
 # Sube tu código al repositorio remoto
 git push -u origin main
