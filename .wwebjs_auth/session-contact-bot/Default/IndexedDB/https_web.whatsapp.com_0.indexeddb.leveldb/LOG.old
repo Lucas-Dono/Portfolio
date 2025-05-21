@@ -1,0 +1,65 @@
+2025/05/18-10:15:13.164 1232 Reusing MANIFEST /home/Lucas/Documentos/Portfolio/portfolio/.wwebjs_auth/session-contact-bot/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/05/18-10:15:13.167 1232 Recovering log #7895
+2025/05/18-10:15:13.195 1232 Reusing old log /home/Lucas/Documentos/Portfolio/portfolio/.wwebjs_auth/session-contact-bot/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/007895.log 
+2025/05/18-10:15:13.195 1232 Delete type=2 #7884
+2025/05/18-10:15:13.195 1232 Delete type=2 #7885
+2025/05/18-10:15:13.196 1232 Delete type=2 #7886
+2025/05/18-10:15:13.196 1232 Delete type=2 #7887
+2025/05/18-10:15:13.196 1232 Delete type=2 #7888
+2025/05/18-10:15:13.196 1232 Delete type=2 #7889
+2025/05/18-10:15:13.196 1232 Delete type=2 #7890
+2025/05/18-10:15:13.196 1232 Delete type=2 #7891
+2025/05/18-10:15:13.196 1232 Delete type=2 #7892
+2025/05/18-10:15:13.196 1232 Delete type=2 #7893
+2025/05/18-10:15:13.196 1232 Delete type=2 #7897
+2025/05/18-10:15:14.917 1232 Level-0 table #7917: started
+2025/05/18-10:15:14.930 1232 Level-0 table #7917: 250145 bytes OK
+2025/05/18-10:15:14.947 1232 Delete type=0 #7895
+2025/05/18-10:15:14.948 1232 Manual compaction at level-0 from ' #\x01\x00\x00\x00' @ 72057594037927935 : 1 .. ' $\x01\x00\x00\x00' @ 0 : 0; will stop at ' #\x01\x00\x00\x05' @ 18113982 : 1
+2025/05/18-10:15:14.948 1232 Compacting 1@0 + 0@1 files
+2025/05/18-10:15:14.961 1232 Generated table #7918@0: 5957 keys, 120136 bytes
+2025/05/18-10:15:14.968 1232 Generated table #7919@0: 53 keys, 3353 bytes
+2025/05/18-10:15:14.968 1232 Compacted 1@0 + 0@1 files => 123489 bytes
+2025/05/18-10:15:14.983 1232 compacted to: files[ 0 2 16 0 0 0 0 ]
+2025/05/18-10:15:14.984 1232 Delete type=2 #7917
+2025/05/18-10:15:14.985 1232 Manual compaction at level-0 from ' #\x01\x00\x00\x05' @ 18113982 : 1 .. ' $\x01\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/05/18-10:15:16.714 1232 Compacting 1@1 + 6@2 files
+2025/05/18-10:15:16.760 1232 Generated table #7920@1: 18290 keys, 2158412 bytes
+2025/05/18-10:15:16.813 1232 Generated table #7921@1: 9568 keys, 2134546 bytes
+2025/05/18-10:15:16.902 1232 Generated table #7922@1: 56002 keys, 2192328 bytes
+2025/05/18-10:15:16.991 1232 Generated table #7923@1: 105264 keys, 2256689 bytes
+2025/05/18-10:15:17.105 1232 Generated table #7924@1: 105712 keys, 2256044 bytes
+2025/05/18-10:15:17.133 1232 Generated table #7925@1: 22561 keys, 574994 bytes
+2025/05/18-10:15:17.133 1232 Compacted 1@1 + 6@2 files => 11573013 bytes
+2025/05/18-10:15:17.148 1232 compacted to: files[ 0 1 16 0 0 0 0 ]
+2025/05/18-10:15:17.149 1232 Delete type=2 #7899
+2025/05/18-10:15:17.149 1232 Delete type=2 #7900
+2025/05/18-10:15:17.149 1232 Delete type=2 #7901
+2025/05/18-10:15:17.149 1232 Delete type=2 #7902
+2025/05/18-10:15:17.149 1232 Delete type=2 #7903
+2025/05/18-10:15:17.149 1232 Delete type=2 #7904
+2025/05/18-10:15:17.149 1232 Delete type=2 #7919
+2025/05/18-10:15:17.708 1232 Compacting 1@1 + 10@2 files
+2025/05/18-10:15:17.798 1232 Generated table #7926@1: 84501 keys, 2233023 bytes
+2025/05/18-10:15:17.884 1232 Generated table #7927@1: 98556 keys, 2251806 bytes
+2025/05/18-10:15:17.992 1232 Generated table #7928@1: 70030 keys, 2255605 bytes
+2025/05/18-10:15:18.069 1232 Generated table #7929@1: 51313 keys, 2214279 bytes
+2025/05/18-10:15:18.104 1232 Generated table #7930@1: 3657 keys, 2155743 bytes
+2025/05/18-10:15:18.135 1232 Generated table #7931@1: 2884 keys, 2155234 bytes
+2025/05/18-10:15:18.165 1232 Generated table #7932@1: 3337 keys, 2147282 bytes
+2025/05/18-10:15:18.201 1232 Generated table #7933@1: 8589 keys, 2163076 bytes
+2025/05/18-10:15:18.271 1232 Generated table #7934@1: 30685 keys, 2261013 bytes
+2025/05/18-10:15:18.332 1232 Generated table #7935@1: 23624 keys, 1963722 bytes
+2025/05/18-10:15:18.332 1232 Compacted 1@1 + 10@2 files => 21800783 bytes
+2025/05/18-10:15:18.348 1232 compacted to: files[ 0 0 16 0 0 0 0 ]
+2025/05/18-10:15:18.348 1232 Delete type=2 #7905
+2025/05/18-10:15:18.348 1232 Delete type=2 #7906
+2025/05/18-10:15:18.348 1232 Delete type=2 #7907
+2025/05/18-10:15:18.348 1232 Delete type=2 #7908
+2025/05/18-10:15:18.348 1232 Delete type=2 #7909
+2025/05/18-10:15:18.348 1232 Delete type=2 #7910
+2025/05/18-10:15:18.348 1232 Delete type=2 #7911
+2025/05/18-10:15:18.348 1232 Delete type=2 #7912
+2025/05/18-10:15:18.348 1232 Delete type=2 #7913
+2025/05/18-10:15:18.348 1232 Delete type=2 #7914
+2025/05/18-10:15:18.348 1232 Delete type=2 #7918

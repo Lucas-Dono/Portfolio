@@ -1,0 +1,88 @@
+{
+  "services": [
+    {
+      "id": "service_1747360616438_of55saa",
+      "userId": "google-116666621322247819969",
+      "serviceId": "service_sim_1747360614387",
+      "type": "business",
+      "name": "Página Web 5 Rutas",
+      "description": "Sitio web completo con hasta 5 páginas para tu empresa",
+      "status": "development",
+      "domain": null,
+      "createdAt": "2025-05-16T01:56:56.438Z",
+      "updatedAt": "2025-05-16T01:57:58.149Z",
+      "progress": 10,
+      "stage": "Planificación",
+      "nextTask": "Diseño inicial",
+      "payment": {
+        "id": "sim_746627",
+        "status": "approved",
+        "amount": 30000,
+        "date": "2025-05-16T01:56:56.438Z"
+      },
+      "milestones": [
+        {
+          "id": "planning",
+          "name": "Planificación",
+          "completed": true
+        },
+        {
+          "id": "design",
+          "name": "Diseño",
+          "completed": false
+        },
+        {
+          "id": "content",
+          "name": "Contenido",
+          "completed": false
+        },
+        {
+          "id": "development",
+          "name": "Desarrollo",
+          "completed": false
+        },
+        {
+          "id": "responsive",
+          "name": "Responsive",
+          "completed": false
+        },
+        {
+          "id": "testing",
+          "name": "Pruebas",
+          "completed": false
+        },
+        {
+          "id": "launch",
+          "name": "Lanzamiento",
+          "completed": false
+        }
+      ],
+      "previews": [
+        {
+          "id": 1,
+          "url": "https://placehold.co/600x400/00FFFF/1e1e1e?text=Design+Preview",
+          "title": "Diseño Inicial",
+          "description": "Vista previa del diseño inicial"
+        }
+      ],
+      "details": {
+        "serviceTitle": "Página Web 5 Rutas",
+        "paymentDate": "2025-05-16T01:56:56.428Z"
+      },
+      "projectDetails": {
+        "businessName": "Cafe Expresso",
+        "businessDescription": "Cafetería abierta las 24 horas con opciones gourmet",
+        "targetAudience": "Jovenes de 18 a 29 años",
+        "socialNetworks": "@Hola",
+        "colorPreference": "#e5a50a",
+        "desiredPages": [
+          "home",
+          "about",
+          "services"
+        ],
+        "websiteStyle": "creative",
+        "competitors": "@"
+      }
+    }
+  ]
+}
