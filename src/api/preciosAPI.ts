@@ -1,21 +1,5 @@
 import { Servicio, AddonServicio } from '../services/preciosService';
-
-// Obtener la URL base desde variables de entorno
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-
-// Función auxiliar para evitar duplicar '/api' en las rutas
-function getApiUrl(endpoint: string): string {
-  // Si API_URL ya termina en '/api', no añadir '/api' al principio del endpoint
-  if (API_URL.endsWith('/api')) {
-    // Eliminar '/api' del inicio del endpoint si existe
-    const cleanEndpoint = endpoint.startsWith('/api/')
-      ? endpoint.substring(4) // Quitar '/api' dejando la barra inicial del resto
-      : endpoint;
-    return `${API_URL}${cleanEndpoint.startsWith('/') ? cleanEndpoint : `/${cleanEndpoint}`}`;
-  }
-  // Si API_URL no termina en '/api', usamos el endpoint tal cual
-  return `${API_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-}
+import { getApiUrl } from '../config/apiConfig';
 
 // API para obtener todos los servicios
 export const obtenerServicios = async (): Promise<Servicio[]> => {
