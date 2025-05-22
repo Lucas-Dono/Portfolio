@@ -15,6 +15,7 @@ import {
   getToken
 } from '../services/auth';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../config/apiConfig';
 
 // Interfaz para el contexto de autenticación
 interface AuthContextType {
@@ -243,7 +244,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🔄 Iniciando autenticación directa con Google...');
 
       // Abrir ventana de autenticación de Google directamente
-      const googleAuthUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/auth/google/login?callback=${encodeURIComponent(window.location.origin + '/html/auth-callback.html')}`;
+      const googleAuthUrl = `${API_BASE_URL}/auth/google/login?callback=${encodeURIComponent(window.location.origin + '/html/auth-callback.html')}`;
       console.log('🔗 Abriendo URL de autenticación:', googleAuthUrl);
 
       // Crear una promesa que se resolverá cuando la ventana de autenticación se complete

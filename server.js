@@ -1261,9 +1261,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// Ruta para el health check (útil para monitoreo)
+// Ruta para el health check (útil para monitoreo y pruebas de configuración)
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'UP', time: new Date().toISOString() });
+  // Incluir información sobre la configuración actual para diagnóstico
+  res.status(200).json({
+    status: 'UP',
+    time: new Date().toISOString(),
+    config: {
+      port: process.env.PORT,
+      apiPort: process.env.API_PORT || process.env.PORT,
+      environment: process.env.NODE_ENV,
+      apiUrl: process.env.VITE_API_URL,
+      corsFront: process.env.CORS_FRONT,
+      corsBack: process.env.CORS_BACK
+    }
+  });
 });
 
 // Servir archivos estáticos del frontend (build de Vite)

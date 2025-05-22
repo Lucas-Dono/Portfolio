@@ -28,6 +28,7 @@ import {
   SettingsButton
 } from './Settings';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 // Las fuentes se cargan desde index.html o CSS global para mejor compatibilidad
 
@@ -1907,7 +1908,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
       try {
         // Realizar la llamada a la API para obtener los servicios del usuario
-        const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/users/services`;
+        const apiUrl = `${API_BASE_URL}/users/services`;
         console.log('🔄 Obteniendo servicios del usuario desde:', apiUrl);
 
         const response = await fetch(apiUrl, {
@@ -2342,11 +2343,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       };
 
       console.log('Enviando solicitud de reembolso:', refundData);
-      console.log('URL de API:', `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/payments/refunds/request`);
+      console.log('URL de API:', `${API_BASE_URL}/payments/refunds/request`);
 
       // Usar axios en lugar de fetch para mejor manejo de errores
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/payments/refunds/request`,
+        `${API_BASE_URL}/payments/refunds/request`,
         refundData,
         {
           headers: {
@@ -3237,7 +3238,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       setLoading(true);
 
       // Obtener servicios del usuario desde la API
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/services/user`, {
+      const response = await fetch(`${API_BASE_URL}/services/user`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
