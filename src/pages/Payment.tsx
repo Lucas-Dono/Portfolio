@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import GlobalBackground from '../components/ui/GlobalBackground';
 import { useAuth } from '../context/AuthContext';
 import ProjectQuestionnaire from '../components/payment/ProjectQuestionnaire';
+import { API_BASE_URL } from '../config/apiConfig';
 
 // Declarar el tipo MercadoPago para TypeScript
 declare global {
@@ -307,10 +308,10 @@ const Payment: React.FC = () => {
   const queryParams = new URLSearchParams(location.search);
   const queryServiceId = queryParams.get('service');
   const { user } = useAuth(); // Usar el hook de autenticación
-  
+
   // Usar el serviceId de la ruta o del query param
   const serviceId = routeServiceId || queryServiceId;
-  
+
   // Estados para gestionar el pago
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -318,24 +319,24 @@ const Payment: React.FC = () => {
   const [preferenceId, setPreferenceId] = useState('');
   const [mpLoaded, setMpLoaded] = useState(false);
   const [serviceInfo, setServiceInfo] = useState<{ title: string; price: number }>({ title: '', price: 0 });
-    
+
   // Estado para el cuestionario de proyecto
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
   const [projectData, setProjectData] = useState<Record<string, any>>({});
-      
+
   // Estado para servicios del usuario
   const [userServices, setUserServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
-        
+
   // Obtener información del usuario
   const userEmail = user?.email;
   const userName = user?.name || (userEmail ? userEmail.split('@')[0] : 'Usuario');
-  
+
   // Referencias para MercadoPago
   const mpRef = useRef<any>(null);
   const brickRef = useRef<any>(null);
-  
+
   // Obtener datos del servicio seleccionado
   const getServiceData = () => {
     // Esta es una versión simplificada, debes adaptarla a tu lógica de negocio
@@ -344,21 +345,21 @@ const Payment: React.FC = () => {
       'web5': { title: 'Página Web 5 Rutas', price: 30000 },
       'web7': { title: 'Página Web 7+ Rutas', price: 50000 }
     };
-    
+
     const defaultService = { title: 'Servicio no reconocido', price: 0 };
-    
+
     // Si el serviceId es null o undefined, devolver servicio por defecto
     if (!serviceId) return defaultService;
-    
+
     // @ts-ignore - Ignorar error de tipado por índice dinámico
     return services[serviceId] || defaultService;
   };
-  
+
   // Efecto para cargar los datos del servicio al montar el componente
   useEffect(() => {
     const data = getServiceData();
     setServiceInfo(data);
-    
+
     // Si llegamos a esta página por redirección de MP con un estado en la URL
     const params = new URLSearchParams(location.search);
     const status = params.get('status');
@@ -367,13 +368,13 @@ const Payment: React.FC = () => {
       // En lugar de redirigir, procesamos el pago directamente en esta página
       if (status === 'approved' || status === 'success') {
         setPaymentStatus('success');
-        
+
         // Guardar la información del pago en localStorage para trackeo
         const paymentId = params.get('payment_id') || params.get('collection_id');
         if (paymentId) {
           localStorage.setItem('last_payment_id', paymentId);
           localStorage.setItem('last_payment_status', status);
-          
+
           // Registrar el servicio para el usuario si tenemos todos los datos necesarios
           if (user && user.id && serviceId) {
             const registerService = async () => {
@@ -384,10 +385,10 @@ const Payment: React.FC = () => {
                   console.error('No se encontró token de autenticación');
                   return;
                 }
-                
+
                 // URL de la API para registrar servicios
-                const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/users/services`;
-                
+                const apiUrl = `${API_BASE_URL}/users/services`;
+
                 // Datos del servicio a registrar
                 const serviceData = {
                   serviceId: serviceId,
@@ -405,9 +406,9 @@ const Payment: React.FC = () => {
                     paymentDate: new Date().toISOString()
                   }
                 };
-                
+
                 console.log('📤 Enviando datos del servicio:', serviceData);
-                
+
                 // Hacer la petición a la API
                 const response = await fetch(apiUrl, {
                   method: 'POST',
@@ -417,23 +418,23 @@ const Payment: React.FC = () => {
                   },
                   body: JSON.stringify(serviceData)
                 });
-                
+
                 // Procesar la respuesta
                 if (response.ok) {
                   const data = await response.json();
                   console.log('✅ Servicio registrado correctamente:', data);
-                  
+
                   // Guardar el ID del servicio registrado
                   if (data.service && data.service.id) {
                     localStorage.setItem('last_service_id', data.service.id);
                   }
-                  
+
                   // Actualizar la bandera para completar el pago en localStorage
                   localStorage.setItem('project_payment_completed', 'true');
-                  
+
                   // Cargar servicios actualizados
                   loadUserServices();
-                  
+
                   // Mostrar el cuestionario automáticamente
                   setShowQuestionnaire(true);
                 } else {
@@ -444,12 +445,12 @@ const Payment: React.FC = () => {
                 console.error('❌ Error general al registrar servicio:', error);
               }
             };
-            
+
             // Llamar a la función para registrar el servicio
             registerService();
           }
         }
-        
+
         return;
       } else if (status === 'rejected' || status === 'failure') {
         setPaymentStatus('error');
@@ -461,33 +462,33 @@ const Payment: React.FC = () => {
       }
     }
   }, [serviceId, location, navigate, user]);
-  
+
   // Crear preferencia y cargar el SDK de Mercado Pago
   useEffect(() => {
     if (!serviceId || serviceInfo.price <= 0) return;
-    
+
     // 1. Crear preferencia en el backend
     const createPreference = async () => {
       try {
         setLoading(true);
         setError(null); // Limpiar errores previos
-        
+
         console.log('Creando preferencia para:', {
           serviceId: serviceId,
           serviceTitle: serviceInfo.title,
           servicePrice: serviceInfo.price,
           userName
         });
-        
+
         // Guardar información del servicio en localStorage para recuperarla después de la redirección
         localStorage.setItem('last_payment_service', serviceId);
         localStorage.setItem('last_payment_amount', serviceInfo.price.toString());
         localStorage.setItem('last_payment_service_title', serviceInfo.title);
-        
+
         // URL API con fallback
-        const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/payments/preference`;
+        const apiUrl = `${API_BASE_URL}/payments/preference`;
         console.log('URL de la API:', apiUrl);
-        
+
         // Datos para enviar a la API
         const paymentData = {
           serviceId: serviceId,
@@ -496,17 +497,17 @@ const Payment: React.FC = () => {
           userName: userName,
           email: userEmail
         };
-        
+
         console.log('Enviando datos a la API:', paymentData);
-        
+
         // Intentar crear preferencia varias veces en caso de error
         let attempts = 0;
         let success = false;
         let responseData = null;
-        
+
         while (!success && attempts < 3) {
           attempts++;
-          
+
           try {
             const response = await fetch(apiUrl, {
               method: 'POST',
@@ -517,9 +518,9 @@ const Payment: React.FC = () => {
               body: JSON.stringify(paymentData),
               credentials: 'include' // Permitir cookies para cross-origin
             });
-            
+
             const responseText = await response.text();
-            
+
             try {
               responseData = JSON.parse(responseText);
               console.log(`Intento ${attempts} - Respuesta de la API:`, responseData);
@@ -527,41 +528,41 @@ const Payment: React.FC = () => {
               console.error(`Error al parsear respuesta JSON (intento ${attempts}):`, responseText);
               throw new Error(`Error al parsear respuesta del servidor: ${responseText}`);
             }
-            
+
             if (!response.ok) {
               console.error(`Error en respuesta de API (intento ${attempts}):`, responseData);
               throw new Error(responseData.error || responseData.message || `Error ${response.status}: ${response.statusText}`);
             }
-            
+
             if (!responseData.id) {
               throw new Error('El servidor no devolvió un ID de preferencia válido');
             }
-            
+
             success = true;
           } catch (error) {
             console.error(`Error en intento ${attempts}:`, error);
-            
+
             // Si ya alcanzamos el máximo de intentos, propagar el error
             if (attempts >= 3) {
               throw error;
             }
-            
+
             // Esperar antes del próximo intento
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
         }
         setPreferenceId(responseData.id);
-        
+
         // Usar una clave pública por defecto si no se recibe de la API
         const publicKey = responseData.public_key || import.meta.env.VITE_MP_PUBLIC_KEY || 'TEST-064a6d85-da9f-4dea-9587-d0e7da336abc';
-        
+
         if (!publicKey) {
           console.warn('Advertencia: No se recibió clave pública de MercadoPago, usando valor por defecto');
         }
-        
+
         // Solo iniciamos la carga cuando hemos terminado de cargar la preferencia
         setLoading(false);
-        
+
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         console.error('Error al obtener preferencia:', error);
@@ -569,37 +570,37 @@ const Payment: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     createPreference();
   }, [serviceInfo, serviceId, userName, userEmail]);
-  
+
   // Memoizar loadUserServices para evitar recreaciones innecesarias
   const loadUserServices = useCallback(async () => {
     try {
       setLoadingServices(true);
-      
+
       const token = localStorage.getItem('auth_token');
       if (!token) {
         console.error('No se encontró token de autenticación');
         return;
       }
-      
-      const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/users/services`;
-      
+
+      const apiUrl = `${API_BASE_URL}/users/services`;
+
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (!response.ok) {
         throw new Error(`Error al cargar servicios: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log('✅ Servicios cargados correctamente:', data);
-      
+
       if (data.services) {
         setUserServices(data.services);
       }
@@ -609,53 +610,53 @@ const Payment: React.FC = () => {
       setLoadingServices(false);
     }
   }, []);
-  
+
   // Manejar la finalización del cuestionario
   const handleQuestionnaireComplete = async (answers: Record<string, any>) => {
     try {
       console.log('Respuestas del cuestionario:', answers);
       setProjectData(answers);
-      
+
       // Obtener datos necesarios
       const token = localStorage.getItem('auth_token');
       let serviceId = localStorage.getItem('last_service_id') || '';
-      
+
       if (!token) {
         console.error('❌ Error: No se encontró token de autenticación');
         throw new Error('No se encontró token de autenticación. Inicia sesión nuevamente.');
       }
-      
+
       if (!serviceId) {
         console.error('❌ Error: No se encontró ID del servicio');
         throw new Error('No se encontró ID del servicio. Intenta recargar la página.');
       }
-      
+
       console.log('🆔 ID del servicio utilizado:', serviceId);
-      
+
       // Primero, verificar si el servicio existe consultando la lista de servicios
       try {
         // Obtener la lista de servicios del usuario para validar el ID
-        const servicesApiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/users/services`;
+        const servicesApiUrl = `${API_BASE_URL}/users/services`;
         console.log('🔄 Verificando servicios disponibles:', servicesApiUrl);
-        
+
         const servicesResponse = await fetch(servicesApiUrl, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         if (!servicesResponse.ok) {
           throw new Error(`Error al verificar servicios: ${servicesResponse.status}`);
         }
-        
+
         const servicesData = await servicesResponse.json();
         console.log('📋 Servicios disponibles:', servicesData);
-        
+
         // Comprobar si el servicio existe en la lista
-        const serviceExists = servicesData.services && 
-                            servicesData.services.some((service: any) => service.id === serviceId);
-        
+        const serviceExists = servicesData.services &&
+          servicesData.services.some((service: any) => service.id === serviceId);
+
         if (!serviceExists && servicesData.services && servicesData.services.length > 0) {
           console.warn(`⚠️ El servicio con ID ${serviceId} no existe. Usando el primer servicio disponible en su lugar.`);
           // Usar el primer servicio disponible si no existe el que estamos buscando
@@ -666,11 +667,11 @@ const Payment: React.FC = () => {
           console.error(`❌ Error: No se encontraron servicios disponibles para el usuario`);
           throw new Error('No tienes servicios activos. Intenta realizar un pago primero.');
         }
-        
+
         // Actualizar la información del servicio en el backend
-        const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/users/services/${serviceId}/details`;
+        const apiUrl = `${API_BASE_URL}/users/services/${serviceId}/details`;
         console.log('🔗 URL de la API:', apiUrl);
-        
+
         console.log('📤 Enviando actualización al servidor:', {
           headers: {
             'Content-Type': 'application/json',
@@ -678,7 +679,7 @@ const Payment: React.FC = () => {
           },
           body: JSON.stringify({ projectDetails: answers })
         });
-        
+
         // Intentar con método PUT primero
         try {
           console.log('🔄 Intentando método PUT...');
@@ -690,12 +691,12 @@ const Payment: React.FC = () => {
             },
             body: JSON.stringify({ projectDetails: answers })
           });
-          
+
           // Verificar si la respuesta es exitosa
           if (!response.ok) {
             const errorText = await response.text();
             console.error(`❌ Error HTTP ${response.status} con método PUT: ${errorText}`);
-            
+
             // Si PUT falla, intentar con POST como alternativa
             console.log('🔄 PUT falló, intentando con método POST...');
             const postResponse = await fetch(apiUrl, {
@@ -706,39 +707,39 @@ const Payment: React.FC = () => {
               },
               body: JSON.stringify({ projectDetails: answers })
             });
-            
+
             if (!postResponse.ok) {
               const postErrorText = await postResponse.text();
               console.error(`❌ Error HTTP ${postResponse.status} con método POST: ${postErrorText}`);
               throw new Error(`Error al guardar detalles con POST (${postResponse.status}): ${postErrorText}`);
             }
-            
+
             // Si POST tiene éxito, usar esa respuesta
             const data = await postResponse.json();
             console.log('✅ Detalles del proyecto guardados correctamente con POST:', data);
-            
+
             // Marcar que se ha registrado un nuevo servicio para que Dashboard lo detecte
             localStorage.setItem('new_service_registered', 'true');
-            
+
             // Cargar los servicios actualizados
             await loadUserServices();
-            
+
             // Marcar como completado y ocultar el cuestionario
             setQuestionnaireCompleted(true);
             setShowQuestionnaire(false);
-            
+
             return; // Salir si POST tiene éxito
           }
-          
+
           const data = await response.json();
           console.log('✅ Detalles del proyecto guardados correctamente con PUT:', data);
-          
+
           // Marcar que se ha registrado un nuevo servicio para que Dashboard lo detecte
           localStorage.setItem('new_service_registered', 'true');
-          
+
           // Cargar los servicios actualizados
           await loadUserServices();
-          
+
           // Marcar como completado y ocultar el cuestionario
           setQuestionnaireCompleted(true);
           setShowQuestionnaire(false);
@@ -750,46 +751,46 @@ const Payment: React.FC = () => {
         console.error('❌ Error de red al actualizar detalles:', fetchError);
         throw fetchError;
       }
-      
+
     } catch (error) {
       console.error('❌ Error al enviar respuestas del cuestionario:', error);
-      
+
       // Mostrar un mensaje de error pero igual marcar como completado para no bloquear al usuario
       alert(`Hubo un problema al guardar los detalles del proyecto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
-      
+
       // Aún así, avanzar para no bloquear al usuario
       setQuestionnaireCompleted(true);
       setShowQuestionnaire(false);
     }
   };
-  
+
   // Efecto para crear preferencia y cargar MercadoPago
   useEffect(() => {
     // Verificar si estamos en la página de pagos
     if (!window.location.pathname.includes('/payment')) {
       return; // No inicializar si no estamos en la página de pagos
     }
-    
+
     // Solo procedemos si tenemos una preferencia válida y email del usuario
     if (!preferenceId || !serviceInfo.price || !userEmail) {
-      console.log('⚠️ No se puede inicializar MercadoPago:', { 
-        preferenceId, 
+      console.log('⚠️ No se puede inicializar MercadoPago:', {
+        preferenceId,
         price: serviceInfo.price,
         userEmail: userEmail || '(vacío)'
       });
       return;
     }
-    
+
     console.log('🚀 Inicializando MercadoPago para preferencia:', preferenceId);
     console.log('📧 Email que se usará en payer:', userEmail);
-    
+
     let sdkCheckAttempts = 0;
     const maxSDKCheckAttempts = 20; // Máximo de intentos (4 segundos)
-    
+
     // Función para verificar si el SDK de MercadoPago está cargado
     const checkMercadoPagoSDK = () => {
       sdkCheckAttempts++;
-      
+
       if (typeof window.MercadoPago !== 'function') {
         if (sdkCheckAttempts < maxSDKCheckAttempts) {
           console.log(`⏳ Esperando a que cargue el SDK de MercadoPago... (intento ${sdkCheckAttempts})`);
@@ -797,144 +798,144 @@ const Payment: React.FC = () => {
         } else {
           console.error('❌ Error: No se pudo cargar el SDK de MercadoPago después de varios intentos');
           setError('No se pudo cargar el procesador de pagos. Por favor, recarga la página');
-        setLoading(false);
+          setLoading(false);
         }
         return;
       }
-      
+
       // El SDK está cargado, proceder con la inicialización
       console.log('✅ SDK de MercadoPago detectado, inicializando...');
-      
-      try {
-      // Inicializar el SDK con la clave pública
-      const publicKey = import.meta.env.VITE_MP_PUBLIC_KEY || 'TEST-064a6d85-da9f-4dea-9587-d0e7da336abc';
-      console.log('🔑 Usando clave pública:', publicKey);
-      
-      // Crear instancia de MercadoPago con configuración específica para Argentina
-      const mp = new window.MercadoPago(publicKey, {
-        locale: 'es-AR',
-        advancedConfiguration: {
-          siteId: 'MLA', // Sitio de Argentina
-            marketplace: false // Establece a false para habilitar todas las opciones de pago
-        }
-      });
-      
-      // Guardar referencia a la instancia de MP
-      mpRef.current = mp;
-      console.log('✅ Instancia de MercadoPago creada correctamente');
-      
-        // Verificar si el contenedor está disponible
-      setTimeout(() => {
-        const container = document.getElementById('payment-brick-container');
-        
-        if (!container) {
-          console.error('❌ No se encontró el contenedor payment-brick-container tras el delay');
-          setError('Error al inicializar el formulario de pago. Intenta recargar.');
-          setLoading(false);
-          return; 
-        }
 
-        console.log('✅ Contenedor payment-brick-container encontrado tras delay');
-        
-        try {
-          // Asegurarse de desmontar cualquier instancia previa si existe
-          if (brickRef.current && typeof brickRef.current.unmount === 'function') {
-            try {
-              console.log('🧹 Desmontando instancia previa de Payment Brick');
-              brickRef.current.unmount();
-            } catch (e) {
-              console.warn('⚠️ Error al desmontar Payment Brick previo:', e);
-            }
+      try {
+        // Inicializar el SDK con la clave pública
+        const publicKey = import.meta.env.VITE_MP_PUBLIC_KEY || 'TEST-064a6d85-da9f-4dea-9587-d0e7da336abc';
+        console.log('🔑 Usando clave pública:', publicKey);
+
+        // Crear instancia de MercadoPago con configuración específica para Argentina
+        const mp = new window.MercadoPago(publicKey, {
+          locale: 'es-AR',
+          advancedConfiguration: {
+            siteId: 'MLA', // Sitio de Argentina
+            marketplace: false // Establece a false para habilitar todas las opciones de pago
+          }
+        });
+
+        // Guardar referencia a la instancia de MP
+        mpRef.current = mp;
+        console.log('✅ Instancia de MercadoPago creada correctamente');
+
+        // Verificar si el contenedor está disponible
+        setTimeout(() => {
+          const container = document.getElementById('payment-brick-container');
+
+          if (!container) {
+            console.error('❌ No se encontró el contenedor payment-brick-container tras el delay');
+            setError('Error al inicializar el formulario de pago. Intenta recargar.');
+            setLoading(false);
+            return;
           }
 
-          // Simplificar la configuración al mínimo necesario
-          const simpleBrickSettings = {
-            initialization: {
-              amount: serviceInfo.price,
-              preferenceId: preferenceId,
-              payer: {
-                email: userEmail && userEmail.includes('@') ? userEmail : undefined
+          console.log('✅ Contenedor payment-brick-container encontrado tras delay');
+
+          try {
+            // Asegurarse de desmontar cualquier instancia previa si existe
+            if (brickRef.current && typeof brickRef.current.unmount === 'function') {
+              try {
+                console.log('🧹 Desmontando instancia previa de Payment Brick');
+                brickRef.current.unmount();
+              } catch (e) {
+                console.warn('⚠️ Error al desmontar Payment Brick previo:', e);
               }
-            },
-            customization: {
-              visual: {
-                style: {
-                  theme: 'dark', // Usar solo el tema dark sin personalización adicional
-                },
-                hideFormTitle: true,
+            }
+
+            // Simplificar la configuración al mínimo necesario
+            const simpleBrickSettings = {
+              initialization: {
+                amount: serviceInfo.price,
+                preferenceId: preferenceId,
+                payer: {
+                  email: userEmail && userEmail.includes('@') ? userEmail : undefined
+                }
               },
-              paymentMethods: {
-                creditCard: "all",
-										debitCard: "all",
-										ticket: "all",
-										bankTransfer: "all",
-										atm: "all",
+              customization: {
+                visual: {
+                  style: {
+                    theme: 'dark', // Usar solo el tema dark sin personalización adicional
+                  },
+                  hideFormTitle: true,
+                },
+                paymentMethods: {
+                  creditCard: "all",
+                  debitCard: "all",
+                  ticket: "all",
+                  bankTransfer: "all",
+                  atm: "all",
                   mercadoPago: "all", // Renombrado de wallet_purchase a mercadoPago
                   creditCardOnly: {
                     maxInstallments: 12 // Permitir hasta 12 cuotas
                   }
-              },
+                },
                 // Siempre mostrar billetera de MercadoPago
                 wallet: {
                   showButton: true
                 }
-            },
-            callbacks: {
-              onReady: () => {
-                console.log('✅ Payment Brick listo y cargado correctamente');
-                console.log('📧 Email de usuario autenticado:', userEmail || 'No hay usuario autenticado');
-                console.log('📧 Email configurado en payer:', userEmail || '');
-                setMpLoaded(true);
-                setLoading(false);
               },
-              onError: (error: any) => {
-                console.error('❌ Error en Payment Brick:', error);
-                
-                // Mensajes de error simplificados
-                let errorMessage = 'Error al procesar el pago';
-                if (error.message) {
-                  if (error.message.includes('bin')) {
-                    errorMessage = 'Número de tarjeta no reconocido';
-                  } else {
-                    errorMessage = `Error: ${error.message}`;
+              callbacks: {
+                onReady: () => {
+                  console.log('✅ Payment Brick listo y cargado correctamente');
+                  console.log('📧 Email de usuario autenticado:', userEmail || 'No hay usuario autenticado');
+                  console.log('📧 Email configurado en payer:', userEmail || '');
+                  setMpLoaded(true);
+                  setLoading(false);
+                },
+                onError: (error: any) => {
+                  console.error('❌ Error en Payment Brick:', error);
+
+                  // Mensajes de error simplificados
+                  let errorMessage = 'Error al procesar el pago';
+                  if (error.message) {
+                    if (error.message.includes('bin')) {
+                      errorMessage = 'Número de tarjeta no reconocido';
+                    } else {
+                      errorMessage = `Error: ${error.message}`;
+                    }
                   }
+
+                  setError(errorMessage);
+                  setPaymentStatus('error');
+                  setLoading(false);
+                },
+                onSubmit: () => {
+                  console.log('📝 Formulario de pago enviado');
+                  setPaymentStatus('processing');
+                  return new Promise<void>((resolve) => setTimeout(resolve, 1500));
                 }
-                
-                setError(errorMessage);
-                setPaymentStatus('error');
-                setLoading(false);
-              },
-              onSubmit: () => {
-                console.log('📝 Formulario de pago enviado');
-                setPaymentStatus('processing');
-                return new Promise<void>((resolve) => setTimeout(resolve, 1500));
               }
-            }
-          };
+            };
 
-          // Depurar configuración antes de inicializar
-          console.log('⚙️ Configuración del Brick:', JSON.stringify(simpleBrickSettings, null, 2));
+            // Depurar configuración antes de inicializar
+            console.log('⚙️ Configuración del Brick:', JSON.stringify(simpleBrickSettings, null, 2));
 
-          // Usar la configuración simplificada
-          brickRef.current = mp.bricks().create("payment", "payment-brick-container", simpleBrickSettings);
-          console.log('✅ Payment Brick inicializado correctamente');
-        } catch (e) {
-          console.error('❌ Error al inicializar Payment Brick:', e);
-          setError(`Error al inicializar el formulario de pago: ${e instanceof Error ? e.message : 'Error desconocido'}`);
-          setLoading(false);
-        }
-      }, 100); // Delay de 100ms
-            
-    } catch (error) {
-      console.error('❌ Error general al inicializar MercadoPago:', error);
-      setError('Error al inicializar el procesador de pagos: ' + (error instanceof Error ? error.message : 'Error desconocido'));
-      setLoading(false);
-    }
+            // Usar la configuración simplificada
+            brickRef.current = mp.bricks().create("payment", "payment-brick-container", simpleBrickSettings);
+            console.log('✅ Payment Brick inicializado correctamente');
+          } catch (e) {
+            console.error('❌ Error al inicializar Payment Brick:', e);
+            setError(`Error al inicializar el formulario de pago: ${e instanceof Error ? e.message : 'Error desconocido'}`);
+            setLoading(false);
+          }
+        }, 100); // Delay de 100ms
+
+      } catch (error) {
+        console.error('❌ Error general al inicializar MercadoPago:', error);
+        setError('Error al inicializar el procesador de pagos: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+        setLoading(false);
+      }
     };
-    
+
     // Iniciar verificación de carga del SDK
     checkMercadoPagoSDK();
-    
+
     return () => {
       // Limpiar recursos
       if (brickRef.current && typeof brickRef.current.unmount === 'function') {
@@ -947,14 +948,14 @@ const Payment: React.FC = () => {
       }
     };
   }, [preferenceId, serviceInfo.price, userEmail]);
-  
+
   // Exponer la función de simulación en el objeto window para acceso desde consola
   useEffect(() => {
     // Función para simular un pago exitoso (solo para desarrollo)
     const simulatePayment = () => {
       console.log('🚀 Simulando pago exitoso...');
       setPaymentStatus('processing');
-      
+
       // Guardar información del pago simulado en localStorage
       const paymentId = 'sim_' + Math.floor(Math.random() * 1000000);
       const paymentData = {
@@ -971,21 +972,21 @@ const Payment: React.FC = () => {
           price: serviceInfo.price
         }
       };
-      
+
       // Guardar datos del pago simulado para recuperarlos
       localStorage.setItem('last_payment_data', JSON.stringify(paymentData));
       localStorage.setItem('last_payment_id', paymentId);
       localStorage.setItem('last_payment_status', 'approved');
-      
+
       // Crear un ID único para el servicio simulado
       const serviceUniqueId = `service_sim_${Date.now()}`;
       console.log('🆔 ID único generado para el servicio:', serviceUniqueId);
       localStorage.setItem('last_service_id', serviceUniqueId);
-      
+
       // Simular procesamiento (2 segundos)
       setTimeout(() => {
         setPaymentStatus('success');
-        
+
         // Registrar servicio para el usuario (usar API real)
         if (user && user.id) {
           // Obtener el token de autenticación
@@ -994,10 +995,10 @@ const Payment: React.FC = () => {
             console.error('No se encontró token de autenticación');
             return;
           }
-          
+
           // URL de la API para registrar servicios
-          const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/users/services`;
-          
+          const apiUrl = `${API_BASE_URL}/users/services`;
+
           // Datos del servicio a registrar
           const serviceData = {
             serviceId: serviceUniqueId,
@@ -1015,9 +1016,9 @@ const Payment: React.FC = () => {
               paymentDate: new Date().toISOString()
             }
           };
-          
+
           console.log('📤 Registrando servicio simulado en el backend:', serviceData);
-          
+
           // Registrar el servicio en el backend
           fetch(apiUrl, {
             method: 'POST',
@@ -1027,75 +1028,75 @@ const Payment: React.FC = () => {
             },
             body: JSON.stringify(serviceData)
           })
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(`Error al registrar servicio: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then(data => {
-            console.log('✅ Servicio registrado correctamente:', data);
-            
-            // Guardar el ID del servicio registrado (manejando diferentes estructuras de respuesta)
-            const registeredServiceId = data?.service?.id || data?.id || data?._id;
-            if (registeredServiceId) {
-              console.log('🆔 ID del servicio recibido del backend:', registeredServiceId);
-              
-              // IMPORTANTE: Actualizar último ID de servicio registrado para el cuestionario
-              localStorage.setItem('last_service_id', registeredServiceId);
-              console.log('🔄 ID de servicio actualizado en localStorage:', registeredServiceId);
-              
-              // Marcar que se ha registrado un nuevo servicio para que Dashboard lo detecte
-              localStorage.setItem('new_service_registered', 'true');
-            } else {
-              console.warn('⚠️ No se pudo extraer ID del servicio de la respuesta:', data);
-            }
-            
-            // Cargar servicios actualizados
-            loadUserServices();
-            
-            // Mostrar el cuestionario automáticamente
-            setShowQuestionnaire(true);
-          })
-          .catch(error => {
-            console.error('❌ Error al registrar servicio simulado:', error);
-            // Intentar mostrar el cuestionario de todos modos
-            setShowQuestionnaire(true);
-          });
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`Error al registrar servicio: ${response.status}`);
+              }
+              return response.json();
+            })
+            .then(data => {
+              console.log('✅ Servicio registrado correctamente:', data);
+
+              // Guardar el ID del servicio registrado (manejando diferentes estructuras de respuesta)
+              const registeredServiceId = data?.service?.id || data?.id || data?._id;
+              if (registeredServiceId) {
+                console.log('🆔 ID del servicio recibido del backend:', registeredServiceId);
+
+                // IMPORTANTE: Actualizar último ID de servicio registrado para el cuestionario
+                localStorage.setItem('last_service_id', registeredServiceId);
+                console.log('🔄 ID de servicio actualizado en localStorage:', registeredServiceId);
+
+                // Marcar que se ha registrado un nuevo servicio para que Dashboard lo detecte
+                localStorage.setItem('new_service_registered', 'true');
+              } else {
+                console.warn('⚠️ No se pudo extraer ID del servicio de la respuesta:', data);
+              }
+
+              // Cargar servicios actualizados
+              loadUserServices();
+
+              // Mostrar el cuestionario automáticamente
+              setShowQuestionnaire(true);
+            })
+            .catch(error => {
+              console.error('❌ Error al registrar servicio simulado:', error);
+              // Intentar mostrar el cuestionario de todos modos
+              setShowQuestionnaire(true);
+            });
         } else {
           // Si no hay usuario, mostrar el cuestionario de todos modos
           setShowQuestionnaire(true);
         }
       }, 2000);
     };
-    
+
     // Crear o actualizar la función global
     (window as any).simulatePayment = simulatePayment;
-    
+
     // Mensaje en consola para informar al desarrollador
     console.log('💡 Para simular un pago exitoso, ejecuta window.simulatePayment() en la consola');
-    
+
     // Limpieza al desmontar
     return () => {
       delete (window as any).simulatePayment;
     };
   }, [serviceInfo, serviceId, user]);
-  
+
   // Efecto para verificar estado del pago
   useEffect(() => {
     console.log('🔍 Verificando estado del pago, usuario actual:', user);
-    
+
     // Verificar si venimos de una redirección después de un pago
     const status = new URLSearchParams(location.search).get('status');
     const paymentId = new URLSearchParams(location.search).get('payment_id');
-    
+
     // Cargar los servicios del usuario al iniciar
     if (user && user.id) {
       console.log('🔄 Cargando servicios para el usuario:', user.id);
       loadUserServices();
     }
   }, [user, location, loadUserServices]);
-  
+
   // Renderizado condicional según estado del servicio
   if (!serviceInfo) {
     return (
@@ -1117,7 +1118,7 @@ const Payment: React.FC = () => {
       </PageContainer>
     );
   }
-  
+
   // Si no hay usuario autenticado o está en proceso de verificación
   if (!userEmail && !error) {
     return (
@@ -1133,14 +1134,14 @@ const Payment: React.FC = () => {
               <Title>Verificando cuenta</Title>
             </Header>
             <div style={{ padding: '2rem', textAlign: 'center' }}>
-              <div className="loader" style={{ 
+              <div className="loader" style={{
                 margin: '0 auto 1.5rem',
                 borderTopColor: '#009ee3'
               }}></div>
               <p>Verificando tu cuenta para proceder con el pago...</p>
-              <p style={{ 
-                fontSize: '0.85rem', 
-                color: 'rgba(255,255,255,0.5)', 
+              <p style={{
+                fontSize: '0.85rem',
+                color: 'rgba(255,255,255,0.5)',
                 marginTop: '1rem'
               }}>
                 Para realizar pagos es necesario iniciar sesión.
@@ -1151,7 +1152,7 @@ const Payment: React.FC = () => {
       </PageContainer>
     );
   }
-  
+
   // Mostrar mensaje según estado del pago
   const renderPaymentStatus = () => {
     switch (paymentStatus) {
@@ -1173,24 +1174,24 @@ const Payment: React.FC = () => {
               <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ margin: '0 auto 1rem' }}>
                 <circle cx="12" cy="12" r="10" stroke="#00FFFF" strokeWidth="1.5" />
                 <path d="M8 12L11 15L16 9" stroke="#00FFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+              </svg>
             </motion.div>
-            
+
             <h3 style={{ fontSize: '1.5rem', margin: '0.5rem 0', color: '#00FFFF' }}>
               ¡Pago Exitoso!
             </h3>
-            
+
             <p style={{ color: 'rgba(255, 255, 255, 0.8)', marginBottom: '1.5rem' }}>
               Tu pago ha sido procesado correctamente. ¡Gracias por confiar en nosotros!
             </p>
-            
+
             {questionnaireCompleted ? (
               <div>
                 <p style={{ color: 'rgba(255, 255, 255, 0.8)', marginBottom: '1.5rem' }}>
                   Hemos recibido toda la información necesaria para comenzar con tu proyecto.
                   Pronto nos pondremos en contacto contigo.
                 </p>
-                
+
                 <Link to="/dashboard" style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -1217,7 +1218,7 @@ const Payment: React.FC = () => {
                 <p style={{ color: 'rgba(255, 255, 255, 0.9)', marginBottom: '1.5rem', fontWeight: 'bold' }}>
                   ¡Un paso más! Para comenzar con tu proyecto, necesitamos algunos detalles importantes.
                 </p>
-                
+
                 <Button onClick={() => setShowQuestionnaire(true)} style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -1246,16 +1247,16 @@ const Payment: React.FC = () => {
         return (
           <div style={{ padding: '2rem', textAlign: 'center', color: '#FF4E4E' }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/>
+              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z" />
             </svg>
             <p style={{ marginTop: '1rem', fontSize: '1.2rem' }}>Error al procesar el pago</p>
             {error && <p>{error}</p>}
-            <button 
-              onClick={() => window.location.reload()} 
-              style={{ 
-                marginTop: '1rem', 
-                padding: '0.5rem 1rem', 
-                background: 'rgba(0, 158, 227, 0.2)', 
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                marginTop: '1rem',
+                padding: '0.5rem 1rem',
+                background: 'rgba(0, 158, 227, 0.2)',
                 border: '1px solid #009ee3',
                 borderRadius: '4px',
                 color: 'white',
@@ -1273,28 +1274,28 @@ const Payment: React.FC = () => {
               <div className="loader" style={{ borderTopColor: '#009ee3' }}></div>
               <p>Cargando opciones de pago...</p>
               <div className="brick-reset-container">
-                <div id="payment-brick-container" style={{width: '100%', position: 'relative'}}>
+                <div id="payment-brick-container" style={{ width: '100%', position: 'relative' }}>
                   {!mpLoaded && !loading && <LoadingContainer><p>Cargando formulario...</p></LoadingContainer>}
                 </div>
               </div>
             </LoadingContainer>
           );
         }
-        
+
         if (error) {
           return (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#FF4E4E' }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/>
+                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z" />
               </svg>
               <p style={{ marginTop: '1rem', fontSize: '1.2rem' }}>No se pudo cargar el formulario de pago</p>
               <p>{error}</p>
-              <button 
-                onClick={() => window.location.reload()} 
-                style={{ 
-                  marginTop: '1rem', 
-                  padding: '0.5rem 1rem', 
-                  background: 'rgba(0, 158, 227, 0.2)', 
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  marginTop: '1rem',
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(0, 158, 227, 0.2)',
                   border: '1px solid #009ee3',
                   borderRadius: '4px',
                   color: 'white',
@@ -1304,26 +1305,26 @@ const Payment: React.FC = () => {
                 Reintentar
               </button>
               <div className="brick-reset-container">
-                <div id="payment-brick-container" style={{width: '100%', position: 'relative'}}>
+                <div id="payment-brick-container" style={{ width: '100%', position: 'relative' }}>
                   {!mpLoaded && !loading && <LoadingContainer><p>Cargando formulario...</p></LoadingContainer>}
                 </div>
               </div>
             </div>
           );
         }
-        
+
         return (
           <BrickContainer className="BrickContainer">
             <div className="brick-reset-container">
-              <div id="payment-brick-container" style={{width: '100%', position: 'relative'}}>
+              <div id="payment-brick-container" style={{ width: '100%', position: 'relative' }}>
                 {!mpLoaded && !loading && <LoadingContainer><p>Cargando formulario...</p></LoadingContainer>}
               </div>
             </div>
-            <div style={{ 
-              textAlign: 'center', 
-              marginTop: '1rem', 
-              fontSize: '0.85rem', 
-              color: 'rgba(255,255,255,0.6)' 
+            <div style={{
+              textAlign: 'center',
+              marginTop: '1rem',
+              fontSize: '0.85rem',
+              color: 'rgba(255,255,255,0.6)'
             }}>
               Usa una tarjeta de prueba como 4509 9535 6623 3704, vto 12/25, CVV 123
             </div>
@@ -1331,11 +1332,11 @@ const Payment: React.FC = () => {
         );
     }
   };
-  
+
   return (
     <PageContainer>
       <GlobalBackground />
-      
+
       <ContentContainer>
         <Card
           initial={{ opacity: 0, y: 20 }}
@@ -1346,12 +1347,12 @@ const Payment: React.FC = () => {
             <Title>Finalizar Compra</Title>
             <SecurePaymentBadge>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
               </svg>
               <span>Pago Seguro</span>
             </SecurePaymentBadge>
           </Header>
-          
+
           {/* Si no hay servicio seleccionado, mostrar mensaje */}
           {!serviceId || serviceInfo.price === 0 ? (
             <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -1374,58 +1375,58 @@ const Payment: React.FC = () => {
                   <OrderTotal>${serviceInfo.price.toLocaleString()}</OrderTotal>
                 </OrderItem>
               </OrderSummary>
-              
+
               <PaymentContainer>
                 <MercadoPagoLogo>
-                  <img 
-                    src="images/MercadoPago.logo.svg" 
-                    alt="Mercado Pago" 
+                  <img
+                    src="images/MercadoPago.logo.svg"
+                    alt="Mercado Pago"
                   />
                 </MercadoPagoLogo>
-                
+
                 <PaymentTitle>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5H0V4zm11.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-2zM0 11v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1H0z"/>
+                    <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5H0V4zm11.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-2zM0 11v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1H0z" />
                   </svg>
                   Método de pago
                 </PaymentTitle>
                 <PaymentSubtitle>
                   Elige cómo quieres pagar tu compra
                 </PaymentSubtitle>
-                
+
                 {renderPaymentStatus()}
-                
+
                 {error && <ErrorMessage>{error}</ErrorMessage>}
-                
+
                 <PaymentFooter>
                   <p>Tu información de pago está protegida con encriptación de 256 bits</p>
-                  
+
                   <div className="auth-notice">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                      <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                      <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
                     </svg>
                     <span>Para realizar pagos es necesario iniciar sesión</span>
                   </div>
-                  
+
                   <div className="security-badges">
                     <div className="badge">
-                    <img 
-                    src="images/MercadoPago.svg" 
-                    alt="Mercado Pago" 
-                    width="44"
-                  />
+                      <img
+                        src="images/MercadoPago.svg"
+                        alt="Mercado Pago"
+                        width="44"
+                      />
                       <span>Tecnología verificada</span>
                     </div>
                     <div className="badge">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#32CCBC" viewBox="0 0 16 16">
-                        <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                        <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
                       </svg>
                       <span>Conexión Segura</span>
                     </div>
                     <div className="badge">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#009ee3" viewBox="0 0 16 16">
-                        <path d="M5.338 1.59a61.44 61.44 0 0 0-2.837.856.481.481 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.725 10.725 0 0 0 2.287 2.233c.346.244.652.42.893.533.12.057.218.095.293.118a.55.55 0 0 0 .101.025.615.615 0 0 0 .1-.025c.076-.023.174-.061.294-.118.24-.113.547-.29.893-.533a10.726 10.726 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z"/>
-                        <path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0z"/>
+                        <path d="M5.338 1.59a61.44 61.44 0 0 0-2.837.856.481.481 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.725 10.725 0 0 0 2.287 2.233c.346.244.652.42.893.533.12.057.218.095.293.118a.55.55 0 0 0 .101.025.615.615 0 0 0 .1-.025c.076-.023.174-.061.294-.118.24-.113.547-.29.893-.533a10.726 10.726 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z" />
+                        <path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0z" />
                       </svg>
                       <span>Pagos Protegidos</span>
                     </div>
@@ -1436,7 +1437,7 @@ const Payment: React.FC = () => {
           )}
         </Card>
       </ContentContainer>
-      
+
       {/* Cuestionario de proyecto */}
       <ProjectQuestionnaire
         serviceType={serviceId || 'default'}

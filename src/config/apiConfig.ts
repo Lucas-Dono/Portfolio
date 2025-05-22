@@ -4,13 +4,13 @@
 
 // Función para determinar la URL base de la API
 export const getApiBaseUrl = (): string => {
-    // En producción, usar el dominio actual
-    if (import.meta.env.PROD) {
-        // Usar la URL definida en variables de entorno si existe
-        if (import.meta.env.VITE_API_URL) {
-            return import.meta.env.VITE_API_URL;
-        }
+    // Siempre preferir la variable de entorno si está disponible
+    if (import.meta.env.VITE_API_URL) {
+        return import.meta.env.VITE_API_URL;
+    }
 
+    // En producción, construir la URL desde la ubicación actual como fallback
+    if (import.meta.env.PROD) {
         // Si no hay variable de entorno, construir la URL desde la ubicación actual
         if (typeof window !== 'undefined') {
             const { protocol, hostname } = window.location;
@@ -18,8 +18,17 @@ export const getApiBaseUrl = (): string => {
         }
     }
 
-    // En desarrollo, usar localhost
-    return 'http://localhost:5001/api';
+    // En desarrollo, usar un fallback seguro (esto solo se usará si VITE_API_URL no está definida)
+    // Usar la ubicación actual con el puerto configurado en el .env
+    if (typeof window !== 'undefined') {
+        const { protocol, hostname } = window.location;
+        const port = window.location.port || '4000'; // Usar el puerto actual o 4000 como fallback
+        return `${protocol}//${hostname}:${port}/api`;
+    }
+
+    // Último recurso (nunca debería llegar aquí)
+    console.warn('No se pudo determinar la URL de la API, usando localhost:4000 como fallback');
+    return 'http://localhost:4000/api';
 };
 
 // Exportar la URL base para uso en toda la aplicación

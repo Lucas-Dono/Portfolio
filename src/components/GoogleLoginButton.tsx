@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../config/apiConfig';
 
 interface GoogleLoginButtonProps {
   onSuccess?: () => void;
@@ -161,7 +162,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       console.log('🔄 Preparando autenticación con Google (mostrando términos primero)...');
       try {
         // Abrir ventana de autenticación de Google directamente
-        const googleAuthUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/auth/google/login?callback=${encodeURIComponent(window.location.origin + '/html/auth-callback.html')}`;
+        const googleAuthUrl = `${API_BASE_URL}/auth/google/login?callback=${encodeURIComponent(window.location.origin + '/html/auth-callback.html')}`;
         console.log('🔗 Abriendo URL de autenticación:', googleAuthUrl);
 
         const authWindow = window.open(googleAuthUrl, 'GoogleAuth', 'width=600,height=700');

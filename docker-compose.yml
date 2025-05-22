@@ -4,7 +4,7 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - "4000:4000"
       - "5001:5001"
     depends_on:
       - postgres
@@ -19,7 +19,7 @@ services:
   postgres:
     image: postgres:14
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres

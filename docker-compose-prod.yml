@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile.prod
     restart: unless-stopped
     ports:
-      - "5001:5001" # Exponer el puerto 5001 para CloudPanel
+      - "5001:5001" # Exponer el puerto 7001 para CloudPanel
     depends_on:
       postgres:
         condition: service_healthy
@@ -90,7 +90,7 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "127.0.0.1:5433:5432"
       - "443:443"
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:ro

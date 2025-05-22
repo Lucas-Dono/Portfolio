@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 // Interfaces
 interface RefundRequest {
@@ -377,7 +378,7 @@ const AdminRefunds = () => {
     const [actionError, setActionError] = useState<string | null>(null);
     const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+    const API_URL = API_BASE_URL;
 
     // Obtener token de autenticación
     const getAuthToken = () => {
