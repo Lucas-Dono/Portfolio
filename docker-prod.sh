@@ -27,6 +27,41 @@ verificar_docker() {
     return 0
 }
 
+# Función para verificar y liberar puertos
+verificar_puertos() {
+    echo -e "${AZUL}🔍 Verificando puertos necesarios...${NC}"
+    
+    # Array de puertos a verificar
+    PUERTOS=(4000 5001 5433)
+    
+    for puerto in "${PUERTOS[@]}"; do
+        if lsof -i :$puerto > /dev/null 2>&1; then
+            echo -e "${AMARILLO}⚠️ El puerto $puerto está en uso. Intentando liberarlo...${NC}"
+            
+            # Obtener el PID del proceso que usa el puerto
+            PID=$(lsof -ti :$puerto)
+            
+            if [ ! -z "$PID" ]; then
+                echo -e "${AZUL}🔄 Deteniendo proceso $PID que usa el puerto $puerto${NC}"
+                kill -9 $PID
+                sleep 2
+                
+                # Verificar si el puerto se liberó
+                if ! lsof -i :$puerto > /dev/null 2>&1; then
+                    echo -e "${VERDE}✅ Puerto $puerto liberado correctamente${NC}"
+                else
+                    echo -e "${ROJO}❌ No se pudo liberar el puerto $puerto${NC}"
+                    return 1
+                fi
+            fi
+        else
+            echo -e "${VERDE}✅ Puerto $puerto está disponible${NC}"
+        fi
+    done
+    
+    return 0
+}
+
 # Función para solucionar permisos de volúmenes
 solucionar_permisos() {
     echo -e "${AZUL}🔧 Solucionando permisos de volúmenes...${NC}"
@@ -59,6 +94,7 @@ iniciar_produccion() {
     echo -e "${AZUL}=================================${NC}"
 
     verificar_docker || return 1
+    verificar_puertos || return 1
     
     echo -e "${AZUL}🛑 Deteniendo contenedores existentes...${NC}"
     $DOCKER_COMPOSE -f docker-compose-prod.yml down
@@ -181,7 +217,7 @@ case "$1" in
             read opcion
             case $opcion in
                 1)
-                    iniciar_produccion
+                    iniciar_produccion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
                     echo -e "${AZUL}Presiona Enter para continuar...${NC}"
                     read
                     ;;
