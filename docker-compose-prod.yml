@@ -7,12 +7,14 @@ services:
       dockerfile: Dockerfile.prod
     restart: unless-stopped
     ports:
-      - "5001:5001" # Exponer el puerto 7001 para CloudPanel
+      - "5001:5001"
     depends_on:
       postgres:
         condition: service_healthy
     env_file:
-      - .env.prod
+      - .env
+    environment:
+      - NODE_ENV=production
     volumes:
       - app_logs:/app/logs
       - app_uploads:/app/uploads
@@ -44,7 +46,6 @@ services:
       - CHOWN
       - SETUID
       - SETGID
-    # Los secretos se manejan a través de un archivo .env.prod
 
   postgres:
     image: postgres:14-alpine
@@ -90,7 +91,6 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5433:5432"
       - "443:443"
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:ro

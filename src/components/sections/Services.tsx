@@ -82,9 +82,9 @@ const ServicesGrid = styled.div`
   }
 `;
 
-const ServiceCard = styled(motion.div) <{ highlight?: boolean }>`
+const ServiceCard = styled(motion.div) <{ highlight?: string }>`
   background: rgba(17, 17, 17, 0.6);
-  border: 1px solid ${props => props.highlight ? 'rgba(0, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.07)'};
+  border: 1px solid ${props => props.highlight === 'true' ? 'rgba(0, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.07)'};
   border-radius: 16px;
   padding: 1.5rem;
   display: flex;
@@ -92,7 +92,7 @@ const ServiceCard = styled(motion.div) <{ highlight?: boolean }>`
   gap: 1.2rem;
   transition: all 0.3s ease;
   position: relative;
-  box-shadow: ${props => props.highlight ? '0 8px 32px rgba(0, 255, 255, 0.15)' : 'none'};
+  box-shadow: ${props => props.highlight === 'true' ? '0 8px 32px rgba(0, 255, 255, 0.15)' : 'none'};
   height: 100%;
 
   &:hover {
@@ -807,7 +807,7 @@ const services = [
     promoAvailable: true,
     promoLimit: 3,
     promoText: '¡Gratis para las primeras 3 compras!',
-    highlight: false,
+    highlight: 'false',
     popularBadge: false
   },
   {
@@ -828,7 +828,7 @@ const services = [
     originalPrice: 80000,
     price: 69997,
     priceValue: 69997,
-    highlight: true,
+    highlight: 'true',
     popularBadge: true,
     popularText: 'MÁS POPULAR'
   },
@@ -850,7 +850,7 @@ const services = [
     ],
     price: 149997,
     priceValue: 149997,
-    highlight: false,
+    highlight: 'false',
     popularBadge: false
   },
   {
@@ -873,7 +873,7 @@ const services = [
     customPrice: true,
     customPriceText: 'Desde',
     contactForPrice: true,
-    highlight: false,
+    highlight: 'false',
     popularBadge: false
   }
 ];
