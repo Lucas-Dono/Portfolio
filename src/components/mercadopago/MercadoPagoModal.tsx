@@ -250,20 +250,20 @@ const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth(); // Obtener información del usuario autenticado
   const [userEmail, setUserEmail] = useState<string>('');
-  
+
   // Depuración del usuario autenticado y obtención del email
   useEffect(() => {
     if (isOpen) {
       // Intentar obtener el email del usuario de varias fuentes
       let email = '';
-      
+
       // 1. Primero intentar del contexto de autenticación
       if (user && user.email) {
         email = user.email;
         console.log('✅ Email obtenido del contexto de autenticación:', email);
       } else {
         console.log('❌ No hay email disponible en el contexto de autenticación');
-        
+
         // 2. Intentar obtener del localStorage
         try {
           const storedUserStr = localStorage.getItem('auth_user');
@@ -282,11 +282,11 @@ const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
           console.error('Error al obtener email de localStorage:', e);
         }
       }
-      
+
       // Guardar el email encontrado
       setUserEmail(email);
       console.log('📧 Email final que se usará:', email || 'No disponible');
-      
+
       // Si no hay email después de todos los intentos, mostrar error
       if (!email) {
         setPaymentStatus({
@@ -297,23 +297,45 @@ const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
       }
     }
   }, [isOpen, user]);
-  
+
   // Inicializar Mercado Pago SDK
   useEffect(() => {
     if (isOpen) {
-      const mpPublicKey = import.meta.env.VITE_MP_PUBLIC_KEY;
-      if (mpPublicKey) {
-        initMercadoPago(mpPublicKey);
-      } else {
-        console.error('Error: Mercado Pago Public Key no disponible');
+      try {
+        const mpPublicKey = import.meta.env.VITE_MP_PUBLIC_KEY;
+        console.log('Clave pública de MercadoPago (Modal):', mpPublicKey);
+
+        if (mpPublicKey) {
+          // Primero comprobar si ya está inicializado
+          if (typeof window.MercadoPago === 'function') {
+            console.log('✅ MercadoPago SDK ya estaba disponible en window (Modal)');
+          } else {
+            console.log('🔄 Inicializando MercadoPago mediante SDK React (Modal)');
+            initMercadoPago(mpPublicKey);
+          }
+        } else {
+          console.error('Error: Mercado Pago Public Key no disponible (Modal)');
+          setPaymentStatus({
+            status: 'rejected',
+            id: '',
+            detail: 'Error al cargar el sistema de pagos. Inténtalo más tarde o contacta con soporte.'
+          });
+        }
+      } catch (error) {
+        console.error('Error al inicializar MercadoPago (Modal):', error);
+        setPaymentStatus({
+          status: 'rejected',
+          id: '',
+          detail: 'Error al cargar el sistema de pagos. Inténtalo más tarde o contacta con soporte.'
+        });
       }
     }
   }, [isOpen]);
-  
+
   // Función para manejar el pago
   const handlePaymentSubmit = async (formData: any) => {
     setIsLoading(true);
-    
+
     try {
       // Envío los datos de pago al backend
       const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/process`, {
@@ -329,12 +351,12 @@ const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
           email: userEmail
         }),
       });
-      
+
       const result = await response.json();
-      
+
       setIsLoading(false);
       setPaymentStatus(result);
-      
+
     } catch (error) {
       console.error('Error al procesar el pago:', error);
       setIsLoading(false);
@@ -345,32 +367,32 @@ const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
       });
     }
   };
-  
+
   // Cerrar y reiniciar
   const handleClose = () => {
     setPaymentStatus(null);
     onClose();
   };
-  
+
   // Finalizar proceso exitoso
   const handleSuccess = () => {
     setPaymentStatus(null);
     onSuccess();
   };
-  
+
   // Variantes para animaciones
   const modalVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.3 } },
     exit: { opacity: 0, transition: { duration: 0.2 } }
   };
-  
+
   const contentVariants = {
     hidden: { scale: 0.95, opacity: 0 },
     visible: { scale: 1, opacity: 1, transition: { duration: 0.3 } },
     exit: { scale: 0.95, opacity: 0, transition: { duration: 0.2 } }
   };
-  
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -396,7 +418,7 @@ const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
                 </svg>
               </CloseButton>
             </ModalHeader>
-            
+
             {!paymentStatus ? (
               <>
                 <OrderSummary>
@@ -413,7 +435,7 @@ const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
                     <OrderTotal>${servicePrice.toLocaleString()}</OrderTotal>
                   </OrderItem>
                 </OrderSummary>
-                
+
                 <CardPaymentContainer>
                   <CardPayment
                     initialization={{
@@ -440,12 +462,12 @@ const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
                     }}
                   />
                 </CardPaymentContainer>
-                
+
                 <SecurityBadge>
                   <img src="/images/shield-check.svg" alt="Seguridad" />
                   <span>Tus datos están protegidos con encriptación de nivel bancario.</span>
                 </SecurityBadge>
-                
+
                 <MercadoPagoLogo>
                   <img src="/images/mercadopago-logo.svg" alt="Mercado Pago" />
                 </MercadoPagoLogo>
@@ -464,19 +486,19 @@ const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
                     </svg>
                   )}
                 </StatusIcon>
-                
+
                 <StatusTitle>
-                  {paymentStatus.status === 'approved' 
-                    ? '¡Pago realizado con éxito!' 
+                  {paymentStatus.status === 'approved'
+                    ? '¡Pago realizado con éxito!'
                     : 'El pago no pudo ser procesado'}
                 </StatusTitle>
-                
+
                 <StatusMessage>
-                  {paymentStatus.status === 'approved' 
-                    ? `Tu pago por $${servicePrice.toLocaleString()} ha sido procesado correctamente.` 
+                  {paymentStatus.status === 'approved'
+                    ? `Tu pago por $${servicePrice.toLocaleString()} ha sido procesado correctamente.`
                     : paymentStatus.detail || 'Ha ocurrido un error al procesar el pago. Por favor, intenta nuevamente.'}
                 </StatusMessage>
-                
+
                 <ActionButton
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}

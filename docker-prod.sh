@@ -217,7 +217,7 @@ case "$1" in
             read opcion
             case $opcion in
                 1)
-                    iniciar_produccion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
+                    iniciar_produccion
                     echo -e "${AZUL}Presiona Enter para continuar...${NC}"
                     read
                     ;;

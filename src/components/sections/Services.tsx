@@ -8,6 +8,7 @@ import { Promocion, PromocionesState, ReservaPromocion } from '../../types/promo
 import * as promocionesAPI from '../../api/promocionesAPI';
 import * as preciosAPI from '../../api/preciosAPI';
 import { Servicio, AddonServicio } from '../../services/preciosService';
+import axios from 'axios';
 
 // Estilos
 const ServicesSection = styled.section`
@@ -871,8 +872,8 @@ const services = [
     price: 249997,
     priceValue: 249997,
     customPrice: true,
-    customPriceText: 'Desde',
-    contactForPrice: true,
+    customPriceText: 'Desde ',
+    contactForPrice: false,
     highlight: 'false',
     popularBadge: false
   }
@@ -1038,6 +1039,113 @@ const Services: React.FC = () => {
   const [baseService, setBaseService] = useState<string | null>(null);
   const [basePrice, setBasePrice] = useState(0);
 
+  // Agregar un nuevo estado para el modal de chat empresarial
+  const [showEnterpriseChatModal, setShowEnterpriseChatModal] = useState(false);
+  const [enterpriseChatMessages, setEnterpriseChatMessages] = useState<Array<{ role: string, content: string }>>([]);
+  const [userInput, setUserInput] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+
+  // Actualizar el estado para el formulario empresarial
+  const [showEnterpriseForm, setShowEnterpriseForm] = useState(false);
+  const [userResponses, setUserResponses] = useState<Record<string, string>>({});
+  const [formCompleted, setFormCompleted] = useState(false);
+
+  // Agregar esta declaración de estado que falta
+  const [conversationHistory, setConversationHistory] = useState<Array<{ role: string, content: string }>>([]);
+
+  // Guión de preguntas para la IA
+  const enterpriseQuestions = [
+    "¿Cómo se llama tu empresa?",
+    "¿En qué mercado o industria se desarrolla tu empresa?",
+    "¿Cuáles son tus principales necesidades o exigencias para este proyecto?",
+    "¿Cuál es el tamaño aproximado de tu empresa? (cantidad de empleados, sucursales, etc.)",
+    "¿Qué objetivos específicos tienes con este proyecto digital?",
+    "¿Hay algún plazo específico en el que necesitas tener el proyecto implementado?",
+    "¿Hay alguna información adicional que consideres relevante para entender mejor tus necesidades?"
+  ];
+
+  // Función para abrir el chat empresarial
+  const openEnterpriseChat = () => {
+    // Iniciar con el primer mensaje
+    setEnterpriseChatMessages([
+      { role: "assistant", content: enterpriseQuestions[0] }
+    ]);
+    setCurrentQuestion(0);
+    setShowEnterpriseChatModal(true);
+  };
+
+  // Función para enviar mensaje en el chat empresarial
+  const sendEnterpriseMessage = async () => {
+    if (!userInput.trim() || isProcessing) return;
+
+    const userMessage = userInput.trim();
+    setUserInput("");
+    setIsProcessing(true);
+
+    // Agregar mensaje del usuario
+    setEnterpriseChatMessages(prev => [...prev, { role: "user", content: userMessage }]);
+
+    // Simulamos la respuesta de la IA con setTimeout tipado correctamente
+    setTimeout(() => {
+      const nextQuestionIndex = currentQuestion + 1;
+
+      // Verificar si hay más preguntas en el guión
+      if (nextQuestionIndex < enterpriseQuestions.length) {
+        setCurrentQuestion(nextQuestionIndex);
+        setEnterpriseChatMessages(prev => [...prev, {
+          role: "assistant",
+          content: enterpriseQuestions[nextQuestionIndex]
+        }]);
+      } else {
+        // Finalizar el chat y enviar la información
+        setEnterpriseChatMessages(prev => [...prev, {
+          role: "assistant",
+          content: "¡Gracias por toda la información! Uno de nuestros asesores revisará tus necesidades y se pondrá en contacto contigo a la brevedad. ¿Hay algo más que quieras agregar antes de finalizar?"
+        }]);
+
+        // Aquí podríamos enviar la conversación al backend
+        console.log("Enviando datos de la conversación empresarial:", enterpriseChatMessages);
+      }
+
+      setIsProcessing(false);
+    }, 1000);
+  };
+
+  // Función para cerrar el chat empresarial
+  const closeEnterpriseChat = () => {
+    setShowEnterpriseChatModal(false);
+    setEnterpriseChatMessages([]);
+    setCurrentQuestion(0);
+  };
+
+  // Ejemplo de función para enviar datos de la conversación al backend (no implementada)
+  const sendEnterpriseData = async (messages: Array<{ role: string, content: string }>) => {
+    try {
+      // Esta es una función de ejemplo que deberías implementar con tu lógica real
+      // para enviar los datos a tu backend y procesarlos para WhatsApp/Gmail
+      /*
+      const response = await fetch('/api/enterprise/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages,
+          timestamp: new Date().toISOString()
+        })
+      });
+      
+      const data = await response.json();
+      console.log('Datos enviados correctamente:', data);
+      */
+
+      console.log('Función de envío simulada, implementa tu lógica real aquí');
+    } catch (error) {
+      console.error('Error al enviar datos de la conversación:', error);
+    }
+  };
+
   // Cargar precios desde la API
   useEffect(() => {
     const cargarPrecios = async () => {
@@ -1196,9 +1304,25 @@ const Services: React.FC = () => {
 
   // Inicializar Mercado Pago para Checkout Pro
   useEffect(() => {
-    const mpPublicKey = import.meta.env.VITE_MP_PUBLIC_KEY;
-    if (mpPublicKey) {
-      initMercadoPago(mpPublicKey);
+    // Inicializar MercadoPago al cargar el componente
+    try {
+      const mpPublicKey = import.meta.env.VITE_MP_PUBLIC_KEY;
+      console.log('Clave pública de MercadoPago:', mpPublicKey);
+
+      if (mpPublicKey) {
+        // Primero intentar usar window.MercadoPago si está disponible
+        if (typeof window.MercadoPago === 'function') {
+          console.log('✅ MercadoPago SDK ya estaba disponible en window');
+          // Ya está inicializado, no hacer nada
+        } else {
+          console.log('🔄 Inicializando MercadoPago mediante SDK React');
+          initMercadoPago(mpPublicKey);
+        }
+      } else {
+        console.error('Error: No se encontró la clave pública de MercadoPago');
+      }
+    } catch (error) {
+      console.error('Error al inicializar MercadoPago:', error);
     }
   }, []);
 
@@ -1248,6 +1372,21 @@ const Services: React.FC = () => {
     }
   };
 
+  // Función para asignar el servicio gratuito al usuario tras confirmar la promoción
+  const asignarServicioGratuito = async (serviceId: string) => {
+    try {
+      // Aquí deberías llamar a tu endpoint real de backend para asignar el servicio
+      // Por ahora, simulamos con un delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      // TODO: Reemplazar por llamada real, por ejemplo:
+      // await fetch(`/api/user-services/assign-free`, { method: 'POST', body: JSON.stringify({ serviceId }) })
+      alert('¡Servicio gratuito asignado correctamente!');
+      navigate('/dashboard');
+    } catch (error) {
+      alert('Error al asignar el servicio gratuito. Intenta nuevamente.');
+    }
+  };
+
   // Actualizar la función proceedWithCheckout para usar la API de promociones
   const proceedWithCheckout = async (serviceId: string, price: number, addOns: string[] = []) => {
     setIsLoading(true);
@@ -1285,7 +1424,7 @@ const Services: React.FC = () => {
       }
 
       // Verificar si el usuario está autenticado
-      const isAuthenticated = localStorage.getItem('user_token') || false;
+      const isAuthenticated = !!localStorage.getItem('auth_token');
 
       if (!isAuthenticated) {
         // Si no está autenticado, guardamos la selección en localStorage y redirigimos a login
@@ -1297,7 +1436,12 @@ const Services: React.FC = () => {
         }));
 
         setIsLoading(false);
-        navigate(`/login?redirect=/payment`);
+        // Incluir el serviceId y los addons en la URL de redirección
+        let redirectUrl = `/payment?service=${serviceId}`;
+        if (addOns && addOns.length > 0) {
+          redirectUrl += `&addons=${addOns.join(',')}`;
+        }
+        navigate(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
         return;
       }
 
@@ -1384,6 +1528,8 @@ const Services: React.FC = () => {
         if (reservaPromocionId) {
           await promocionesAPI.confirmarPromocion(reservaPromocionId);
         }
+        // Asignar el servicio gratuito al usuario
+        await asignarServicioGratuito(serviceId);
 
         alert(`¡Felicidades! Has obtenido el plan ${service.title} gratuitamente gracias a una promoción limitada.`);
 
@@ -1404,11 +1550,12 @@ const Services: React.FC = () => {
           });
         }
       } else {
-        // Simulación para precios normales (en producción, se confirmaría en el webhook)
-        alert(`Procesando compra: ${service.title} por $${precioFinal.toLocaleString('es-AR')}`);
-
-        // En la implementación real, la confirmación de promoción ocurriría en el webhook
-        // después de que el pago sea exitoso
+        // Redirigir directamente a la página de pago con los add-ons incluidos
+        let redirectUrl = `/payment?service=${serviceId}`;
+        if (addOns && addOns.length > 0) {
+          redirectUrl += `&addons=${addOns.join(',')}`;
+        }
+        navigate(redirectUrl);
       }
 
       setIsLoading(false);
@@ -1468,6 +1615,205 @@ const Services: React.FC = () => {
     }
 
     return precioOriginal;
+  };
+
+  // Al montar el componente, si el usuario acaba de autenticarse y hay una intención pendiente, completarla
+  useEffect(() => {
+    const pending = localStorage.getItem('pending_purchase');
+    if (pending) {
+      try {
+        const { serviceId, reservaPromocionId } = JSON.parse(pending);
+        // Verificar si el usuario ya está autenticado
+        const isAuthenticated = !!localStorage.getItem('auth_token');
+        if (isAuthenticated && serviceId) {
+          // Limpiar la intención pendiente
+          localStorage.removeItem('pending_purchase');
+          // Confirmar la promoción si hay reserva
+          (async () => {
+            if (reservaPromocionId) {
+              await promocionesAPI.confirmarPromocion(reservaPromocionId);
+            }
+            await asignarServicioGratuito(serviceId);
+          })();
+        }
+      } catch (e) {
+        // Si hay error, limpiar la intención pendiente
+        localStorage.removeItem('pending_purchase');
+      }
+    }
+  }, []);
+
+  // Función para abrir el formulario empresarial
+  const openEnterpriseForm = () => {
+    setCurrentQuestion(0);
+    setUserResponses({});
+    setUserInput("");
+    setIsProcessing(false);
+    setConversationHistory([]);
+    setFormCompleted(false);
+    setShowEnterpriseForm(true);
+  };
+
+  // Interfaz para los datos del formulario empresarial
+  interface EnterpriseFormData {
+    responses: Record<string, string>;
+    summary: string;
+    conversation: Array<{ role: string; content: string }>;
+  }
+
+  // Función para enviar datos al backend
+  const sendEnterpriseDataToBackend = async (data: EnterpriseFormData) => {
+    try {
+      const response = await fetch('/api/enterprise/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...data,
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error en la respuesta: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Datos enviados correctamente al backend:', result);
+      return result;
+    } catch (error) {
+      console.error('Error al enviar datos al backend:', error);
+      throw error; // Re-lanzar el error para manejarlo en el nivel superior
+    }
+  };
+
+  // Función para enviar respuesta en el formulario empresarial
+  const submitEnterpriseResponse = async () => {
+    if (!userInput.trim() || isProcessing) return;
+
+    const response = userInput.trim();
+    setUserInput("");
+    setIsProcessing(true);
+
+    try {
+      // Guardar la respuesta actual
+      setUserResponses(prev => ({
+        ...prev,
+        [currentQuestion]: response
+      }));
+
+      // Actualizar historial de conversación para GPT
+      const updatedHistory = [
+        ...conversationHistory,
+        { role: "user", content: `${enterpriseQuestions[currentQuestion]}\nRespuesta: ${response}` }
+      ];
+      setConversationHistory(updatedHistory);
+
+      // Determinar si es la última pregunta
+      const isLastQuestion = currentQuestion === enterpriseQuestions.length - 1;
+
+      // Si es la última pregunta, procesamos con GPT para generar un resumen
+      if (isLastQuestion) {
+        try {
+          // Preparar los datos para la llamada a GPT
+          const messages = [
+            { role: "system", content: "Eres un asistente especializado en analizar necesidades empresariales para proyectos digitales. Tu tarea es generar un resumen ejecutivo de las necesidades del cliente basado en sus respuestas a un cuestionario." },
+            ...updatedHistory,
+            { role: "user", content: "Genera un resumen ejecutivo con formato de puntos clave sobre las necesidades de este cliente y el tipo de proyecto que necesita. Sé conciso y profesional." }
+          ];
+
+          // Llamada a la API de GPT
+          const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+          const apiEndpoint = import.meta.env.VITE_OPENAI_API_ENDPOINT || 'https://api.openai.com/v1/chat/completions';
+
+          if (!apiKey) {
+            throw new Error('API key de OpenAI no configurada');
+          }
+
+          interface OpenAIResponse {
+            choices: Array<{
+              message: {
+                content: string;
+              };
+            }>;
+          }
+
+          const apiResponse = await axios.post<OpenAIResponse>(apiEndpoint, {
+            model: import.meta.env.VITE_OPENAI_MODEL || 'gpt-4',
+            messages: messages,
+            temperature: 0.7,
+            max_tokens: 500
+          }, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`
+            }
+          });
+
+          // Obtener el resumen generado
+          const summary = apiResponse.data.choices?.[0]?.message?.content || "No se pudo generar un resumen.";
+
+          // Mostrar mensaje de éxito inmediatamente
+          setEnterpriseChatMessages(prev => [...prev, {
+            role: "assistant",
+            content: "¡Gracias por toda la información! Hemos recibido tu consulta y un asesor se pondrá en contacto contigo a la brevedad."
+          }]);
+
+          // Marcar formulario como completado inmediatamente
+          setFormCompleted(true);
+
+          // Enviar datos al backend en segundo plano
+          sendEnterpriseDataToBackend({
+            responses: userResponses,
+            summary: summary,
+            conversation: updatedHistory
+          }).catch(error => {
+            console.error('Error al enviar datos al backend:', error);
+            // No mostramos el error al usuario ya que ya le dimos el mensaje de éxito
+          });
+
+        } catch (error) {
+          console.error('Error al procesar con GPT o enviar datos:', error);
+
+          // Mensaje de error específico según el tipo de error
+          let errorMessage = "Lo siento, hubo un error al procesar tu información. ";
+          if (error instanceof Error) {
+            if (error.message.includes('401')) {
+              errorMessage += "Error de autenticación con el servicio de IA. ";
+            } else if (error.message.includes('429')) {
+              errorMessage += "El servicio está temporalmente sobrecargado. ";
+            }
+          }
+          errorMessage += "Por favor, intenta nuevamente o contacta a soporte.";
+
+          // Mostrar mensaje de error al usuario
+          setEnterpriseChatMessages(prev => [...prev, {
+            role: "assistant",
+            content: errorMessage
+          }]);
+
+          // Incluso con error, avanzamos al estado de formulario completado
+          setFormCompleted(true);
+        }
+      } else {
+        // Si no es la última pregunta, avanzamos a la siguiente
+        setCurrentQuestion(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('Error general en el formulario:', error);
+      setEnterpriseChatMessages(prev => [...prev, {
+        role: "assistant",
+        content: "Lo siento, ocurrió un error inesperado. Por favor, intenta nuevamente o contacta a soporte."
+      }]);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Función para cerrar el formulario empresarial
+  const closeEnterpriseForm = () => {
+    setShowEnterpriseForm(false);
   };
 
   return (
@@ -1574,7 +1920,7 @@ const Services: React.FC = () => {
                     <Button
                       primary
                       small
-                      onClick={() => startHiringProcess(service.id)}
+                      onClick={() => service.id === 'enterprise' ? openEnterpriseForm() : startHiringProcess(service.id)}
                       disabled={isLoading || cargandoPromociones || cargandoPrecios}
                       icon={
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1582,10 +1928,11 @@ const Services: React.FC = () => {
                         </svg>
                       }
                     >
-                      {cargandoPrecios || cargandoPromociones ? 'Cargando...' :
-                        isLoading ? 'Procesando...' :
-                          promocionesDisponibles[service.id]?.tipo === 'GRATIS' &&
-                            promocionesDisponibles[service.id]?.activa ? 'Obtener Gratis' : 'Contratar'}
+                      {service.id === 'enterprise' ? 'Contactar' :
+                        cargandoPrecios || cargandoPromociones ? 'Cargando...' :
+                          isLoading ? 'Procesando...' :
+                            promocionesDisponibles[service.id]?.tipo === 'GRATIS' &&
+                              promocionesDisponibles[service.id]?.activa ? 'Obtener Gratis' : 'Contratar'}
                     </Button>
                   </ButtonsContainer>
                 </ServiceCard>
@@ -2010,6 +2357,297 @@ const Services: React.FC = () => {
           )}
         </AnimatePresence>
       </SectionContent>
+
+      {/* Modal de Chat Empresarial */}
+      <AnimatePresence>
+        {showEnterpriseChatModal && (
+          <ModalOverlay
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <ModalContent
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              style={{ maxWidth: '550px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
+            >
+              <CloseButton onClick={closeEnterpriseChat}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </CloseButton>
+
+              <ModalTitle style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                Consulta Plan Empresarial
+              </ModalTitle>
+
+              {/* Contenedor de mensajes */}
+              <div style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '1rem',
+                marginBottom: '1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+                background: 'rgba(0, 0, 0, 0.3)',
+                borderRadius: '12px'
+              }}>
+                {enterpriseChatMessages.map((msg, idx) => (
+                  <div key={idx} style={{
+                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    maxWidth: '80%',
+                    padding: '0.8rem 1rem',
+                    borderRadius: msg.role === 'user' ? '15px 15px 5px 15px' : '15px 15px 15px 5px',
+                    background: msg.role === 'user'
+                      ? 'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)'
+                      : 'rgba(20, 20, 20, 0.8)',
+                    boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)',
+                    color: msg.role === 'user' ? 'white' : 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '0.95rem',
+                    lineHeight: '1.5'
+                  }}>
+                    {msg.content}
+                  </div>
+                ))}
+                {isProcessing && (
+                  <div style={{
+                    alignSelf: 'flex-start',
+                    padding: '0.5rem 1rem',
+                    background: 'rgba(20, 20, 20, 0.8)',
+                    borderRadius: '15px',
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontSize: '0.9rem'
+                  }}>
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00FFFF', animation: 'pulse 1s infinite' }}></span>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FF00FF', animation: 'pulse 1s infinite 0.3s' }}></span>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00FFFF', animation: 'pulse 1s infinite 0.6s' }}></span>
+                      <span>Escribiendo</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Formulario de entrada */}
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  type="text"
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && sendEnterpriseMessage()}
+                  placeholder="Escribe tu respuesta..."
+                  style={{
+                    flex: 1,
+                    padding: '0.8rem 1rem',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    color: 'white',
+                    fontSize: '0.95rem'
+                  }}
+                  disabled={isProcessing}
+                />
+                <button
+                  onClick={sendEnterpriseMessage}
+                  disabled={isProcessing || !userInput.trim()}
+                  style={{
+                    padding: '0.8rem 1rem',
+                    borderRadius: '8px',
+                    background: isProcessing || !userInput.trim()
+                      ? 'rgba(0, 255, 255, 0.2)'
+                      : 'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)',
+                    border: 'none',
+                    color: 'white',
+                    cursor: isProcessing || !userInput.trim() ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </div>
+            </ModalContent>
+          </ModalOverlay>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de Formulario Empresarial */}
+      <AnimatePresence>
+        {showEnterpriseForm && (
+          <ModalOverlay
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <ModalContent
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              style={{
+                maxWidth: '800px',
+                width: '90%',
+                maxHeight: '90vh',
+                minHeight: '400px',
+                display: 'flex',
+                flexDirection: 'column',
+                padding: '2.5rem'
+              }}
+            >
+              <CloseButton onClick={closeEnterpriseForm}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </CloseButton>
+
+              <ModalTitle style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                Plan Empresarial Personalizado
+              </ModalTitle>
+
+              {formCompleted ? (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  textAlign: 'center',
+                  gap: '2rem'
+                }}>
+                  <div style={{
+                    background: 'rgba(0, 255, 255, 0.1)',
+                    borderRadius: '50%',
+                    width: '100px',
+                    height: '100px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#00FFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                  </div>
+                  <h3 style={{ fontSize: '1.8rem', color: '#00FFFF', marginBottom: '1rem' }}>
+                    ¡Gracias por tu interés!
+                  </h3>
+                  <p style={{ fontSize: '1.1rem', lineHeight: '1.6', color: 'rgba(255, 255, 255, 0.8)', maxWidth: '500px' }}>
+                    Hemos recibido tus respuestas y un asesor especializado se pondrá en contacto contigo a la brevedad para discutir en detalle tu proyecto empresarial.
+                  </p>
+                  <Button
+                    primary
+                    onClick={closeEnterpriseForm}
+                    style={{ marginTop: '1rem', minWidth: '180px' }}
+                  >
+                    Entendido
+                  </Button>
+                </div>
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  justifyContent: 'space-between'
+                }}>
+                  {/* Pregunta actual */}
+                  <div>
+                    <h3 style={{
+                      fontSize: '1.5rem',
+                      color: '#FFFFFF',
+                      marginBottom: '1.5rem',
+                      fontWeight: '600'
+                    }}>
+                      {currentQuestion + 1}. {enterpriseQuestions[currentQuestion]}
+                    </h3>
+
+                    <textarea
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      placeholder={`Escribe tu respuesta aquí...`}
+                      style={{
+                        width: '100%',
+                        minHeight: '120px',
+                        padding: '1rem',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        background: 'rgba(0, 0, 0, 0.3)',
+                        color: 'white',
+                        fontSize: '1rem',
+                        resize: 'vertical'
+                      }}
+                      disabled={isProcessing}
+                    />
+                  </div>
+
+                  {/* Botones de navegación */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginTop: '2rem'
+                  }}>
+                    <Button
+                      outline
+                      onClick={() => {
+                        if (currentQuestion > 0) {
+                          setCurrentQuestion(prev => prev - 1);
+                          setUserInput(userResponses[currentQuestion - 1] || "");
+                        }
+                      }}
+                      disabled={currentQuestion === 0 || isProcessing}
+                      style={{ minWidth: '120px' }}
+                    >
+                      Anterior
+                    </Button>
+
+                    <Button
+                      primary
+                      onClick={submitEnterpriseResponse}
+                      disabled={isProcessing || !userInput.trim()}
+                      style={{ minWidth: '120px' }}
+                    >
+                      {isProcessing ? 'Procesando...' : currentQuestion < enterpriseQuestions.length - 1 ? 'Siguiente' : 'Finalizar'}
+                    </Button>
+                  </div>
+
+                  {/* Indicador de progreso */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    marginTop: '2rem'
+                  }}>
+                    {enterpriseQuestions.map((_, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '50%',
+                          background: idx === currentQuestion ?
+                            'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)' :
+                            idx < currentQuestion ?
+                              'rgba(0, 255, 255, 0.5)' :
+                              'rgba(255, 255, 255, 0.2)',
+                          margin: '0 4px',
+                          transition: 'all 0.3s ease'
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </ModalContent>
+          </ModalOverlay>
+        )}
+      </AnimatePresence>
     </ServicesSection>
   );
 };
