@@ -168,10 +168,23 @@ const GithubLoginButton: React.FC<GithubLoginButtonProps> = ({
         if (onSuccess) {
           onSuccess();
         } else {
-          const savedRedirectUrl = localStorage.getItem('github_auth_redirect') || '/dashboard';
-          localStorage.removeItem('github_auth_redirect');
+          // Obtener todas las posibles URLs de redirección en orden de prioridad
+          const authRedirectUrl = localStorage.getItem('auth_redirect_url');
+          const githubRedirectUrl = localStorage.getItem('github_auth_redirect');
 
-          window.location.href = savedRedirectUrl;
+          // Determinar la URL de redirección final con prioridad
+          const finalRedirectUrl = authRedirectUrl || githubRedirectUrl || '/dashboard';
+
+          // Limpiar redirecciones guardadas
+          if (authRedirectUrl) {
+            localStorage.removeItem('auth_redirect_url');
+          }
+          if (githubRedirectUrl) {
+            localStorage.removeItem('github_auth_redirect');
+          }
+
+          console.log('✅ Redirigiendo después del login con GitHub a:', finalRedirectUrl);
+          window.location.href = finalRedirectUrl;
         }
       }
     } catch (error: any) {
@@ -201,17 +214,19 @@ const GithubLoginButton: React.FC<GithubLoginButtonProps> = ({
         throw new Error("Client ID de GitHub no configurado correctamente");
       }
 
-      // Primero verificar si ya existe una URL de pago pendiente
+      // Verificar las posibles URLs de redirección en orden de prioridad
+      const authRedirectUrl = localStorage.getItem('auth_redirect_url');
       const pendingPaymentUrl = localStorage.getItem('payment_redirect_url');
 
-      // Si no hay redirección de pago pendiente, usar la redirección proporcionada
-      // Pero NO sobreescribir la redirección de pago existente si ya existe
-      if (!pendingPaymentUrl) {
-        localStorage.setItem('github_auth_redirect', redirect);
-      } else {
-        console.log('⚠️ Ya existe una redirección de pago pendiente, manteniendo:', pendingPaymentUrl);
-        localStorage.setItem('github_auth_redirect', pendingPaymentUrl);
-      }
+      // Determinar la URL de redirección a guardar con prioridad
+      // 1. URL de autenticación (auth_redirect_url)
+      // 2. URL de pago pendiente (payment_redirect_url)
+      // 3. URL proporcionada en redirectUrl (o redirección por defecto)
+      const redirectUrlToStore = authRedirectUrl || pendingPaymentUrl || redirect;
+
+      // Guardar la URL de redirección para GitHub
+      localStorage.setItem('github_auth_redirect', redirectUrlToStore);
+      console.log('🔐 Guardando URL de redirección para GitHub Auth:', redirectUrlToStore);
 
       // Obtener la URL base para la redirección
       const baseUrl = window.location.origin;
@@ -267,10 +282,23 @@ const GithubLoginButton: React.FC<GithubLoginButtonProps> = ({
         if (onSuccess) {
           onSuccess();
         } else {
-          const savedRedirectUrl = localStorage.getItem('github_auth_redirect') || '/dashboard';
-          localStorage.removeItem('github_auth_redirect');
+          // Obtener todas las posibles URLs de redirección en orden de prioridad
+          const authRedirectUrl = localStorage.getItem('auth_redirect_url');
+          const githubRedirectUrl = localStorage.getItem('github_auth_redirect');
 
-          window.location.href = savedRedirectUrl;
+          // Determinar la URL de redirección final con prioridad
+          const finalRedirectUrl = authRedirectUrl || githubRedirectUrl || '/dashboard';
+
+          // Limpiar redirecciones guardadas
+          if (authRedirectUrl) {
+            localStorage.removeItem('auth_redirect_url');
+          }
+          if (githubRedirectUrl) {
+            localStorage.removeItem('github_auth_redirect');
+          }
+
+          console.log('✅ Redirigiendo después de aceptar términos a:', finalRedirectUrl);
+          window.location.href = finalRedirectUrl;
         }
       }
     } catch (error: any) {

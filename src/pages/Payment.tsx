@@ -7,13 +7,6 @@ import { useAuth } from '../context/AuthContext';
 import ProjectQuestionnaire from '../components/payment/ProjectQuestionnaire';
 import { API_BASE_URL } from '../config/apiConfig';
 
-// Declarar el tipo MercadoPago para TypeScript
-declare global {
-  interface Window {
-    MercadoPago: any;
-  }
-}
-
 // Estilos
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -307,10 +300,58 @@ const Payment: React.FC = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const queryServiceId = queryParams.get('service');
+  const addOnsParam = queryParams.get('addons');
   const { user } = useAuth(); // Usar el hook de autenticación
 
   // Usar el serviceId de la ruta o del query param
   const serviceId = routeServiceId || queryServiceId;
+
+  // Procesar los add-ons desde el parámetro de URL
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
+
+  // Si no tenemos serviceId en la URL, intentar obtenerlo del localStorage
+  useEffect(() => {
+    // Procesar los add-ons desde la URL
+    if (addOnsParam) {
+      try {
+        const addOns = addOnsParam.split(',');
+        setSelectedAddOns(addOns);
+        console.log('Add-ons recuperados de URL:', addOns);
+      } catch (error) {
+        console.error('Error al procesar add-ons desde URL:', error);
+      }
+    }
+
+    if (!serviceId) {
+      try {
+        const pendingPurchase = localStorage.getItem('pending_purchase');
+        if (pendingPurchase) {
+          const purchaseData = JSON.parse(pendingPurchase);
+          if (purchaseData.serviceId) {
+            // Redirigir a la misma página pero con el serviceId incluido
+            console.log('Recuperando serviceId desde localStorage:', purchaseData.serviceId);
+
+            // También recuperar los add-ons si existen
+            const urlParams = new URLSearchParams();
+            urlParams.append('service', purchaseData.serviceId);
+
+            if (purchaseData.addOns && purchaseData.addOns.length > 0) {
+              urlParams.append('addons', purchaseData.addOns.join(','));
+              setSelectedAddOns(purchaseData.addOns);
+              console.log('Add-ons recuperados de localStorage:', purchaseData.addOns);
+            }
+
+            navigate(`/payment?${urlParams.toString()}`, { replace: true });
+
+            // Eliminar el pendingPurchase para evitar redirecciones futuras
+            // localStorage.removeItem('pending_purchase');
+          }
+        }
+      } catch (error) {
+        console.error('Error al recuperar la compra pendiente:', error);
+      }
+    }
+  }, [serviceId, navigate, addOnsParam]);
 
   // Estados para gestionar el pago
   const [loading, setLoading] = useState(true);
@@ -319,15 +360,15 @@ const Payment: React.FC = () => {
   const [preferenceId, setPreferenceId] = useState('');
   const [mpLoaded, setMpLoaded] = useState(false);
   const [serviceInfo, setServiceInfo] = useState<{ title: string; price: number }>({ title: '', price: 0 });
+  const [addOnsInfo, setAddOnsInfo] = useState<Array<{ id: string, name: string, price: number }>>([]);
 
   // Estado para el cuestionario de proyecto
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
-  const [projectData, setProjectData] = useState<Record<string, any>>({});
 
-  // Estado para servicios del usuario
-  const [userServices, setUserServices] = useState<any[]>([]);
-  const [loadingServices, setLoadingServices] = useState(false);
+  // Estado para servicios del usuario - Usamos _ para indicar que estas variables son usadas aunque no sea visible
+  const [_userServices, setUserServices] = useState<any[]>([]);
+  const [_loadingServices, setLoadingServices] = useState(false);
 
   // Obtener información del usuario
   const userEmail = user?.email;
@@ -337,43 +378,134 @@ const Payment: React.FC = () => {
   const mpRef = useRef<any>(null);
   const brickRef = useRef<any>(null);
 
-  // Obtener datos del servicio seleccionado
-  const getServiceData = () => {
-    // Esta es una versión simplificada, debes adaptarla a tu lógica de negocio
-    const services = {
-      'landing': { title: 'Landing Page', price: 0 },
-      'web5': { title: 'Página Web 5 Rutas', price: 30000 },
-      'web7': { title: 'Página Web 7+ Rutas', price: 50000 }
-    };
+  // Obtener datos de los add-ons seleccionados
+  const getAddOnsData = () => {
+    console.log('Buscando datos para los add-ons:', selectedAddOns);
 
-    const defaultService = { title: 'Servicio no reconocido', price: 0 };
+    if (!selectedAddOns.length) {
+      return [];
+    }
 
-    // Si el serviceId es null o undefined, devolver servicio por defecto
-    if (!serviceId) return defaultService;
+    // Array de add-ons disponibles (idealmente esto vendría de una API)
+    const availableAddOns = [
+      { id: 'domain', name: 'Dominio personalizado', price: 14997 },
+      { id: 'deployment', name: 'Despliegue profesional', price: 9997 },
+      { id: 'revisions', name: 'Paquete de revisiones', price: 19997 },
+      { id: 'speedOptimization', name: 'Optimización de velocidad', price: 12997 },
+      { id: 'analytics', name: 'Analítica avanzada', price: 16997 },
+      { id: 'training', name: 'Capacitación de uso', price: 8997 }
+    ];
 
-    // @ts-ignore - Ignorar error de tipado por índice dinámico
-    return services[serviceId] || defaultService;
+    // Filtrar sólo los add-ons seleccionados
+    const selectedAddOnsData = availableAddOns.filter(addon =>
+      selectedAddOns.includes(addon.id)
+    );
+
+    console.log('Datos de add-ons recuperados:', selectedAddOnsData);
+    return selectedAddOnsData;
   };
 
-  // Efecto para cargar los datos del servicio al montar el componente
+  // Obtener datos del servicio seleccionado
+  const getServiceData = () => {
+    console.log('Buscando datos para el servicio:', serviceId);
+
+    if (!serviceId) {
+      console.warn('No se proporcionó un ID de servicio válido');
+      return { title: 'No se ha seleccionado un servicio válido', price: 0 };
+    }
+
+    // Intentar obtener datos del servicio desde localStorage
+    try {
+      // 1. Primero verificar si hay una compra pendiente en localStorage
+      const pendingPurchase = localStorage.getItem('pending_purchase');
+      if (pendingPurchase) {
+        const purchaseData = JSON.parse(pendingPurchase);
+        if (purchaseData.serviceId === serviceId) {
+          console.log('Datos de servicio encontrados en pending_purchase:', purchaseData);
+
+          // Consultar el servicio en el array de servicios disponibles
+          const servicios = [
+            { id: 'landing-page', title: 'Plan Básico', price: 29997 },
+            { id: 'basic-website', title: 'Plan Estándar', price: 69997 },
+            { id: 'premium-website', title: 'Plan Premium', price: 149997 },
+            { id: 'enterprise', title: 'Plan Empresarial', price: 249997 },
+            { id: 'paquete-emprendedor', title: 'Paquete Emprendedor', price: 67997 },
+            { id: 'paquete-profesional', title: 'Paquete Profesional', price: 109997 }
+          ];
+
+          const servicio = servicios.find(s => s.id === serviceId);
+          if (servicio) {
+            console.log('Servicio encontrado en array de servicios:', servicio);
+            return { title: servicio.title, price: servicio.price };
+          }
+        }
+      }
+
+      // 2. Verificar en localStorage si hay datos del último servicio
+      const lastService = localStorage.getItem('last_payment_service');
+      const lastAmount = localStorage.getItem('last_payment_amount');
+      const lastTitle = localStorage.getItem('last_payment_service_title');
+
+      if (lastService === serviceId && lastAmount && lastTitle) {
+        console.log('Datos de servicio encontrados en localStorage:', {
+          service: lastService,
+          title: lastTitle,
+          price: parseInt(lastAmount, 10)
+        });
+
+        return {
+          title: lastTitle,
+          price: parseInt(lastAmount, 10)
+        };
+      }
+    } catch (error) {
+      console.error('Error al recuperar datos del servicio desde localStorage:', error);
+    }
+
+    // 3. Fallback a datos predefinidos si no se encuentran en localStorage
+    const servicios = [
+      { id: 'landing-page', title: 'Plan Básico', price: 29997 },
+      { id: 'basic-website', title: 'Plan Estándar', price: 69997 },
+      { id: 'premium-website', title: 'Plan Premium', price: 149997 },
+      { id: 'enterprise', title: 'Plan Empresarial', price: 249997 },
+      { id: 'paquete-emprendedor', title: 'Paquete Emprendedor', price: 67997 },
+      { id: 'paquete-profesional', title: 'Paquete Profesional', price: 109997 }
+    ];
+
+    const servicio = servicios.find(s => s.id === serviceId);
+    if (servicio) {
+      console.log('Servicio encontrado en fallback de servicios:', servicio);
+      return { title: servicio.title, price: servicio.price };
+    }
+
+    // Si no se encuentra nada, retornar datos por defecto
+    console.warn('No se encontró el servicio en ninguna fuente de datos');
+    return { title: 'Servicio no reconocido', price: 0 };
+  };
+
+  // Efecto para cargar los datos del servicio y add-ons al montar el componente
   useEffect(() => {
-    const data = getServiceData();
-    setServiceInfo(data);
+    const serviceData = getServiceData();
+    setServiceInfo(serviceData);
+
+    // Cargar los datos de los add-ons
+    const addOnsData = getAddOnsData();
+    setAddOnsInfo(addOnsData);
 
     // Si llegamos a esta página por redirección de MP con un estado en la URL
     const params = new URLSearchParams(location.search);
-    const status = params.get('status');
-    if (status) {
-      console.log('Estado de pago detectado en URL:', status);
+    const paymentStatus = params.get('status');
+    if (paymentStatus) {
+      console.log('Estado de pago detectado en URL:', paymentStatus);
       // En lugar de redirigir, procesamos el pago directamente en esta página
-      if (status === 'approved' || status === 'success') {
+      if (paymentStatus === 'approved' || paymentStatus === 'success') {
         setPaymentStatus('success');
 
         // Guardar la información del pago en localStorage para trackeo
         const paymentId = params.get('payment_id') || params.get('collection_id');
         if (paymentId) {
           localStorage.setItem('last_payment_id', paymentId);
-          localStorage.setItem('last_payment_status', status);
+          localStorage.setItem('last_payment_status', paymentStatus);
 
           // Registrar el servicio para el usuario si tenemos todos los datos necesarios
           if (user && user.id && serviceId) {
@@ -394,16 +526,17 @@ const Payment: React.FC = () => {
                   serviceId: serviceId,
                   serviceType: serviceId,
                   userId: user.id,
-                  name: serviceInfo.title,  // Asegurar que se incluya el nombre del servicio
-                  price: serviceInfo.price, // Incluir el precio directamente
-                  status: 'paid',           // Cambiar a 'paid' que es un estado mejor para el backend
+                  name: serviceInfo.title,
+                  price: serviceInfo.price,
+                  status: 'paid',
                   paymentId: paymentId,
-                  paymentStatus: status,
+                  paymentStatus: paymentStatus,
                   userEmail: userEmail,
                   amount: parseFloat(localStorage.getItem('last_payment_amount') || '0'),
                   details: {
                     serviceTitle: localStorage.getItem('last_payment_service_title'),
-                    paymentDate: new Date().toISOString()
+                    paymentDate: new Date().toISOString(),
+                    addOns: selectedAddOns // Incluir los add-ons seleccionados
                   }
                 };
 
@@ -452,16 +585,16 @@ const Payment: React.FC = () => {
         }
 
         return;
-      } else if (status === 'rejected' || status === 'failure') {
+      } else if (paymentStatus === 'rejected' || paymentStatus === 'failure') {
         setPaymentStatus('error');
         setError('El pago fue rechazado. Por favor, intenta nuevamente.');
         return;
-      } else if (status === 'pending') {
+      } else if (paymentStatus === 'pending') {
         setPaymentStatus('processing');
         return;
       }
     }
-  }, [serviceId, location, navigate, user]);
+  }, [serviceId, location, navigate, user, selectedAddOns]);
 
   // Crear preferencia y cargar el SDK de Mercado Pago
   useEffect(() => {
@@ -473,17 +606,30 @@ const Payment: React.FC = () => {
         setLoading(true);
         setError(null); // Limpiar errores previos
 
+        // Calcular el precio total incluyendo add-ons
+        const addOnsTotal = addOnsInfo.reduce((sum, addon) => sum + addon.price, 0);
+        const totalPrice = serviceInfo.price + addOnsTotal;
+
         console.log('Creando preferencia para:', {
           serviceId: serviceId,
           serviceTitle: serviceInfo.title,
           servicePrice: serviceInfo.price,
+          addOns: selectedAddOns,
+          addOnsInfo: addOnsInfo,
+          addOnsTotal: addOnsTotal,
+          totalPrice: totalPrice,
           userName
         });
 
         // Guardar información del servicio en localStorage para recuperarla después de la redirección
         localStorage.setItem('last_payment_service', serviceId);
-        localStorage.setItem('last_payment_amount', serviceInfo.price.toString());
+        localStorage.setItem('last_payment_amount', totalPrice.toString());
         localStorage.setItem('last_payment_service_title', serviceInfo.title);
+
+        // También guardar los add-ons seleccionados
+        if (selectedAddOns.length > 0) {
+          localStorage.setItem('last_payment_addons', JSON.stringify(selectedAddOns));
+        }
 
         // URL API con fallback
         const apiUrl = `${API_BASE_URL}/payments/preference`;
@@ -494,6 +640,15 @@ const Payment: React.FC = () => {
           serviceId: serviceId,
           serviceTitle: serviceInfo.title,
           servicePrice: serviceInfo.price,
+          addOns: selectedAddOns.map(id => {
+            const addon = addOnsInfo.find(a => a.id === id);
+            return {
+              id,
+              name: addon?.name || id,
+              price: addon?.price || 0
+            };
+          }),
+          totalPrice: totalPrice,
           userName: userName,
           email: userEmail
         };
@@ -572,7 +727,7 @@ const Payment: React.FC = () => {
     };
 
     createPreference();
-  }, [serviceInfo, serviceId, userName, userEmail]);
+  }, [serviceInfo, serviceId, userName, userEmail, addOnsInfo, selectedAddOns]);
 
   // Memoizar loadUserServices para evitar recreaciones innecesarias
   const loadUserServices = useCallback(async () => {
@@ -615,7 +770,6 @@ const Payment: React.FC = () => {
   const handleQuestionnaireComplete = async (answers: Record<string, any>) => {
     try {
       console.log('Respuestas del cuestionario:', answers);
-      setProjectData(answers);
 
       // Obtener datos necesarios
       const token = localStorage.getItem('auth_token');
@@ -1097,64 +1251,11 @@ const Payment: React.FC = () => {
     }
   }, [user, location, loadUserServices]);
 
-  // Renderizado condicional según estado del servicio
-  if (!serviceInfo) {
-    return (
-      <PageContainer>
-        <GlobalBackground />
-        <ContentContainer>
-          <Card>
-            <Header>
-              <Title>Servicio no encontrado</Title>
-            </Header>
-            <div style={{ padding: '2rem', textAlign: 'center' }}>
-              <p>No se encontró información del servicio seleccionado.</p>
-              <Link to="/#servicios" style={{ display: 'inline-block', marginTop: '1rem' }}>
-                Volver a servicios
-              </Link>
-            </div>
-          </Card>
-        </ContentContainer>
-      </PageContainer>
-    );
-  }
-
-  // Si no hay usuario autenticado o está en proceso de verificación
-  if (!userEmail && !error) {
-    return (
-      <PageContainer>
-        <GlobalBackground />
-        <ContentContainer>
-          <Card
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <Header>
-              <Title>Verificando cuenta</Title>
-            </Header>
-            <div style={{ padding: '2rem', textAlign: 'center' }}>
-              <div className="loader" style={{
-                margin: '0 auto 1.5rem',
-                borderTopColor: '#009ee3'
-              }}></div>
-              <p>Verificando tu cuenta para proceder con el pago...</p>
-              <p style={{
-                fontSize: '0.85rem',
-                color: 'rgba(255,255,255,0.5)',
-                marginTop: '1rem'
-              }}>
-                Para realizar pagos es necesario iniciar sesión.
-              </p>
-            </div>
-          </Card>
-        </ContentContainer>
-      </PageContainer>
-    );
-  }
-
   // Mostrar mensaje según estado del pago
   const renderPaymentStatus = () => {
+    // Usamos un ID único para el contenedor de MercadoPago
+    const paymentBrickId = "payment-brick-container";
+
     switch (paymentStatus) {
       case 'processing':
         return (
@@ -1273,11 +1374,6 @@ const Payment: React.FC = () => {
             <LoadingContainer>
               <div className="loader" style={{ borderTopColor: '#009ee3' }}></div>
               <p>Cargando opciones de pago...</p>
-              <div className="brick-reset-container">
-                <div id="payment-brick-container" style={{ width: '100%', position: 'relative' }}>
-                  {!mpLoaded && !loading && <LoadingContainer><p>Cargando formulario...</p></LoadingContainer>}
-                </div>
-              </div>
             </LoadingContainer>
           );
         }
@@ -1304,20 +1400,16 @@ const Payment: React.FC = () => {
               >
                 Reintentar
               </button>
-              <div className="brick-reset-container">
-                <div id="payment-brick-container" style={{ width: '100%', position: 'relative' }}>
-                  {!mpLoaded && !loading && <LoadingContainer><p>Cargando formulario...</p></LoadingContainer>}
-                </div>
-              </div>
             </div>
           );
         }
 
+        // Solo en este caso mostramos el contenedor para el brick de MercadoPago
         return (
           <BrickContainer className="BrickContainer">
             <div className="brick-reset-container">
-              <div id="payment-brick-container" style={{ width: '100%', position: 'relative' }}>
-                {!mpLoaded && !loading && <LoadingContainer><p>Cargando formulario...</p></LoadingContainer>}
+              <div id={paymentBrickId} style={{ width: '100%', position: 'relative' }}>
+                {!mpLoaded && <LoadingContainer><p>Cargando formulario...</p></LoadingContainer>}
               </div>
             </div>
             <div style={{
@@ -1333,109 +1425,183 @@ const Payment: React.FC = () => {
     }
   };
 
-  return (
-    <PageContainer>
-      <GlobalBackground />
+  // Componente principal
+  const renderPaymentComponent = () => {
+    // Renderizado condicional según estado del servicio
+    if (!serviceInfo) {
+      return (
+        <Card>
+          <Header>
+            <Title>Servicio no encontrado</Title>
+          </Header>
+          <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <p>No se encontró información del servicio seleccionado.</p>
+            <Link to="/#servicios" style={{ display: 'inline-block', marginTop: '1rem' }}>
+              Volver a servicios
+            </Link>
+          </div>
+        </Card>
+      );
+    }
 
-      <ContentContainer>
+    // Si no hay usuario autenticado o está en proceso de verificación
+    if (!userEmail && !error) {
+      return (
         <Card
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
           <Header>
-            <Title>Finalizar Compra</Title>
-            <SecurePaymentBadge>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
-              </svg>
-              <span>Pago Seguro</span>
-            </SecurePaymentBadge>
+            <Title>Verificando cuenta</Title>
           </Header>
+          <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <div className="loader" style={{
+              margin: '0 auto 1.5rem',
+              borderTopColor: '#009ee3'
+            }}></div>
+            <p>Verificando tu cuenta para proceder con el pago...</p>
+            <p style={{
+              fontSize: '0.85rem',
+              color: 'rgba(255,255,255,0.5)',
+              marginTop: '1rem'
+            }}>
+              Para realizar pagos es necesario iniciar sesión.
+            </p>
+          </div>
+        </Card>
+      );
+    }
 
-          {/* Si no hay servicio seleccionado, mostrar mensaje */}
-          {!serviceId || serviceInfo.price === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center' }}>
-              <p>No se ha seleccionado un servicio válido.</p>
-              <Link to="/">Volver al inicio</Link>
-            </div>
-          ) : (
-            <>
-              <OrderSummary>
-                <OrderItem>
-                  <OrderLabel>Servicio:</OrderLabel>
-                  <OrderValue>{serviceInfo.title}</OrderValue>
-                </OrderItem>
-                <OrderItem>
-                  <OrderLabel>Cliente:</OrderLabel>
-                  <OrderValue>{userName}</OrderValue>
-                </OrderItem>
-                <OrderItem>
-                  <OrderLabel>Total:</OrderLabel>
-                  <OrderTotal>${serviceInfo.price.toLocaleString()}</OrderTotal>
-                </OrderItem>
-              </OrderSummary>
+    // Componente principal de pago
+    return (
+      <Card
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <Header>
+          <Title>Finalizar Compra</Title>
+          <SecurePaymentBadge>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+            </svg>
+            <span>Pago Seguro</span>
+          </SecurePaymentBadge>
+        </Header>
 
-              <PaymentContainer>
-                <MercadoPagoLogo>
-                  <img
-                    src="images/MercadoPago.logo.svg"
-                    alt="Mercado Pago"
-                  />
-                </MercadoPagoLogo>
+        {/* Si no hay servicio seleccionado, mostrar mensaje */}
+        {!serviceId || serviceInfo.price === 0 ? (
+          <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <p>No se ha seleccionado un servicio válido.</p>
+            <Link to="/">Volver al inicio</Link>
+          </div>
+        ) : (
+          <>
+            <OrderSummary>
+              <OrderItem>
+                <OrderLabel>Servicio:</OrderLabel>
+                <OrderValue>{serviceInfo.title}</OrderValue>
+              </OrderItem>
 
-                <PaymentTitle>
+              {addOnsInfo.length > 0 && (
+                <>
+                  <OrderItem style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '0.5rem', marginTop: '0.5rem' }}>
+                    <OrderLabel>Complementos:</OrderLabel>
+                    <OrderValue></OrderValue>
+                  </OrderItem>
+
+                  {addOnsInfo.map((addon, index) => (
+                    <OrderItem key={addon.id} style={{ paddingLeft: '1rem' }}>
+                      <OrderLabel>{addon.name}</OrderLabel>
+                      <OrderValue>${addon.price.toLocaleString()}</OrderValue>
+                    </OrderItem>
+                  ))}
+                </>
+              )}
+
+              <OrderItem>
+                <OrderLabel>Cliente:</OrderLabel>
+                <OrderValue>{userName}</OrderValue>
+              </OrderItem>
+
+              <OrderItem>
+                <OrderLabel>Total:</OrderLabel>
+                <OrderTotal>
+                  ${(serviceInfo.price + addOnsInfo.reduce((sum, addon) => sum + addon.price, 0)).toLocaleString()}
+                </OrderTotal>
+              </OrderItem>
+            </OrderSummary>
+
+            <PaymentContainer>
+              <MercadoPagoLogo>
+                <img
+                  src="images/MercadoPago.logo.svg"
+                  alt="Mercado Pago"
+                />
+              </MercadoPagoLogo>
+
+              <PaymentTitle>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5H0V4zm11.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-2zM0 11v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1H0z" />
+                </svg>
+                Método de pago
+              </PaymentTitle>
+              <PaymentSubtitle>
+                Elige cómo quieres pagar tu compra
+              </PaymentSubtitle>
+
+              {renderPaymentStatus()}
+
+              {error && <ErrorMessage>{error}</ErrorMessage>}
+
+              <PaymentFooter>
+                <p>Tu información de pago está protegida con encriptación de 256 bits</p>
+
+                <div className="auth-notice">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5H0V4zm11.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-2zM0 11v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1H0z" />
+                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
                   </svg>
-                  Método de pago
-                </PaymentTitle>
-                <PaymentSubtitle>
-                  Elige cómo quieres pagar tu compra
-                </PaymentSubtitle>
+                  <span>Para realizar pagos es necesario iniciar sesión</span>
+                </div>
 
-                {renderPaymentStatus()}
-
-                {error && <ErrorMessage>{error}</ErrorMessage>}
-
-                <PaymentFooter>
-                  <p>Tu información de pago está protegida con encriptación de 256 bits</p>
-
-                  <div className="auth-notice">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <div className="security-badges">
+                  <div className="badge">
+                    <img
+                      src="images/MercadoPago.svg"
+                      alt="Mercado Pago"
+                      width="44"
+                    />
+                    <span>Tecnología verificada</span>
+                  </div>
+                  <div className="badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#32CCBC" viewBox="0 0 16 16">
                       <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
                     </svg>
-                    <span>Para realizar pagos es necesario iniciar sesión</span>
+                    <span>Conexión Segura</span>
                   </div>
+                  <div className="badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#009ee3" viewBox="0 0 16 16">
+                      <path d="M5.338 1.59a61.44 61.44 0 0 0-2.837.856.481.481 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.725 10.725 0 0 0 2.287 2.233c.346.244.652.42.893.533.12.057.218.095.293.118a.55.55 0 0 0 .101.025.615.615 0 0 0 .1-.025c.076-.023.174-.061.294-.118.24-.113.547-.29.893-.533a10.726 10.726 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z" />
+                      <path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0z" />
+                    </svg>
+                    <span>Pagos Protegidos</span>
+                  </div>
+                </div>
+              </PaymentFooter>
+            </PaymentContainer>
+          </>
+        )}
+      </Card>
+    );
+  };
 
-                  <div className="security-badges">
-                    <div className="badge">
-                      <img
-                        src="images/MercadoPago.svg"
-                        alt="Mercado Pago"
-                        width="44"
-                      />
-                      <span>Tecnología verificada</span>
-                    </div>
-                    <div className="badge">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#32CCBC" viewBox="0 0 16 16">
-                        <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
-                      </svg>
-                      <span>Conexión Segura</span>
-                    </div>
-                    <div className="badge">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#009ee3" viewBox="0 0 16 16">
-                        <path d="M5.338 1.59a61.44 61.44 0 0 0-2.837.856.481.481 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.725 10.725 0 0 0 2.287 2.233c.346.244.652.42.893.533.12.057.218.095.293.118a.55.55 0 0 0 .101.025.615.615 0 0 0 .1-.025c.076-.023.174-.061.294-.118.24-.113.547-.29.893-.533a10.726 10.726 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z" />
-                        <path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0z" />
-                      </svg>
-                      <span>Pagos Protegidos</span>
-                    </div>
-                  </div>
-                </PaymentFooter>
-              </PaymentContainer>
-            </>
-          )}
-        </Card>
+  return (
+    <PageContainer>
+      <GlobalBackground />
+
+      <ContentContainer>
+        {renderPaymentComponent()}
       </ContentContainer>
 
       {/* Cuestionario de proyecto */}
@@ -1447,6 +1613,6 @@ const Payment: React.FC = () => {
       />
     </PageContainer>
   );
-};
+}
 
 export default Payment; 

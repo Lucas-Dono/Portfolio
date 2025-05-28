@@ -223,8 +223,14 @@ const Login: React.FC = () => {
   // Verificar si hay una redirección de pago pendiente
   useEffect(() => {
     const pendingPaymentRedirect = localStorage.getItem('payment_redirect_url');
+    const authRedirectUrl = localStorage.getItem('auth_redirect_url');
+
     if (pendingPaymentRedirect) {
       console.log('💰 Hay una redirección de pago pendiente:', pendingPaymentRedirect);
+    }
+
+    if (authRedirectUrl) {
+      console.log('🔐 Hay una redirección de autenticación pendiente:', authRedirectUrl);
     }
   }, []);
 
@@ -286,14 +292,16 @@ const Login: React.FC = () => {
 
       setSuccess('Inicio de sesión exitoso! Redirigiendo...');
 
-      // Verificar si existe una redirección pendiente de pago
+      // Obtener todas las posibles URLs de redirección en orden de prioridad
       const pendingPaymentRedirect = localStorage.getItem('payment_redirect_url');
+      const authRedirectUrl = localStorage.getItem('auth_redirect_url');
+      const savedRedirectUrl = localStorage.getItem('google_auth_redirect');
 
-      // Priorizar: 1. URL de pago pendiente, 2. Parámetro de redirección, 3. Dashboard por defecto
-      let redirectTarget = pendingPaymentRedirect || redirectUrl;
+      // Determinar la URL de redirección final con prioridad
+      let redirectTarget = pendingPaymentRedirect || authRedirectUrl || savedRedirectUrl || redirectUrl;
 
       // Si hay un serviceId en la URL y no hay una redirección específica
-      if (serviceId && !pendingPaymentRedirect && redirectUrl === '/dashboard') {
+      if (serviceId && !pendingPaymentRedirect && !authRedirectUrl && redirectUrl === '/dashboard') {
         redirectTarget = `/payment?service=${serviceId}`;
         console.log('✅ Redirigiendo a página de pago del servicio:', serviceId);
       }
@@ -304,10 +312,18 @@ const Login: React.FC = () => {
         redirectTarget = '/dashboard';
       }
 
-      // Si hay una redirección pendiente de pago, limpiarla después de usarla
+      // Limpiar redirecciones guardadas
       if (pendingPaymentRedirect) {
         localStorage.removeItem('payment_redirect_url');
       }
+      if (authRedirectUrl) {
+        localStorage.removeItem('auth_redirect_url');
+      }
+      if (savedRedirectUrl) {
+        localStorage.removeItem('google_auth_redirect');
+      }
+
+      console.log('✅ Redirigiendo después del login a:', redirectTarget);
 
       // Esperar un momento para que el usuario vea el mensaje de éxito
       setTimeout(() => {
@@ -328,12 +344,17 @@ const Login: React.FC = () => {
   const handleLoginSuccess = () => {
     setSuccess('Inicio de sesión exitoso! Redirigiendo...');
 
-    // Obtener el redirectUrl o el serviceId que pudo haber sido guardado por los botones sociales
+    // Obtener todas las posibles URLs de redirección en orden de prioridad
     const pendingPaymentRedirect = localStorage.getItem('payment_redirect_url');
+    const authRedirectUrl = localStorage.getItem('auth_redirect_url');
     const savedRedirectUrl = localStorage.getItem('google_auth_redirect');
 
-    // Determinar la URL de redirección final
-    let finalRedirectUrl = pendingPaymentRedirect || savedRedirectUrl || redirectUrl;
+    // Determinar la URL de redirección final con prioridad:
+    // 1. URL de pago pendiente
+    // 2. URL de redirección de autenticación
+    // 3. URL guardada de Google auth
+    // 4. redirectUrl de parámetros de consulta
+    let finalRedirectUrl = pendingPaymentRedirect || authRedirectUrl || savedRedirectUrl || redirectUrl;
 
     // Si hay un serviceId en la URL y no hay otra redirección específica
     if (serviceId && finalRedirectUrl === '/dashboard') {
@@ -344,9 +365,14 @@ const Login: React.FC = () => {
     if (pendingPaymentRedirect) {
       localStorage.removeItem('payment_redirect_url');
     }
+    if (authRedirectUrl) {
+      localStorage.removeItem('auth_redirect_url');
+    }
     if (savedRedirectUrl) {
       localStorage.removeItem('google_auth_redirect');
     }
+
+    console.log('✅ Redirigiendo después del login a:', finalRedirectUrl);
 
     // Redireccionar al usuario
     setTimeout(() => {

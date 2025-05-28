@@ -40,12 +40,12 @@ const payment = new Payment(client);
 
 // Configuración del transporte de email
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+    host: 'c2830653.ferozo.com',
     port: 465,
     secure: true,
     auth: {
         user: process.env.ADMIN_EMAIL,
-        pass: process.env.EMAIL_PASS // Contraseña de aplicación de Gmail
+        pass: process.env.EMAIL_PASS
     }
 });
 
@@ -123,7 +123,7 @@ export const requestRefund = async (req, res) => {
         // Enviar email al administrador
         const mailOptions = {
             from: process.env.ADMIN_EMAIL,
-            to: adminEmail, // Email del administrador
+            to: process.env.Email || adminEmail, // Usar Email personal si está disponible
             subject: '🔔 Nueva solicitud de reembolso',
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">

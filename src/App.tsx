@@ -14,6 +14,7 @@ import GlobalBackground from './components/ui/GlobalBackground';
 import RevealGrid from './components/ui/RevealGrid';
 import { AnimatePresence } from 'framer-motion';
 import GithubCallback from './pages/GithubCallback';
+import { isAuthenticated as checkAuthentication, initializeAuthStorage } from '../src/services/auth';
 
 // Importaciones perezosas para mejorar performance
 const Chat = lazy(() => import('./components/Chat'));
@@ -44,7 +45,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFound'));
 const Terms = lazy(() => import('./pages/Terms'));
 
 // Lista de secciones disponibles en el sitio (debe coincidir con los IDs en el DOM)
-const SECTIONS = ['inicio', 'sobre-mi', 'projects', 'servicios', 'contacto'];
+const SECTIONS = ['inicio', 'services', 'projects', 'sobre-mi', 'contacto'];
 
 // Componente contenedor con el contenido principal
 const MainContent = () => {
@@ -91,9 +92,9 @@ const MainContent = () => {
 
         {/* Secciones */}
         <Hero />
-        <About />
-        <Projects />
         <Services />
+        <Projects />
+        <About />
         <Contact />
 
         {/* Chat (puede necesitar su propio z-index si debe estar sobre RevealGrid/Spotlight) */}
@@ -132,36 +133,60 @@ const MainContent = () => {
 
 // Componente ProtectedRoute para rutas que requieren autenticación
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // Verificar si el usuario está autenticado de cualquier manera
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Verificar autenticación usando el servicio auth
+  const userIsAuthenticated = checkAuthentication();
   const hasAuthToken = !!localStorage.getItem('auth_token');
-  const hasUserData = !!localStorage.getItem('auth_user');
+  const hasSessionToken = !!sessionStorage.getItem('auth_token');
+  const hasUserData = !!localStorage.getItem('auth_user') || !!sessionStorage.getItem('auth_user');
+
+  // Verificar también en cookies para máxima compatibilidad
+  const hasTokenCookie = document.cookie.includes('auth_token=');
+  const isAuthFlag = localStorage.getItem('isAuthenticated') === 'true' ||
+    sessionStorage.getItem('isAuthenticated') === 'true' ||
+    document.cookie.includes('isAuthenticated=true');
 
   console.log('Estado de autenticación (ProtectedRoute):', {
-    isAuthenticated,
+    isAuthenticated: userIsAuthenticated,
     hasAuthToken,
+    hasSessionToken,
+    hasTokenCookie,
     hasUserData,
-    pathname: window.location.pathname,
+    isAuthFlag,
+    pathname: location.pathname,
   });
 
-  // Acceso permitido si tiene sesión iniciada por cualquier método
-  if (!isAuthenticated && !hasAuthToken) {
-    console.log('Acceso al dashboard: Requiere iniciar sesión - Redirigiendo a login');
+  // Intentar múltiples fuentes de autenticación antes de decidir redirigir
+  if (!userIsAuthenticated && !hasAuthToken && !hasSessionToken && !hasTokenCookie && !isAuthFlag) {
+    console.log('Acceso a ruta protegida: Requiere iniciar sesión - Redirigiendo a login');
+
+    // Guardar la URL actual para redirigir después del login
+    const currentPath = `${location.pathname}${location.search}`;
+    localStorage.setItem('auth_redirect_url', currentPath);
+
+    // Verificar si hay tokens o información parcial para recuperar la sesión
+    if (hasUserData) {
+      console.log('⚠️ Hay datos de usuario pero sin token válido, intentando recuperar sesión');
+
+      // Podríamos intentar obtener un nuevo token usando los datos de usuario
+      // Pero por ahora solo redirigirnos al login
+      return <Navigate to="/login" replace state={{ from: location, hasUserData: true }} />;
+    }
+
     // Redireccionar a la página de login
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   // Si el usuario tiene token pero no está marcado como autenticado, establecerlo
-  if (!isAuthenticated && hasAuthToken) {
+  if (!userIsAuthenticated && (hasAuthToken || hasSessionToken || hasTokenCookie)) {
     console.log('Usuario con token: Estableciendo autenticación automática');
-    localStorage.setItem('isAuthenticated', 'true');
-  }
 
-  // Verificar si no tiene datos de usuario pero está autenticado
-  if ((isAuthenticated || hasAuthToken) && !hasUserData) {
-    console.log('⚠️ Usuario autenticado sin datos: Posible error de autenticación');
-    console.warn('La creación automática de datos ficticios está desactivada para depurar errores');
-    // No crear datos ficticios para poder ver y resolver los errores reales
+    // Establecer el flag en todas las formas de almacenamiento
+    localStorage.setItem('isAuthenticated', 'true');
+    sessionStorage.setItem('isAuthenticated', 'true');
+    document.cookie = `isAuthenticated=true; path=/; max-age=2592000; SameSite=Lax`;
   }
 
   return children;
@@ -275,14 +300,43 @@ const AppRoutes = () => {
   const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
+  const [initialAuthChecked, setInitialAuthChecked] = useState(false);
 
-  // Solo mostrar la intro en la primera carga
+  // Solo mostrar la intro en la primera carga y verificar autenticación
   useEffect(() => {
+    // Manejo de la intro
     const hasSeenIntro = sessionStorage.getItem('hasSeenIntro');
     if (hasSeenIntro) {
       setShowIntro(false);
     } else {
       sessionStorage.setItem('hasSeenIntro', 'true');
+    }
+
+    // Verificar autenticación de múltiples fuentes al inicio
+    const authToken = localStorage.getItem('auth_token') ||
+      sessionStorage.getItem('auth_token');
+    const tokenCookie = document.cookie.match(new RegExp(`(^| )auth_token=([^;]+)`));
+    const hasToken = !!authToken || !!tokenCookie;
+
+    console.log('🔄 Verificando tokens al iniciar AppRoutes:', {
+      hasLocalToken: !!localStorage.getItem('auth_token'),
+      hasSessionToken: !!sessionStorage.getItem('auth_token'),
+      hasCookieToken: !!tokenCookie,
+      currentRoute: location.pathname
+    });
+
+    // Si hay token, asegurar que isAuthenticated esté establecido
+    if (hasToken) {
+      console.log('✅ Token encontrado al iniciar, estableciendo estado autenticado');
+      localStorage.setItem('isAuthenticated', 'true');
+      sessionStorage.setItem('isAuthenticated', 'true');
+      document.cookie = `isAuthenticated=true; path=/; max-age=2592000; SameSite=Lax`;
+
+      // Si hay un token pero estamos en /login, podríamos redirigir al dashboard
+      if (location.pathname === '/login') {
+        console.log('⚠️ Usuario ya autenticado en /login, redirigiendo a /dashboard');
+        setTimeout(() => navigate('/dashboard'), 100);
+      }
     }
 
     // Verificar si viene de un pago exitoso
@@ -297,6 +351,8 @@ const AppRoutes = () => {
       localStorage.setItem('project_payment_completed', 'true');
       navigate('/dashboard');
     }
+
+    setInitialAuthChecked(true);
   }, [location, navigate]);
 
   useEffect(() => {
@@ -309,8 +365,13 @@ const AppRoutes = () => {
     if (token && userId) {
       console.log('🔑 Token recibido, autenticando usuario');
 
-      // Guardar el token y la información del usuario
+      // Guardar el token y la información del usuario en todas las formas de almacenamiento
       localStorage.setItem('auth_token', token);
+      sessionStorage.setItem('auth_token', token);
+      document.cookie = `auth_token=${token}; path=/; max-age=2592000; SameSite=Lax`;
+      localStorage.setItem('isAuthenticated', 'true');
+      sessionStorage.setItem('isAuthenticated', 'true');
+      document.cookie = `isAuthenticated=true; path=/; max-age=2592000; SameSite=Lax`;
 
       // Eliminar los parámetros de la URL para limpiarla
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -514,6 +575,47 @@ const AppRoutes = () => {
 
 // La configuración global ya está en main.tsx, pero aquí mantenemos los estilos específicos de la aplicación
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [initialAuthChecked, setInitialAuthChecked] = useState(false);
+
+  // Inicializar el sistema de autenticación al cargar la aplicación
+  useEffect(() => {
+    console.log('🚀 Inicializando App y sistema de autenticación');
+
+    // Inicializar sistema de almacenamiento para autenticación
+    initializeAuthStorage();
+
+    // Verificar si hay autenticación y guardarla en todos los almacenamientos si existe
+    const isAuth = checkAuthentication();
+
+    console.log('🔐 Estado inicial de autenticación:', isAuth);
+
+    // Si hay errores con fuentes principales de almacenamiento, intentar verificar
+    // la autenticación desde otras fuentes al iniciar
+    if (isAuth) {
+      console.log('✅ Usuario autenticado, asegurando persistencia en todos los almacenamientos');
+    }
+
+    // Marcar que ya se realizó la verificación inicial
+    setInitialAuthChecked(true);
+  }, []);
+
+  // Verificar si estamos en una ruta protegida y no autenticado
+  useEffect(() => {
+    if (initialAuthChecked) {
+      const isAuth = checkAuthentication();
+      const currentPath = location.pathname;
+
+      // Solo redirigir a login si NO está autenticado y está en /dashboard
+      if (!isAuth && currentPath === '/dashboard') {
+        localStorage.setItem('auth_redirect_url', currentPath);
+        navigate('/login', { replace: true });
+      }
+      // En cualquier otro caso, nunca redirigir a login
+    }
+  }, [initialAuthChecked, location.pathname, navigate]);
+
   return (
     <>
       <GlobalStyles />

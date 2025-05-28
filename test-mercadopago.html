@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de MercadoPago</title>
+    <meta name="mercadopago-site-id" content="MLA">
+    <meta name="mercadopago-environment" content="test">
+    <meta name="mercadopago-session" content="allow-third-party-cookies">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: white;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #009ee3 0%, #32bcad 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+
+        .log {
+            background: #222;
+            border: 1px solid #333;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .success {
+            color: #00C853;
+        }
+
+        .error {
+            color: #FF4D4D;
+        }
+
+        .info {
+            color: #009ee3;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Prueba de MercadoPago SDK</h1>
+
+    <button id="loadSdk" class="button">Cargar SDK de MercadoPago</button>
+    <button id="checkSdk" class="button">Verificar si MercadoPago está disponible</button>
+    <button id="createInstance" class="button">Crear instancia de MercadoPago</button>
+
+    <div class="log" id="log"></div>
+
+    <script>
+        // Función para registrar mensajes en el log
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log');
+            const logEntry = document.createElement('div');
+            logEntry.className = type;
+            logEntry.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Evento para cargar el SDK
+        document.getElementById('loadSdk').addEventListener('click', function () {
+            log('Intentando cargar el SDK de MercadoPago...', 'info');
+
+            try {
+                // Crear elemento script
+                const script = document.createElement('script');
+                script.src = 'https://sdk.mercadopago.com/js/v2';
+                script.id = 'mercadopagoSdk';
+                script.onload = function () {
+                    log('✅ SDK de MercadoPago cargado correctamente.', 'success');
+                };
+                script.onerror = function (e) {
+                    log(`❌ Error al cargar el SDK de MercadoPago: ${e}`, 'error');
+                };
+
+                // Añadir al head
+                document.head.appendChild(script);
+                log('Script añadido al head del documento.', 'info');
+            } catch (error) {
+                log(`❌ Error al intentar cargar el SDK: ${error}`, 'error');
+            }
+        });
+
+        // Evento para verificar si el SDK está disponible
+        document.getElementById('checkSdk').addEventListener('click', function () {
+            log('Verificando si MercadoPago está disponible...', 'info');
+
+            if (typeof window.MercadoPago === 'function') {
+                log('✅ El objeto MercadoPago está disponible en window.', 'success');
+            } else {
+                log('❌ El objeto MercadoPago NO está disponible en window.', 'error');
+            }
+        });
+
+        // Evento para crear una instancia de MercadoPago
+        document.getElementById('createInstance').addEventListener('click', function () {
+            log('Intentando crear una instancia de MercadoPago...', 'info');
+
+            if (typeof window.MercadoPago !== 'function') {
+                log('❌ No se puede crear instancia porque el SDK no está cargado.', 'error');
+                return;
+            }
+
+            try {
+                // Clave de prueba de MercadoPago
+                const publicKey = 'TEST-064a6d85-da9f-4dea-9587-d0e7da336abc';
+                log(`Usando clave pública: ${publicKey}`, 'info');
+
+                // Crear instancia
+                const mp = new window.MercadoPago(publicKey, {
+                    locale: 'es-AR'
+                });
+
+                log('✅ Instancia de MercadoPago creada correctamente.', 'success');
+                log(`La instancia tiene las siguientes propiedades: ${Object.keys(mp).join(', ')}`, 'info');
+            } catch (error) {
+                log(`❌ Error al crear la instancia: ${error}`, 'error');
+            }
+        });
+
+        // Registrar mensaje inicial
+        log('Herramienta de prueba para MercadoPago inicializada.', 'info');
+    </script>
+</body>
+
+</html>

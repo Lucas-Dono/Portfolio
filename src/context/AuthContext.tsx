@@ -76,52 +76,76 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const checkAuth = async () => {
       setIsLoading(true);
 
-      if (isAuthenticated()) {
+      // Primero, obtener el usuario del localStorage
+      const localUser = getUser();
+      const token = getToken();
+
+      // Si tenemos un usuario local y un token, consideramos que está autenticado inicialmente
+      if (localUser && localUser.id && localUser.email && token) {
+        console.log('✅ Usuario recuperado de localStorage:', localUser.email);
+
+        // Establecer el usuario desde localStorage inmediatamente para evitar parpadeos de UI
+        setUser(localUser);
+
+        // Verificar si el usuario tiene el campo termsAccepted
+        if (typeof localUser.termsAccepted === 'undefined' || localUser.termsAccepted === false) {
+          console.log('⚠️ Usuario local sin aceptación de términos, requiere aceptarlos');
+          // Iniciar proceso de redirección
+          setRequiresTermsRedirect(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // En segundo plano, intentamos actualizar los datos del usuario desde el servidor
+        // pero no bloqueamos la UI mientras esperamos
         try {
-          // Intentar obtener el usuario actual desde el servidor
           const userData = await getCurrentUser();
-          console.log('✅ Usuario obtenido del servidor:', userData?.email || 'Sin email');
+          console.log('✅ Usuario actualizado desde el servidor:', userData?.email || 'Sin email');
 
-          // Verificar si el usuario tiene el campo termsAccepted
-          // Si no lo tiene o es false, necesitamos mostrar el modal de términos
-          if (userData && (typeof userData.termsAccepted === 'undefined' || userData.termsAccepted === false)) {
-            console.log('⚠️ Usuario sin aceptación de términos, requiere aceptarlos');
-            // Iniciar proceso de redirección
-            setRequiresTermsRedirect(true);
-            return;
-          }
+          // Actualizar el usuario solo si obtenemos datos válidos
+          if (userData && userData.id && userData.email) {
+            setUser(userData);
 
-          setUser(userData);
-        } catch (err) {
-          console.warn('⚠️ Error al obtener usuario del servidor, usando localStorage como fallback');
-
-          // Si falla, usar los datos almacenados localmente
-          const localUser = getUser();
-
-          if (localUser && localUser.id && localUser.email) {
-            console.log('✅ Usuario recuperado de localStorage:', localUser.email);
-
-            // Verificar si el usuario tiene el campo termsAccepted
-            if (typeof localUser.termsAccepted === 'undefined' || localUser.termsAccepted === false) {
-              console.log('⚠️ Usuario local sin aceptación de términos, requiere aceptarlos');
-              // Iniciar proceso de redirección
+            // Verificar términos y condiciones en la respuesta del servidor
+            if (typeof userData.termsAccepted === 'undefined' || userData.termsAccepted === false) {
+              console.log('⚠️ Usuario del servidor sin aceptación de términos, requiere aceptarlos');
               setRequiresTermsRedirect(true);
-              return;
             }
+          }
+        } catch (err) {
+          // Si hay un error al actualizar desde el servidor, mantenemos el usuario local
+          // y simplemente registramos el error sin interrumpir la sesión
+          console.warn('⚠️ Error al actualizar datos del usuario desde el servidor:', err);
+          // No hacemos logout, mantenemos la sesión con los datos locales
+        }
+      } else if (token) {
+        // Si solo tenemos token pero no usuario en localStorage, intentamos obtener el usuario
+        try {
+          const userData = await getCurrentUser();
+          console.log('✅ Usuario obtenido del servidor con token existente:', userData?.email || 'Sin email');
 
-            setUser(localUser);
+          if (userData && userData.id && userData.email) {
+            setUser(userData);
 
-            // No hacer logout, permitir que el usuario siga con su sesión
-            // El token puede ser válido aunque el servidor esté temporalmente indisponible
-            // o haya ocurrido un error transitorio
+            // Verificar términos y condiciones
+            if (typeof userData.termsAccepted === 'undefined' || userData.termsAccepted === false) {
+              console.log('⚠️ Usuario sin aceptación de términos, requiere aceptarlos');
+              setRequiresTermsRedirect(true);
+            }
           } else {
-            console.error('❌ No se pudo obtener un usuario válido de localStorage');
-            // Solo hacer logout si no hay datos de usuario en localStorage
+            console.error('❌ Respuesta del servidor sin datos de usuario válidos');
+            logoutService(); // Limpiar token inválido
+          }
+        } catch (err) {
+          console.error('❌ Error al obtener usuario con token existente:', err);
+          // No hacer logout automáticamente, podría ser un error temporal del servidor
+          // Solo si es error 401 (no autorizado) entonces hacemos logout
+          if (err instanceof Error && err.message.includes('401')) {
             logoutService();
           }
         }
       } else {
-        console.log('⚠️ Usuario no autenticado según token');
+        console.log('⚠️ No hay datos de autenticación en localStorage');
       }
 
       setIsLoading(false);

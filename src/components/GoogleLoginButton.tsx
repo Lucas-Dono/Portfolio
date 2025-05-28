@@ -134,12 +134,18 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
 
   // Estados para el modal de términos
   const [showTermsModal, setShowTermsModal] = useState(false);
-  const [pendingTokenResponse, setPendingTokenResponse] = useState<any>(null);
 
   const handleGoogleLogin = async () => {
     try {
+      // Verificar si hay una URL de redirección de autenticación
+      const authRedirectUrl = localStorage.getItem('auth_redirect_url');
+
       // Guardar la URL de redirección antes de iniciar el proceso de autenticación
-      if (redirectUrl) {
+      // Prioridad: 1. auth_redirect_url, 2. redirectUrl prop, 3. serviceParam
+      if (authRedirectUrl) {
+        // Ya existe una URL de redirección de autenticación, no sobrescribirla
+        console.log('🔐 Ya existe una URL de redirección de autenticación:', authRedirectUrl);
+      } else if (redirectUrl) {
         localStorage.setItem('google_auth_redirect', redirectUrl);
         console.log('🔄 Guardando URL de redirección para Google Auth:', redirectUrl);
       } else {
@@ -155,62 +161,14 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
         }
       }
 
-      // En lugar de autenticar inmediatamente, primero mostrar el modal de términos
+      // Mostrar el modal de términos primero, sin iniciar autenticación
       setShowTermsModal(true);
-
-      // Intentamos obtener el token para usarlo después
-      console.log('🔄 Preparando autenticación con Google (mostrando términos primero)...');
-      try {
-        // Abrir ventana de autenticación de Google directamente
-        const googleAuthUrl = `${API_BASE_URL}/auth/google/login?callback=${encodeURIComponent(window.location.origin + '/html/auth-callback.html')}`;
-        console.log('🔗 Abriendo URL de autenticación:', googleAuthUrl);
-
-        const authWindow = window.open(googleAuthUrl, 'GoogleAuth', 'width=600,height=700');
-
-        // Escuchar mensajes de la ventana emergente
-        const handleMessage = (event: MessageEvent) => {
-          console.log('📨 Mensaje recibido en ventana principal:', event.origin, event.data);
-
-          // Procesar la respuesta de autenticación
-          if (event.data && typeof event.data === 'object' && event.data.tokenResponse) {
-            // Cerrar la ventana emergente si aún está abierta
-            if (authWindow && !authWindow.closed) {
-              authWindow.close();
-            }
-
-            // Guardar el token para usarlo después de que el usuario acepte los términos
-            setPendingTokenResponse(event.data.tokenResponse);
-
-            // Asegurarnos de que se muestre el modal de términos
-            setShowTermsModal(true);
-
-            // Eliminar el event listener
-            window.removeEventListener('message', handleMessage);
-          }
-        };
-
-        // Agregar listener para mensajes
-        window.addEventListener('message', handleMessage);
-      } catch (tokenError) {
-        console.error('Error al obtener token de Google:', tokenError);
-        // Aún así mostramos el modal de términos
-      }
-
-      return; // Detenemos aquí para que el usuario deba aceptar los términos primero
     } catch (error: any) {
-      console.error('❌ Error en login con Google:', error);
+      console.error('❌ Error al preparar login con Google:', error);
 
-      // Manejar múltiples tipos de errores comunes
       let errorMessage = 'Error al iniciar sesión con Google';
-
-      // Detectar errores específicos
-      if (error.message && error.message.includes('NetworkError')) {
-        errorMessage = 'Error de conexión con el servidor de autenticación. Verificar si el backend está en ejecución y el puerto es correcto.';
-        console.error('🔴 Error CORS detectado:', errorMessage);
-      } else if (error.message && error.message.includes('cerrada antes')) {
-        errorMessage = 'La ventana de autenticación se cerró antes de completar el proceso.';
-      } else if (error.message && error.message.includes('agotado')) {
-        errorMessage = 'El tiempo de espera para la autenticación se ha agotado. Intente nuevamente.';
+      if (error.message) {
+        errorMessage = error.message;
       }
 
       if (onError) {
@@ -224,45 +182,35 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
     try {
       setShowTermsModal(false);
 
-      if (pendingTokenResponse) {
-        // Si tenemos un token pendiente, usar ese
-        console.log('🔄 Completando autenticación con Google después de aceptar términos...');
-        const response = await loginWithGoogleProvider(pendingTokenResponse, true);
+      // Iniciar autenticación con Google DESPUÉS de aceptar términos
+      console.log('🔄 Iniciando autenticación con Google después de aceptar términos...');
 
-        if (response.success) {
-          console.log('✅ Login con Google exitoso después de aceptar términos:', response.user?.email || 'email desconocido');
+      // Ahora iniciamos la autenticación con Google
+      const result = await loginWithGoogle();
 
-          if (onSuccess) {
-            onSuccess();
-          } else {
-            // Obtener la URL de redirección guardada o usar dashboard como fallback
-            const savedRedirectUrl = localStorage.getItem('google_auth_redirect') || '/dashboard';
-            localStorage.removeItem('google_auth_redirect'); // Limpiar después de usar
+      if (result.success) {
+        console.log('✅ Login con Google exitoso:', result.user?.email || 'email desconocido');
 
-            console.log('🔄 Redirigiendo a:', savedRedirectUrl);
-            navigate(savedRedirectUrl);
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          // Obtener todas las posibles URLs de redirección en orden de prioridad
+          const authRedirectUrl = localStorage.getItem('auth_redirect_url');
+          const googleRedirectUrl = localStorage.getItem('google_auth_redirect');
+
+          // Determinar la URL de redirección final con prioridad
+          const finalRedirectUrl = authRedirectUrl || googleRedirectUrl || '/dashboard';
+
+          // Limpiar redirecciones guardadas
+          if (authRedirectUrl) {
+            localStorage.removeItem('auth_redirect_url');
           }
-        }
-      } else {
-        // Si no tenemos token pendiente, iniciar autenticación normal
-        console.log('🔄 Iniciando autenticación con Google con términos aceptados...');
-        const result = await loginWithGoogle();
-
-        if (result.success) {
-          console.log('✅ Login con Google exitoso:', result.user?.email || 'email desconocido');
-
-          if (onSuccess) {
-            onSuccess();
-          } else {
-            // Obtener la URL de redirección guardada o usar dashboard como fallback
-            const savedRedirectUrl = localStorage.getItem('google_auth_redirect') || '/dashboard';
-            localStorage.removeItem('google_auth_redirect'); // Limpiar después de usar
-
-            console.log('🔄 Redirigiendo a:', savedRedirectUrl);
-            setTimeout(() => {
-              navigate(savedRedirectUrl);
-            }, 1000);
+          if (googleRedirectUrl) {
+            localStorage.removeItem('google_auth_redirect');
           }
+
+          console.log('🔄 Redirigiendo a:', finalRedirectUrl);
+          navigate(finalRedirectUrl);
         }
       }
     } catch (error: any) {
@@ -277,7 +225,6 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   // Manejar el rechazo de términos
   const handleRejectTerms = () => {
     setShowTermsModal(false);
-    setPendingTokenResponse(null);
 
     if (onError) {
       onError('Debe aceptar los términos y condiciones para continuar');

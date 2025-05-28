@@ -980,16 +980,18 @@ const NoSitesDescription = styled.p`
   font-size: 0.95rem;
 `;
 
-const NoSitesButton = styled.a`
+const NoSitesButton = styled.button`
   display: inline-block;
   padding: 0.75rem 1.5rem;
   background: linear-gradient(135deg, #3a7bd5, #00d2ff);
   color: white;
+  border: none;
   text-decoration: none;
   border-radius: 8px;
   font-weight: 600;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(0, 210, 255, 0.3);
+  cursor: pointer;
   
   &:hover {
     transform: translateY(-2px);
@@ -1446,29 +1448,6 @@ const DragHandle = styled.div`
 
 // Configurar el WidthProvider de ReactGridLayout fuera del componente
 const ResponsiveGridLayout = WidthProvider(ReactGridLayout);
-
-const FloatingChatButton = styled.button`
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  color: white;
-  box-shadow: 0 4px 12px rgba(255, 0, 255, 0.4);
-  cursor: pointer;
-  z-index: 900;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: scale(1.1);
-  }
-`;
 
 const FullScreenChatOverlay = styled.div<{ isOpen: boolean }>`
   position: fixed;
@@ -2668,7 +2647,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           <NoSitesDescription>
             Explora nuestros planes y lanza tu primer sitio web hoy. Tenemos opciones para todos los proyectos y presupuestos. 🚀
           </NoSitesDescription>
-          <NoSitesButton href="/#servicios">
+          <NoSitesButton onClick={navigateToServices}>
             Ver planes disponibles
           </NoSitesButton>
         </NoSitesCard>
@@ -2979,15 +2958,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         )}
       </div>
 
-      {/* Botón flotante para abrir el chat */}
-      <FloatingChatButton onClick={() => setShowMobileChat(true)}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          <line x1="9" y1="10" x2="15" y2="10"></line>
-          <line x1="12" y1="7" x2="12" y2="13"></line>
-        </svg>
-      </FloatingChatButton>
-
       {/* Overlay para cerrar el menú lateral */}
       <Overlay isVisible={isSidebarOpen} onClick={() => setIsSidebarOpen(false)} />
 
@@ -3098,9 +3068,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         Todavía no has adquirido ninguno de nuestros servicios. Explora nuestras opciones
         de desarrollo web y encuentra la solución perfecta para tu presencia online.
       </p>
-      <ViewSiteButton as="a" href="/#servicios">
-        Ver servicios disponibles
-      </ViewSiteButton>
     </Card>
   );
 
@@ -3266,6 +3233,22 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Añadir esta función para navegar a servicios sin recargar la página
+  const navigateToServices = () => {
+    console.log('Navegando a la sección de servicios sin recargar la página');
+    // Navegar a la página principal
+    navigate('/');
+
+    // Esperar un poco para que cargue la página
+    setTimeout(() => {
+      // Desplazarse a la sección de servicios
+      const servicesSection = document.getElementById('services');
+      if (servicesSection) {
+        servicesSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 300);
   };
 
   return (
@@ -3448,19 +3431,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         </>
       )}
 
-      {/* Botón flotante de chat */}
-      <FloatingChatButton
-        onClick={() => windowSize.width <= 1024 ? setShowMobileChat(true) : setIsChatMinimized(false)}
-        style={{
-          display: (windowSize.width > 1024 && !isChatMinimized) ? 'none' : 'flex'
-        }}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          <line x1="9" y1="10" x2="15" y2="10"></line>
-          <line x1="12" y1="7" x2="12" y2="13"></line>
-        </svg>
-      </FloatingChatButton>
 
       {/* Chat en pantalla completa solo para móvil */}
       <FullScreenChatOverlay isOpen={showMobileChat && windowSize.width <= 1024}>
@@ -3471,46 +3441,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           {renderAssistantChat()}
         </div>
       </FullScreenChatOverlay>
-
-      {/* Botón flotante de Configuración - siempre visible */}
-      <FloatingChatButton
-        onClick={() => setShowSettingsModal(true)}
-        style={{
-          position: 'fixed',
-          bottom: windowSize.width <= 1024 ? '160px' : '90px',
-          right: '20px',
-          background: 'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)',
-          zIndex: 800
-        }}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-      </FloatingChatButton>
-
-      {/* Botón flotante de WhatsApp */}
-      <WhatsAppButton
-        href="https://wa.me/542324543762?text=Hola,%20tengo%20una%20consulta%20sobre%20mi%20proyecto"
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          position: 'fixed',
-          bottom: windowSize.width <= 1024 ? '90px' : '20px',
-          right: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '50px',
-          height: '50px',
-          borderRadius: '50%',
-          padding: 0,
-          boxShadow: '0 4px 12px rgba(37, 211, 102, 0.4)',
-          zIndex: 800
-        }}
-      >
-        <WhatsAppIcon />
-      </WhatsAppButton>
 
       {/* Modal de Configuración */}
       {showSettingsModal && (

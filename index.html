@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link rel="preload" href="/images/logo.png" as="image" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Lucas Dono - Portfolio personal y servicios de desarrollo web" />
   <meta name="keywords" content="desarrollo web, frontend, backend, React, Node.js, servicios" />
@@ -22,9 +23,6 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
     rel="stylesheet">
 
-  <!-- Favicon y Apple touch icon -->
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 
   <!-- Meta para cookies de MercadoPago -->
   <meta name="mercadopago-site-id" content="MLA">
@@ -38,50 +36,33 @@
   <!-- DNS Prefetch -->
   <link rel="dns-prefetch" href="*.mercadopago.com">
 
-  <title>Lucas Dono Portfolio</title>
+  <!-- Cargar el SDK de MercadoPago directamente en el head -->
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
+
+  <title>Circuit Prompt</title>
 </head>
 
 <body>
   <div id="root"></div>
 
-  <!-- Cargar el SDK de Mercado Pago y script de depuración solo cuando sea necesario -->
-  <script>
-    // Cargar el SDK de Mercado Pago en todas las páginas (necesario para la app)
-    const mercadoPagoScript = document.createElement('script');
-    mercadoPagoScript.src = "https://sdk.mercadopago.com/js/v2";
-    document.head.appendChild(mercadoPagoScript);
-
-    // Cargar el script de depuración solo en páginas de pago
-    if (window.location.pathname.includes('/payment')) {
-      const mpDebugScript = document.createElement('script');
-      mpDebugScript.src = "/mp-debug.js";
-      document.head.appendChild(mpDebugScript);
-    }
-  </script>
-
   <!-- Script principal de la aplicación -->
   <script type="module" src="/src/main.tsx"></script>
 
-  <!-- Eliminar nodos de script después de cargarlos para evitar bloqueos -->
+  <!-- Script para verificar que MercadoPago se cargó correctamente -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      // Limpiar nodos de script para evitar posibles bloqueos
-      Array.from(document.getElementsByTagName('script')).forEach(node => {
-        if (
-          (node.src.includes('mercadopago') ||
-            node.src.includes('mp-debug')) &&
-          node.parentNode
-        ) {
-          // No eliminar, solo marcar como cargado
-          node.setAttribute('data-loaded', 'true');
-        }
-      });
-
       // Verificar que MercadoPago se cargó correctamente
       if (typeof window.MercadoPago === 'function') {
         console.log('✅ MercadoPago SDK cargado correctamente');
       } else {
         console.error('❌ MercadoPago SDK no se cargó correctamente');
+        // Intentar cargar nuevamente si falló
+        const mercadoPagoScript = document.createElement('script');
+        mercadoPagoScript.src = "https://sdk.mercadopago.com/js/v2";
+        mercadoPagoScript.onload = function () {
+          console.log('✅ MercadoPago SDK cargado en segundo intento');
+        };
+        document.head.appendChild(mercadoPagoScript);
       }
     });
   </script>

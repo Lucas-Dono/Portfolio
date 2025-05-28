@@ -68,13 +68,13 @@ const ChatIcon = () => (
 );
 
 const GameIcon = () => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width="28" 
-    height="28" 
-    viewBox="0 0 512 512" 
-    fill="currentColor" 
-    stroke="currentColor" 
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="28"
+    height="28"
+    viewBox="0 0 512 512"
+    fill="currentColor"
+    stroke="currentColor"
     strokeWidth="0"
   >
     <path d="M469.344,266.664v-85.328h-42.656v-42.672H384v-21.328h42.688v-64h-64v42.656H320v42.672H192V95.992
@@ -85,15 +85,15 @@ const GameIcon = () => (
 );
 
 const DashboardIcon = () => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width="24" 
-    height="24" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
     strokeLinejoin="round"
   >
     <rect x="3" y="3" width="7" height="7"></rect>
@@ -104,7 +104,7 @@ const DashboardIcon = () => (
 );
 
 // --- Componentes Estilizados ---
-const NavContainer = styled(motion.nav)<NavContainerProps>`
+const NavContainer = styled(motion.nav) <NavContainerProps>`
   position: fixed;
   top: 0;
   left: 0;
@@ -117,13 +117,13 @@ const NavContainer = styled(motion.nav)<NavContainerProps>`
   padding: 0 2.5rem;
   transition: background-color 0.3s ease, box-shadow 0.3s ease, height 0.3s ease, padding 0.3s ease;
 
-  background-color: ${props => 
-    props.$isScrolled 
+  background-color: ${props =>
+    props.$isScrolled
       ? 'rgba(5, 5, 5, 0.7)' // Siempre modo oscuro
       : 'transparent'};
   backdrop-filter: ${props => props.$isScrolled ? 'blur(10px)' : 'none'};
-  box-shadow: ${props => 
-    props.$isScrolled 
+  box-shadow: ${props =>
+    props.$isScrolled
       ? '0 2px 20px rgba(0, 0, 0, 0.4)' // Siempre modo oscuro
       : 'none'};
   
@@ -391,7 +391,7 @@ const MobileControls = styled.div`
 `;
 
 // --- Componente Principal Navbar ---
-const Navbar: React.FC<NavbarProps> = ({ 
+const Navbar: React.FC<NavbarProps> = ({
   showAfterScroll = 50, // Mostrar antes
   onNavigate,
   toggleChat,
@@ -401,13 +401,13 @@ const Navbar: React.FC<NavbarProps> = ({
   // const { isDarkMode, toggleTheme } = useTheme(); // Ya no se usa
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setIsScrolled(scrollY > showAfterScroll);
     };
-    
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll(); // Check initial scroll position
 
@@ -429,15 +429,15 @@ const Navbar: React.FC<NavbarProps> = ({
   useEffect(() => {
     document.body.style.overflow = isMobileMenuOpen ? 'hidden' : 'auto';
   }, [isMobileMenuOpen]);
-  
+
   const menuItems = [
     { label: 'Inicio', section: 'inicio' },
-    { label: 'Sobre Mí', section: 'sobre-mi' },
+    { label: 'Servicios', section: 'services' },
     { label: 'Proyectos', section: 'projects' },
-    { label: 'Servicios', section: 'servicios' },
+    { label: 'Sobre Mí', section: 'sobre-mi' },
     { label: 'Contacto', section: 'contacto' }
   ];
-  
+
   const handleNavigation = (section: string) => {
     setIsMobileMenuOpen(false); // Cerrar menú al navegar
     if (onNavigate) {
@@ -457,40 +457,40 @@ const Navbar: React.FC<NavbarProps> = ({
     visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeInOut" } },
     exit: { opacity: 0, y: "-100%", transition: { duration: 0.3, ease: "easeInOut" } }
   };
-  
+
   return (
     <>
-        <NavContainer
-          // $isDarkMode={isDarkMode} // Ya no es necesario
+      <NavContainer
+        // $isDarkMode={isDarkMode} // Ya no es necesario
         $isScrolled={isScrolled}
-          initial={{ y: -80 }}
-          animate={{ y: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        >
-        {/* Pasar href al LogoLink para que apunte al inicio */} 
+        initial={{ y: -80 }}
+        animate={{ y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      >
+        {/* Pasar href al LogoLink para que apunte al inicio */}
         <LogoLink href="#inicio" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => { e.preventDefault(); handleNavigation('inicio'); }}>
           Circuit Prompt
         </LogoLink>
-          
-          <NavLinks>
+
+        <NavLinks>
           {menuItems.map(item => (
             <NavLink
-                  key={item.section}
-                  onClick={() => handleNavigation(item.section)}
+              key={item.section}
+              onClick={() => handleNavigation(item.section)}
               $isActive={currentSection === item.section}
-                  // $isDarkMode={isDarkMode} // Ya no es necesario
-                >
-                  {item.label}
+            // $isDarkMode={isDarkMode} // Ya no es necesario
+            >
+              {item.label}
             </NavLink>
           ))}
-          </NavLinks>
-          
-          <Controls>
-            {/* Botón de tema eliminado */}
-            
-            {toggleChat && (
-            <ChatButton 
-                onClick={() => { setIsMobileMenuOpen(false); toggleChat(); }}
+        </NavLinks>
+
+        <Controls>
+          {/* Botón de tema eliminado */}
+
+          {toggleChat && (
+            <ChatButton
+              onClick={() => { setIsMobileMenuOpen(false); toggleChat(); }}
               aria-label="Abrir chat"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -498,9 +498,9 @@ const Navbar: React.FC<NavbarProps> = ({
               <ChatIcon />
             </ChatButton>
           )}
-          
+
           {toggleGame && (
-            <GameButton 
+            <GameButton
               onClick={() => { setIsMobileMenuOpen(false); toggleGame(); }}
               aria-label="Abrir juego"
               whileHover={{ scale: 1.05 }}
@@ -509,10 +509,8 @@ const Navbar: React.FC<NavbarProps> = ({
               <GameIcon />
             </GameButton>
           )}
-          
           <DashboardLink to="/dashboard">
-            <DashboardButton 
-              as="div"
+            <DashboardButton
               aria-label="Ir al dashboard"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -520,7 +518,7 @@ const Navbar: React.FC<NavbarProps> = ({
               <DashboardIcon />
             </DashboardButton>
           </DashboardLink>
-          </Controls>
+        </Controls>
 
         {/* Botón Hamburguesa */}
         <MenuToggle onClick={toggleMobileMenu} $isOpen={isMobileMenuOpen} >
@@ -529,7 +527,7 @@ const Navbar: React.FC<NavbarProps> = ({
           <span></span>
         </MenuToggle>
 
-        </NavContainer>
+      </NavContainer>
 
       {/* Menú Móvil */}
       <AnimatePresence>
@@ -547,7 +545,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => handleNavigation(item.section)}
                   $isActive={currentSection === item.section}
                   // $isDarkMode={isDarkMode} // Ya no es necesario
-                  style={{ fontSize: '1.5rem' }} 
+                  style={{ fontSize: '1.5rem' }}
                 >
                   {item.label}
                 </NavLink>
@@ -555,9 +553,9 @@ const Navbar: React.FC<NavbarProps> = ({
             </MobileNavLinks>
             <MobileControls>
               {/* Botón de tema eliminado */}
-              
+
               {toggleChat && (
-                <ChatButton 
+                <ChatButton
                   onClick={() => { setIsMobileMenuOpen(false); toggleChat(); }}
                   aria-label="Abrir chat"
                   whileHover={{ scale: 1.1 }}
@@ -566,9 +564,9 @@ const Navbar: React.FC<NavbarProps> = ({
                   <ChatIcon />
                 </ChatButton>
               )}
-              
+
               {toggleGame && (
-                <GameButton 
+                <GameButton
                   onClick={() => { setIsMobileMenuOpen(false); toggleGame(); }}
                   aria-label="Abrir juego"
                   whileHover={{ scale: 1.05 }}
@@ -577,10 +575,9 @@ const Navbar: React.FC<NavbarProps> = ({
                   <GameIcon />
                 </GameButton>
               )}
-              
+
               <DashboardLink to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                <DashboardButton 
-                  as="div"
+                <DashboardButton
                   aria-label="Ir al dashboard"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -590,8 +587,8 @@ const Navbar: React.FC<NavbarProps> = ({
               </DashboardLink>
             </MobileControls>
           </MobileMenuContainer>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
     </>
   );
 };

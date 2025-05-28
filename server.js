@@ -588,14 +588,14 @@ app.get('/admin', (req, res) => {
   res.redirect('/admin/whatsapp');
 });
 
-// Configuración de Email (SMTP) para notificaciones de error con Gmail
+// Configuración de Email (SMTP) para notificaciones de error con DonWeb
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: 'c2830653.ferozo.com',
   port: 465,
   secure: true,
   auth: {
     user: process.env.ADMIN_EMAIL,
-    pass: process.env.EMAIL_PASS // Debe ser una contraseña de aplicación de Gmail
+    pass: process.env.EMAIL_PASS
   }
 });
 
@@ -604,12 +604,12 @@ transporter.verify((err, success) => {
   if (err) {
     // Ignorar error DNS temporal
     if (err.code === 'EDNS') {
-      console.warn('⚠️ DNS lookup fallido para smtp.gmail.com, omitiendo verificación SMTP inicial');
+      console.warn('⚠️ DNS lookup fallido para c2830653.ferozo.com, omitiendo verificación SMTP inicial');
     } else {
       console.error('❌ Error en verificación SMTP:', err);
     }
   } else {
-    console.log('✅ SMTP verificado correctamente con Gmail');
+    console.log('✅ SMTP verificado correctamente con DonWeb');
   }
 });
 
@@ -628,7 +628,7 @@ async function fallback(error, formData) {
     // Envía email de notificación de error
     await transporter.sendMail({
       from: process.env.ADMIN_EMAIL,
-      to: process.env.ADMIN_EMAIL,
+      to: process.env.Email || process.env.ADMIN_EMAIL, // Usar Email personal si está disponible
       subject: '⚠️ Error de WhatsApp Bot',
       text: `Error al enviar mensaje por WhatsApp:\n${error.message}`
     });
@@ -1295,6 +1295,131 @@ if (fs.existsSync(distPath)) {
   });
 } else {
   console.warn(`⚠️ Directorio 'dist' no encontrado. El frontend no será servido.`);
+}
+
+// Endpoint para procesar formulario de contacto empresarial
+app.post('/api/enterprise/contact', async (req, res) => {
+  console.log('📨 POST /api/enterprise/contact recibido');
+
+  try {
+    const { responses, summary, conversation } = req.body;
+
+    if (!responses || !summary) {
+      return res.status(400).json({ ok: false, error: 'Datos incompletos' });
+    }
+
+    // Formatear las respuestas para el mensaje
+    const formattedResponses = Object.entries(responses).map(([questionIndex, answer]) => {
+      const questionNumber = parseInt(questionIndex) + 1;
+      const question = enterpriseQuestions[parseInt(questionIndex)];
+      return `*Pregunta ${questionNumber}:* ${question}\n*Respuesta:* ${answer}`;
+    }).join('\n\n');
+
+    // Crear texto del mensaje para WhatsApp
+    const empresaName = responses[0] || 'Cliente empresarial';
+    const timestamp = new Date().toLocaleString('es-AR');
+
+    const text =
+      `🏢 *Nueva consulta empresarial* 🏢\n\n` +
+      `*Fecha:* ${timestamp}\n` +
+      `*Empresa:* ${empresaName}\n\n` +
+      `*📋 Resumen generado por IA:*\n${summary}\n\n` +
+      `*📝 Respuestas del formulario:*\n\n` +
+      formattedResponses;
+
+    // Si WhatsApp está deshabilitado, usar directamente el fallback
+    if (whatsappDisabled) {
+      console.log('WhatsApp deshabilitado, usando fallback directamente');
+      await enterpriseContactFallback(new Error('WhatsApp Web deshabilitado'), { responses, summary, conversation });
+      return res.json({ ok: true, message: 'Datos procesados vía fallback (WhatsApp deshabilitado)' });
+    }
+
+    // Leer ID de chat desde .env
+    const chatId = process.env.GROUP_CHAT_ID || process.env.ENTERPRISE_CHAT_ID;
+    if (!chatId) {
+      const errMsg = 'ID de chat de WhatsApp no configurado en .env';
+      console.error('Error:', errMsg);
+      await enterpriseContactFallback(new Error(errMsg), { responses, summary, conversation });
+      return res.status(500).json({ ok: false, error: errMsg });
+    }
+
+    console.log(`Enviando mensaje empresarial al chatId=${chatId}`);
+    await client.sendMessage(chatId, text);
+    console.log('Mensaje empresarial enviado con éxito');
+
+    return res.json({ ok: true, message: 'Consulta empresarial enviada correctamente' });
+  } catch (err) {
+    console.error('Error al procesar formulario empresarial:', err.message);
+
+    // Intentar fallback
+    try {
+      await enterpriseContactFallback(err, req.body);
+    } catch (fallbackErr) {
+      console.error('Error en fallback empresarial:', fallbackErr);
+    }
+
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Variables globales para el formulario empresarial
+const enterpriseQuestions = [
+  "¿Cómo se llama tu empresa?",
+  "¿En qué mercado o industria se desarrolla tu empresa?",
+  "¿Cuáles son tus principales necesidades o exigencias para este proyecto?",
+  "¿Cuál es el tamaño aproximado de tu empresa? (cantidad de empleados, sucursales, etc.)",
+  "¿Qué objetivos específicos tienes con este proyecto digital?",
+  "¿Hay algún plazo específico en el que necesitas tener el proyecto implementado?",
+  "¿Hay alguna información adicional que consideres relevante para entender mejor tus necesidades?"
+];
+
+// Función de fallback para formulario empresarial
+async function enterpriseContactFallback(error, formData) {
+  try {
+    console.log('📧 Ejecutando fallback para formulario empresarial');
+
+    const { responses, summary, conversation } = formData;
+
+    // Formatear las respuestas para el email
+    let formattedResponses = '';
+    if (responses) {
+      formattedResponses = Object.entries(responses).map(([questionIndex, answer]) => {
+        const questionNumber = parseInt(questionIndex) + 1;
+        const question = enterpriseQuestions[parseInt(questionIndex)];
+        return `Pregunta ${questionNumber}: ${question}\nRespuesta: ${answer}`;
+      }).join('\n\n');
+    }
+
+    // Crear texto del email
+    const empresaName = responses?.[0] || 'Cliente empresarial';
+    const timestamp = new Date().toLocaleString('es-AR');
+
+    const subject = `🏢 Nueva consulta empresarial: ${empresaName}`;
+    const text =
+      `Nueva consulta empresarial recibida\n\n` +
+      `Fecha: ${timestamp}\n` +
+      `Empresa: ${empresaName}\n\n` +
+      `RESUMEN GENERADO POR IA:\n${summary || 'No disponible'}\n\n` +
+      `RESPUESTAS DEL FORMULARIO:\n\n` +
+      (formattedResponses || 'No disponible') +
+      `\n\nCONVERSACIÓN COMPLETA:\n\n` +
+      (conversation ? JSON.stringify(conversation, null, 2) : 'No disponible') +
+      `\n\nError que causó el fallback: ${error.message}`;
+
+    // Enviar email usando el transporter existente
+    await transporter.sendMail({
+      from: process.env.ADMIN_EMAIL,
+      to: process.env.Email || process.env.ADMIN_EMAIL, // Usar Email personal si está disponible
+      subject: subject,
+      text: text
+    });
+
+    console.log('✅ Notificación por email de consulta empresarial enviada correctamente');
+    return true;
+  } catch (e) {
+    console.error('❌ Error al ejecutar fallback empresarial:', e);
+    return false;
+  }
 }
 
 const PORT = process.env.PORT || 3001;
