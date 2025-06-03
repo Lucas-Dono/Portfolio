@@ -86,11 +86,11 @@ export const requestRefund = async (req, res) => {
         } else {
             const paymentQuery = `
                 SELECT payment_id, status
-                FROM payments
+            FROM payments 
                 WHERE service_id = $1 AND (status = 'approved' OR status = 'succeeded')
-                ORDER BY created_at DESC
-                LIMIT 1
-            `;
+            ORDER BY created_at DESC 
+            LIMIT 1
+        `;
             const paymentResult = await pool.query(paymentQuery, [serviceId]);
 
             if (paymentResult.rows.length === 0) {
@@ -122,7 +122,7 @@ export const requestRefund = async (req, res) => {
 
         const insertQuery = `
             INSERT INTO refund_requests (
-                user_id, service_id, reason, status,
+                user_id, service_id, reason, status, 
                 payment_id, amount, admin_email, user_email,
                 service_name, purchase_date
             )
@@ -184,23 +184,23 @@ export const requestRefund = async (req, res) => {
             to: userEmail,
             subject: '✅ Tu Solicitud de Reembolso ha sido Recibida | Circuit Prompt',
             html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
-                <h2 style="color: #333; border-bottom: 2px solid #00ADEF; padding-bottom: 10px;">Solicitud de Reembolso Recibida</h2>
+                <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+                    <h2 style="color: #333; border-bottom: 2px solid #00ADEF; padding-bottom: 10px;">Solicitud de Reembolso Recibida</h2>
                 <p>Hola,</p>
                 <p>Hemos recibido tu solicitud de reembolso para el servicio: <strong>${serviceName}</strong>.</p>
-                <div style="background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #00ADEF;">
+                    <div style="background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #00ADEF;">
                     <p><strong>Monto del Reembolso Solicitado:</strong> $${amount}</p>
                     <p><strong>ID de Pago Original (Mercado Pago):</strong> ${paymentInfo.payment_id}</p>
                     <p><strong>ID de Tu Solicitud de Reembolso:</strong> ${refundRequest.id}</p>
                     <p><strong>Fecha de Solicitud:</strong> ${new Date(refundRequest.created_at).toLocaleDateString()}</p>
-                </div>
+                    </div>
                 <p style="margin-top: 20px;">Un administrador revisará tu solicitud lo antes posible (generalmente dentro de las 24-48 horas hábiles). Te notificaremos por este medio una vez que hayamos tomado una decisión.</p>
                 <p>Gracias por tu paciencia.</p>
-                <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
+                    <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
                     Atentamente,<br>El equipo de Circuit Prompt<br>
                     Si tienes alguna pregunta, por favor, contacta a nuestro soporte.
-                </p>
-            </div>
+                    </p>
+                </div>
             `
         };
         transporter.sendMail(mailOptionsUser).catch(error => {
@@ -400,7 +400,7 @@ export const approveRefund = async (req, res) => {
             to: refundInfo.user_email,
             subject: '🎉 ¡Tu Solicitud de Reembolso ha sido APROBADA! | Circuit Prompt',
             html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+                <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
                 <h2 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">¡Reembolso Aprobado!</h2>
                 <p>Hola,</p>
                 <p>Nos complace informarte que tu solicitud de reembolso para el servicio <strong>${refundInfo.service_name}</strong> (ID de Solicitud: ${refundInfo.id}) ha sido <strong>APROBADA</strong>.</p>
@@ -408,13 +408,13 @@ export const approveRefund = async (req, res) => {
                     <p><strong>Monto Reembolsado:</strong> $${refundInfo.amount}</p>
                     <p><strong>ID de Pago Original (Mercado Pago):</strong> ${refundInfo.payment_id}</p>
                     <p><strong>ID de Reembolso (Mercado Pago):</strong> ${mercadoPagoRefundId}</p>
-                </div>
+                    </div>
                 <p style="margin-top: 20px;">El monto debería reflejarse en tu cuenta o tarjeta (dependiendo de tu método de pago original) en los próximos días hábiles. Los tiempos exactos pueden variar según tu banco o emisor de tarjeta.</p>
                 <p>Si tienes alguna pregunta sobre este reembolso, por favor, contacta a nuestro soporte.</p>
-                <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
+                    <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
                     Gracias por tu comprensión,<br>El equipo de Circuit Prompt
-                </p>
-            </div>
+                    </p>
+                </div>
             `
         };
         transporter.sendMail(userMailOptions).catch(error => {
@@ -503,7 +503,7 @@ export const rejectRefund = async (req, res) => {
             to: refundInfo.user_email,
             subject: '⚠️ Actualización sobre tu Solicitud de Reembolso | Circuit Prompt',
             html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+                <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
                 <h2 style="color: #333; border-bottom: 2px solid #FF6347; padding-bottom: 10px;">Solicitud de Reembolso No Aprobada</h2>
                 <p>Hola,</p>
                 <p>Te escribimos para informarte sobre tu solicitud de reembolso para el servicio <strong>${refundInfo.service_name}</strong> (ID de Solicitud: ${refundInfo.id}).</p>
@@ -512,12 +512,12 @@ export const rejectRefund = async (req, res) => {
                     <p><strong>Razón:</strong> ${rejectionReason}</p>
                     <p><strong>Monto Solicitado:</strong> $${refundInfo.amount}</p>
                     <p><strong>ID de Pago Original (Mercado Pago):</strong> ${refundInfo.payment_id}</p>
-                </div>
+                    </div>
                 <p style="margin-top: 20px;">Entendemos que esta puede no ser la noticia que esperabas. Si tienes preguntas sobre esta decisión o deseas proporcionar información adicional, por favor, contacta a nuestro equipo de soporte respondiendo a este correo o visitando nuestra sección de ayuda.</p>
-                <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
+                    <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
                     Atentamente,<br>El equipo de Circuit Prompt
-                </p>
-            </div>
+                    </p>
+                </div>
             `
         };
         transporter.sendMail(userMailOptions).catch(error => {

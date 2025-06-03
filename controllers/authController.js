@@ -1118,6 +1118,7 @@ export const requestTwoFactorAuth = async (req, res) => {
     const { username, password } = req.body;
 
     console.log('🔑 Solicitud de verificación en dos pasos recibida para usuario:', username);
+    console.log('📝 Datos recibidos:', { username, password: '***' });
 
     // Verificar credenciales iniciales
     let credentialesValidas = false;
@@ -1140,75 +1141,75 @@ export const requestTwoFactorAuth = async (req, res) => {
       }
     }
 
-    if (credentialesValidas) {
-      // Generar token de verificación único
-      const twoFactorToken = generateTwoFactorToken();
-      console.log('🔑 Token de verificación generado:', twoFactorToken.substring(0, 10) + '...');
-
-      // Guardar el token en el mapa con tiempo de expiración (10 minutos)
-      twoFactorTokens.set(twoFactorToken, {
-        username,
-        created: Date.now(),
-        expires: Date.now() + 10 * 60 * 1000, // 10 minutos
-        used: false
+    if (!credentialesValidas) {
+      console.log('❌ Credenciales incorrectas para:', username);
+      return res.status(401).json({
+        success: false,
+        error: 'Credenciales incorrectas'
       });
-
-      // Enviar correo de verificación al administrador
-      const targetEmail = process.env.ADMIN_EMAIL || 'lucasdono391@gmail.com';
-      console.log(`📧 Enviando correo de verificación a ${targetEmail}`);
-
-      const emailSent = await sendTwoFactorEmail(targetEmail, twoFactorToken);
-
-      if (emailSent) {
-        console.log('✅ Correo de verificación enviado correctamente');
-        return res.json({
-          success: true,
-          message: 'Se ha enviado un enlace de verificación a tu correo electrónico',
-          requiresTwoFactor: true
-        });
-      } else {
-        console.error('❌ Error al enviar correo de verificación');
-
-        // En desarrollo, permitir inicio de sesión aún si falla el correo
-        if (process.env.NODE_ENV === 'development') {
-          console.log('⚠️ MODO DESARROLLO: Permitiendo acceso sin verificación por email');
-
-          // Generar token JWT para la sesión
-          const jwtToken = jwt.sign({
-            userId: 'admin-user',
-            role: 'admin'
-          }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-
-          return res.json({
-            success: true,
-            token: jwtToken,
-            message: 'Inicio de sesión en modo desarrollo (sin verificación de correo)',
-            user: {
-              name: 'Administrador',
-              role: 'admin',
-              email: targetEmail
-            }
-          });
-        }
-
-        return res.status(500).json({
-          success: false,
-          error: 'Error al enviar correo de verificación. Por favor, intenta de nuevo más tarde.'
-        });
-      }
     }
 
-    // Si las credenciales no son válidas
-    console.log('❌ Credenciales incorrectas para:', username);
-    return res.status(401).json({
-      success: false,
-      error: 'Credenciales incorrectas'
+    // Generar token de verificación único
+    const twoFactorToken = generateTwoFactorToken();
+    console.log('🔑 Token de verificación generado:', twoFactorToken.substring(0, 10) + '...');
+
+    // Guardar el token en el mapa con tiempo de expiración (10 minutos)
+    twoFactorTokens.set(twoFactorToken, {
+      username,
+      created: Date.now(),
+      expires: Date.now() + 10 * 60 * 1000, // 10 minutos
+      used: false
     });
+
+    // Enviar correo de verificación al administrador
+    const targetEmail = process.env.ADMIN_EMAIL || 'lucasdono391@gmail.com';
+    console.log(`📧 Enviando correo de verificación a ${targetEmail}`);
+
+    const emailSent = await sendTwoFactorEmail(targetEmail, twoFactorToken);
+
+    if (emailSent) {
+      console.log('✅ Correo de verificación enviado correctamente');
+      return res.json({
+        success: true,
+        message: 'Se ha enviado un enlace de verificación a tu correo electrónico',
+        requiresTwoFactor: true
+      });
+    }
+
+    console.error('❌ Error al enviar correo de verificación');
+
+    // En desarrollo, permitir inicio de sesión aún si falla el correo
+    if (process.env.NODE_ENV === 'development') {
+      console.log('⚠️ MODO DESARROLLO: Permitiendo acceso sin verificación por email');
+
+      // Generar token JWT para la sesión
+      const jwtToken = jwt.sign({
+        userId: 'admin-user',
+        role: 'admin'
+      }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+      return res.json({
+        success: true,
+        token: jwtToken,
+        message: 'Inicio de sesión en modo desarrollo (sin verificación de correo)',
+        user: {
+          name: 'Administrador',
+          role: 'admin',
+          email: targetEmail
+        }
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: 'Error al enviar correo de verificación. Por favor, intenta de nuevo más tarde.'
+    });
+
   } catch (error) {
     console.error('Error en solicitud de verificación de dos factores:', error);
     return res.status(500).json({
       success: false,
-      error: 'Error en el servidor'
+      error: 'Error en el servidor: ' + error.message
     });
   }
 };

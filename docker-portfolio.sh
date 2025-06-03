@@ -100,8 +100,8 @@ iniciar_docker() {
         echo -e "${VERDE}🌐 Frontend: https://circuitprompt.com.ar${NC}"
         echo -e "${VERDE}🖥️ Backend: https://circuitprompt.com.ar/api${NC}"
     else
-        echo -e "${VERDE}✅ Entorno de desarrollo iniciado correctamente${NC}"
-        echo -e "${VERDE}🌐 Frontend: http://localhost:3000${NC}"
+    echo -e "${VERDE}✅ Entorno de desarrollo iniciado correctamente${NC}"
+    echo -e "${VERDE}🌐 Frontend: http://localhost:3000${NC}"
         echo -e "${VERDE}🖥️ Backend: http://localhost:3000/api${NC}"
     fi
 }

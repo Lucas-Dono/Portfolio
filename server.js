@@ -213,7 +213,18 @@ app.use((req, res, next) => {
 });
 
 // Middleware de autenticación básica para rutas /admin
-app.use('/admin', basicAuth({ users: { [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'password' }, challenge: true }));
+app.use('/admin', (req, res, next) => {
+  // Excluir rutas de autenticación
+  if (req.path.startsWith('/api/auth/')) {
+    return next();
+  }
+  basicAuth({
+    users: {
+      [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'password'
+    },
+    challenge: true
+  })(req, res, next);
+});
 
 // Rutas de autenticación (ahora usando SQL)
 app.use('/api/auth', authRoutes);
