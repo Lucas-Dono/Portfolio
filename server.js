@@ -23,7 +23,7 @@ import {
 // Importaciones para la base de datos y autenticación
 import connectDB from './config/database.js';
 // Importar rutas SQL para autenticación (nuevo)
-import authRoutes from './routes/authRoutesSql.js';
+import authRoutes from './routes/authRoutes.js';
 // Importar rutas de pago
 import paymentRoutes from './routes/paymentRoutes.js';
 // Importar rutas de reembolso
