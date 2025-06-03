@@ -21,11 +21,11 @@ const SendIcon = () => (
 
 const SparkleIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2L9.4 8.6 2 9.2l5.6 6.4L6.8 22 12 18l5.2 4-1.4-6.4L22 9.2l-7.4-.6L12 2z"/>
-    <path d="M5 3v4h4"/>
-    <path d="M19 17v4h-4"/>
-    <path d="M3 5l4-4"/>
-    <path d="M17 19l4 4"/>
+    <path d="M12 2L9.4 8.6 2 9.2l5.6 6.4L6.8 22 12 18l5.2 4-1.4-6.4L22 9.2l-7.4-.6L12 2z" />
+    <path d="M5 3v4h4" />
+    <path d="M19 17v4h-4" />
+    <path d="M3 5l4-4" />
+    <path d="M17 19l4 4" />
   </svg>
 );
 
@@ -38,33 +38,33 @@ const ChatIcon = () => (
 // Icono para maximizar/restaurar (contorno cuadrado)
 const MaximizeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg"
-     width="24" height="24"
-     viewBox="0 0 24 24"
-     fill="none"
-     stroke="currentColor"
-     stroke-width="2"
-     stroke-linecap="round"
-     stroke-linejoin="round">
-  <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
-  <path d="M16 3h3a2 2 0 0 1 2 2v3"/>
-  <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
-  <path d="M8 21H5a2 2 0 0 1-2-2v-3"/>
-</svg>
+    width="24" height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+    <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+    <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+    <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+    <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+  </svg>
 
 );
 
 // Icono para minimizar/restaurar (esquinas en ángulo para minimizar)
 const MinimizeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg"
-     width="24" height="24"
-     viewBox="0 0 24 24"
-     fill="none"
-     stroke="currentColor"
-     stroke-width="2"
-     stroke-linecap="round"
-     stroke-linejoin="round">
-  <line x1="5" y1="12" x2="19" y2="12"/>
-</svg>
+    width="24" height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
 );
 
 // Contenedor para agrupar los botones de maximizar y cerrar en el header
@@ -90,7 +90,7 @@ const ChatContainer = styled(motion.div)`
   }
 `;
 
-const ChatWindow = styled(motion.div)<{ $isOpen: boolean; $isDarkMode: boolean; $isMaximized: boolean; children?: React.ReactNode }>`
+const ChatWindow = styled(motion.div) <{ $isOpen: boolean; $isDarkMode: boolean; $isMaximized: boolean; children?: React.ReactNode }>`
   width: 360px;
   height: 500px;
   background: ${props => props.$isDarkMode
@@ -181,7 +181,7 @@ interface CloseButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>
   $isDarkMode: boolean;
 }
 
-const CloseButton = styled(motion.button)<CloseButtonProps>`
+const CloseButton = styled(motion.button) <CloseButtonProps>`
     background: none;
     border: none;
   width: 30px;
@@ -206,7 +206,7 @@ const CloseButton = styled(motion.button)<CloseButtonProps>`
 `;
 
 // Botón para maximizar/restaurar
-const MaximizeButton = styled(motion.button)<CloseButtonProps>`
+const MaximizeButton = styled(motion.button) <CloseButtonProps>`
   background: none;
   border: none;
   width: 30px;
@@ -242,7 +242,7 @@ const NavigationButtons = styled.div`
   flex-shrink: 0;
 `;
 
-const NavButton = styled(motion.button)<NavButtonProps>`
+const NavButton = styled(motion.button) <NavButtonProps>`
   background: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);
   color: white;
   border: none;
@@ -302,14 +302,14 @@ interface MessageBubbleProps {
   children?: React.ReactNode;
 }
 
-const MessageBubble = styled(motion.div)<MessageBubbleProps>`
+const MessageBubble = styled(motion.div) <MessageBubbleProps>`
   padding: 0.6rem 1rem;
   border-radius: ${props => props.$isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};
   max-width: 85%;
-  background: ${props => 
+  background: ${props =>
     props.$isUser
       ? 'linear-gradient(135deg, #FF00FF 0%, #00A0FF 100%)'
-    : props.$isDarkMode
+      : props.$isDarkMode
         ? 'rgba(255, 255, 255, 0.07)'
         : '#e9eef2'};
   align-self: ${props => props.$isUser ? 'flex-end' : 'flex-start'};
@@ -468,7 +468,7 @@ const Chat = ({ isChatOpen, setIsChatOpen, setOpenProject, onNavigate }: ChatPro
   // Función para ejecutar el comando (redirección a proyecto o navegación)
   const executeCommand = (command: string) => {
     console.log("Ejecutando comando:", command);
-    
+
     // Comandos de redirección a proyectos
     if (command === '{Tech-store}') {
       setOpenProject('tech-store');
@@ -476,7 +476,7 @@ const Chat = ({ isChatOpen, setIsChatOpen, setOpenProject, onNavigate }: ChatPro
       setOpenProject('youtube-music-player');
     } else if (command === '{CV}') {
       window.location.href = '/curriculum';
-    } 
+    }
     // Comandos de navegación
     else if (command === '{Hero}' && onNavigate) {
       onNavigate('hero');
@@ -549,11 +549,11 @@ const Chat = ({ isChatOpen, setIsChatOpen, setOpenProject, onNavigate }: ChatPro
     visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
     exit: { opacity: 0, y: 50, transition: { duration: 0.2, ease: 'easeIn' } }
   };
-  
+
   const messageVariants = {
     hidden: { opacity: 0, y: 10 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: { duration: 0.3 }
     }
@@ -602,15 +602,15 @@ const Chat = ({ isChatOpen, setIsChatOpen, setOpenProject, onNavigate }: ChatPro
                 </CloseButton>
               </HeaderActions>
             </ChatHeader>
-            
+
             {/* Botones de navegación rápida */}
             <NavigationButtons>
               <NavButton $isDarkMode={true} onClick={() => handleNavButtonClick('projects')}>Proyectos</NavButton>
-              <NavButton $isDarkMode={true} onClick={() => handleNavButtonClick('sobre-mi')}>Sobre Mí</NavButton>
+              <NavButton $isDarkMode={true} onClick={() => handleNavButtonClick('sobre-nosotros')}>Sobre Nosotros</NavButton>
               <NavButton $isDarkMode={true} onClick={() => handleNavButtonClick('servicios')}>Servicios</NavButton>
               <NavButton $isDarkMode={true} onClick={() => handleNavButtonClick('contacto')}>Contacto</NavButton>
             </NavigationButtons>
-            
+
             <MessagesContainer ref={messagesEndRef}>
               {messages.map((msg, index) => (
                 <MessageBubble
@@ -629,8 +629,8 @@ const Chat = ({ isChatOpen, setIsChatOpen, setOpenProject, onNavigate }: ChatPro
               ))}
               {isLoading && (
                 <MessageBubble $isDarkMode={true} $isUser={false} >
-                  <motion.div 
-                    animate={{ opacity: [0.5, 1, 0.5] }} 
+                  <motion.div
+                    animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 1, repeat: Infinity }}>
                     Escribiendo...
                   </motion.div>
@@ -638,7 +638,7 @@ const Chat = ({ isChatOpen, setIsChatOpen, setOpenProject, onNavigate }: ChatPro
               )}
               <div ref={messagesEndRef} />
             </MessagesContainer>
-            
+
             <InputContainer $isDarkMode={true} onSubmit={handleSubmit}>
               <Input
                 type="text"

@@ -45,7 +45,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFound'));
 const Terms = lazy(() => import('./pages/Terms'));
 
 // Lista de secciones disponibles en el sitio (debe coincidir con los IDs en el DOM)
-const SECTIONS = ['inicio', 'services', 'projects', 'sobre-mi', 'contacto'];
+const SECTIONS = ['inicio', 'services', 'projects', 'sobre-nosotros', 'contacto'];
 
 // Componente contenedor con el contenido principal
 const MainContent = () => {

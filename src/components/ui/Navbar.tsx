@@ -434,7 +434,7 @@ const Navbar: React.FC<NavbarProps> = ({
     { label: 'Inicio', section: 'inicio' },
     { label: 'Servicios', section: 'services' },
     { label: 'Proyectos', section: 'projects' },
-    { label: 'Sobre Mí', section: 'sobre-mi' },
+    { label: 'Sobre Nosotros', section: 'sobre-nosotros' },
     { label: 'Contacto', section: 'contacto' }
   ];
 

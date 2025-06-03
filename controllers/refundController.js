@@ -59,45 +59,70 @@ export const requestRefund = async (req, res) => {
         adminEmail,
         serviceName,
         amount,
-        purchaseDate
+        purchaseDate,
+        payment_id_manual
     } = req.body;
 
+    console.log('Solicitud de reembolso recibida en backend:', { serviceId, userId, userEmail, amount, purchaseDate, payment_id_manual });
+
     try {
-        // Verificar si el servicio existe y fue comprado hace menos de 7 días
         const purchaseDateTime = new Date(purchaseDate);
         const now = new Date();
         const daysDifference = Math.floor((now - purchaseDateTime) / (1000 * 60 * 60 * 24));
 
         if (daysDifference > 7) {
+            console.warn('Intento de reembolso fuera de plazo:', { serviceId, userId, daysDifference });
             return res.status(400).json({
                 success: false,
-                message: 'No es posible solicitar un reembolso para compras realizadas hace más de 7 días'
+                message: 'No es posible solicitar un reembolso para compras realizadas hace más de 7 días.'
             });
         }
 
-        // Consultar en la base de datos si existe un pago para este servicio
-        const paymentQuery = `
-            SELECT payment_id, preference_id, status 
-            FROM payments 
-            WHERE service_id = $1 
-            ORDER BY created_at DESC 
+        let paymentInfo;
+
+        if (payment_id_manual) {
+            console.log(`Usando payment_id manual: ${payment_id_manual} para servicio ${serviceId}`);
+            paymentInfo = { payment_id: payment_id_manual, status: 'approved' };
+        } else {
+            const paymentQuery = `
+                SELECT payment_id, status
+                FROM payments
+                WHERE service_id = $1 AND (status = 'approved' OR status = 'succeeded')
+                ORDER BY created_at DESC
+                LIMIT 1
+            `;
+            const paymentResult = await pool.query(paymentQuery, [serviceId]);
+
+            if (paymentResult.rows.length === 0) {
+                console.warn('No se encontró pago aprobado para reembolso:', { serviceId, userId });
+                return res.status(404).json({
+                    success: false,
+                    message: 'No se encontró un pago aprobado asociado a este servicio para reembolsar.'
+                });
+            }
+            paymentInfo = paymentResult.rows[0];
+            console.log('Pago encontrado en BD para reembolso:', paymentInfo);
+        }
+
+        const existingRefundQuery = `
+            SELECT id, status FROM refund_requests
+            WHERE payment_id = $1 AND (status = 'pending' OR status = 'approved')
             LIMIT 1
         `;
-        const paymentResult = await pool.query(paymentQuery, [serviceId]);
+        const existingRefundResult = await pool.query(existingRefundQuery, [paymentInfo.payment_id]);
 
-        if (paymentResult.rows.length === 0) {
-            return res.status(404).json({
+        if (existingRefundResult.rows.length > 0) {
+            const existingRefund = existingRefundResult.rows[0];
+            console.warn('Ya existe una solicitud de reembolso para este pago:', { payment_id: paymentInfo.payment_id, existing_status: existingRefund.status });
+            return res.status(409).json({
                 success: false,
-                message: 'No se encontró un pago asociado a este servicio'
+                message: `Ya existe una solicitud de reembolso con estado "${existingRefund.status}" para el pago asociado a este servicio. ID de solicitud existente: ${existingRefund.id}.`
             });
         }
 
-        const paymentInfo = paymentResult.rows[0];
-
-        // Insertar la solicitud de reembolso en la base de datos
         const insertQuery = `
             INSERT INTO refund_requests (
-                user_id, service_id, reason, status, 
+                user_id, service_id, reason, status,
                 payment_id, amount, admin_email, user_email,
                 service_name, purchase_date
             )
@@ -109,88 +134,91 @@ export const requestRefund = async (req, res) => {
             userId,
             serviceId,
             reason,
-            'pending', // Estado inicial
+            'pending',
             paymentInfo.payment_id,
             amount,
-            adminEmail,
+            adminEmail || process.env.ADMIN_EMAIL_FALLBACK,
             userEmail,
             serviceName,
             purchaseDate
         ]);
 
         const refundRequest = insertResult.rows[0];
+        console.log('Solicitud de reembolso creada en BD:', refundRequest);
 
-        // Enviar email al administrador
-        const mailOptions = {
+        const mailOptionsAdmin = {
             from: process.env.ADMIN_EMAIL,
-            to: process.env.Email || adminEmail, // Usar Email personal si está disponible
-            subject: '🔔 Nueva solicitud de reembolso',
+            to: adminEmail || process.env.ADMIN_EMAIL_FALLBACK,
+            subject: '🔔 Nueva Solicitud de Reembolso | Circuit Prompt',
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
                     <h2 style="color: #333; border-bottom: 2px solid #00ADEF; padding-bottom: 10px;">Nueva Solicitud de Reembolso</h2>
-                    
+                    <p>Se ha recibido una nueva solicitud de reembolso:</p>
                     <div style="background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #00ADEF;">
                         <p><strong>Servicio:</strong> ${serviceName}</p>
                         <p><strong>ID de Servicio:</strong> ${serviceId}</p>
                         <p><strong>Monto:</strong> $${amount}</p>
+                        <p><strong>ID de Pago (Mercado Pago):</strong> ${paymentInfo.payment_id}</p>
                         <p><strong>Fecha de compra:</strong> ${new Date(purchaseDate).toLocaleDateString()}</p>
-                        <p><strong>Cliente:</strong> ${userEmail}</p>
+                        <p><strong>Cliente:</strong> ${userEmail} (ID: ${userId || 'No especificado'})</p>
                         <p><strong>Razón:</strong> ${reason}</p>
-                        <p><strong>ID de Solicitud:</strong> ${refundRequest.id}</p>
+                        <p><strong>ID de Solicitud de Reembolso:</strong> ${refundRequest.id}</p>
                         <p><strong>Fecha de Solicitud:</strong> ${new Date(refundRequest.created_at).toLocaleDateString()}</p>
                     </div>
-                    
                     <div style="margin-top: 20px; text-align: center;">
-                        <a href="${process.env.SITE_URL}/admin/refunds" style="background-color: #00ADEF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Gestionar Solicitud</a>
+                        <a href="${process.env.SITE_URL || 'http://localhost:5173'}/admin/refunds?highlight=${refundRequest.id}" style="background-color: #00ADEF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Gestionar Solicitud</a>
                     </div>
-                    
                     <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
-                        Este correo es automático. Por favor, no responda a este mensaje.
+                        Plataforma Circuit Prompt.
                     </p>
                 </div>
             `
         };
 
-        await transporter.sendMail(mailOptions);
+        transporter.sendMail(mailOptionsAdmin).catch(error => {
+            console.error("Error enviando email de notificación de reembolso al admin:", error);
+        });
 
-        // Confirmar al usuario
-        const userMailOptions = {
+        const mailOptionsUser = {
             from: process.env.ADMIN_EMAIL,
             to: userEmail,
-            subject: '✅ Tu solicitud de reembolso ha sido recibida',
+            subject: '✅ Tu Solicitud de Reembolso ha sido Recibida | Circuit Prompt',
             html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
-                    <h2 style="color: #333; border-bottom: 2px solid #00ADEF; padding-bottom: 10px;">Solicitud de Reembolso Recibida</h2>
-                    
-                    <div style="background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #00ADEF;">
-                        <p>Hemos recibido tu solicitud de reembolso para el servicio: <strong>${serviceName}</strong>.</p>
-                        <p>Monto: <strong>$${amount}</strong></p>
-                        <p>ID de Solicitud: <strong>${refundRequest.id}</strong></p>
-                        <p>Fecha de Solicitud: <strong>${new Date(refundRequest.created_at).toLocaleDateString()}</strong></p>
-                        
-                        <p style="margin-top: 20px;">Un administrador revisará tu solicitud en las próximas 24-48 horas. Te notificaremos cuando hayamos tomado una decisión.</p>
-                    </div>
-                    
-                    <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
-                        Si tienes alguna pregunta, no dudes en contactarnos respondiendo a este correo.
-                    </p>
+            <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+                <h2 style="color: #333; border-bottom: 2px solid #00ADEF; padding-bottom: 10px;">Solicitud de Reembolso Recibida</h2>
+                <p>Hola,</p>
+                <p>Hemos recibido tu solicitud de reembolso para el servicio: <strong>${serviceName}</strong>.</p>
+                <div style="background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #00ADEF;">
+                    <p><strong>Monto del Reembolso Solicitado:</strong> $${amount}</p>
+                    <p><strong>ID de Pago Original (Mercado Pago):</strong> ${paymentInfo.payment_id}</p>
+                    <p><strong>ID de Tu Solicitud de Reembolso:</strong> ${refundRequest.id}</p>
+                    <p><strong>Fecha de Solicitud:</strong> ${new Date(refundRequest.created_at).toLocaleDateString()}</p>
                 </div>
+                <p style="margin-top: 20px;">Un administrador revisará tu solicitud lo antes posible (generalmente dentro de las 24-48 horas hábiles). Te notificaremos por este medio una vez que hayamos tomado una decisión.</p>
+                <p>Gracias por tu paciencia.</p>
+                <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
+                    Atentamente,<br>El equipo de Circuit Prompt<br>
+                    Si tienes alguna pregunta, por favor, contacta a nuestro soporte.
+                </p>
+            </div>
             `
         };
-
-        await transporter.sendMail(userMailOptions);
+        transporter.sendMail(mailOptionsUser).catch(error => {
+            console.error("Error enviando email de confirmación de reembolso al usuario:", error);
+        });
 
         return res.status(201).json({
             success: true,
-            message: 'Solicitud de reembolso recibida correctamente',
-            refundId: refundRequest.id
+            message: 'Solicitud de reembolso enviada y recibida correctamente. Te notificaremos la resolución.',
+            refundRequestId: refundRequest.id,
+            payment_id: paymentInfo.payment_id
         });
 
     } catch (error) {
-        console.error('Error al solicitar reembolso:', error);
+        console.error('Error catastrófico al solicitar reembolso:', error);
         return res.status(500).json({
             success: false,
-            message: 'Error al procesar la solicitud de reembolso',
+            message: 'Error interno del servidor al procesar la solicitud de reembolso. Por favor, contacta a soporte si el problema persiste.',
             error: error.message
         });
     }
@@ -258,187 +286,255 @@ export const getRefundRequests = async (req, res) => {
     }
 };
 
-// [ADMIN] Aprobar un reembolso
+// [ADMIN] Aprobar una solicitud de reembolso
 export const approveRefund = async (req, res) => {
-    const { refundId } = req.params;
-    const adminId = req.user.id; // ID del administrador que aprueba
+    const { refundRequestId } = req.params;
+    const { adminNotes } = req.body;
+    const adminId = req.user?.id; // Asumiendo que el ID del admin está en req.user.id
+
+    if (!adminId) {
+        console.warn('[ADMIN] Intento de aprobar reembolso sin ID de administrador en la sesión.');
+        return res.status(401).json({ success: false, message: 'No autorizado: Se requiere sesión de administrador.' });
+    }
+
+    console.log(`[ADMIN ID: ${adminId}] Solicitud para aprobar reembolso ID: ${refundRequestId}`);
 
     try {
-        // Obtener información de la solicitud de reembolso
-        const queryRefund = `
-            SELECT * FROM refund_requests 
-            WHERE id = $1 AND status = 'pending'
-        `;
-
-        const refundResult = await pool.query(queryRefund, [refundId]);
+        const refundQuery = 'SELECT * FROM refund_requests WHERE id = $1';
+        const refundResult = await pool.query(refundQuery, [refundRequestId]);
 
         if (refundResult.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Solicitud de reembolso no encontrada o ya procesada'
-            });
+            console.warn(`[ADMIN ID: ${adminId}] Solicitud de reembolso ID: ${refundRequestId} no encontrada para aprobar.`);
+            return res.status(404).json({ success: false, message: 'Solicitud de reembolso no encontrada.' });
         }
 
         const refundInfo = refundResult.rows[0];
+        console.log('[ADMIN ID: ${adminId}] Información de la solicitud a aprobar:', refundInfo);
 
-        // Procesar el reembolso en Mercado Pago
+        if (refundInfo.status === 'approved') {
+            console.warn(`[ADMIN ID: ${adminId}] Reembolso ID: ${refundRequestId} ya está aprobado.`);
+            return res.status(400).json({ success: false, message: 'Esta solicitud de reembolso ya ha sido aprobada previamente.' });
+        }
+        if (refundInfo.status === 'rejected') {
+            console.warn(`[ADMIN ID: ${adminId}] Reembolso ID: ${refundRequestId} fue rechazado previamente. No se puede aprobar directamente.`);
+            return res.status(400).json({ success: false, message: 'Esta solicitud fue rechazada. Para aprobar, crea una nueva solicitud o procesa manualmente.' });
+        }
+        if (refundInfo.status !== 'pending') {
+            console.warn(`[ADMIN ID: ${adminId}] Reembolso ID: ${refundRequestId} no está en estado pendiente. Estado actual: ${refundInfo.status}`);
+            return res.status(400).json({ success: false, message: `La solicitud no está en estado pendiente (actual: ${refundInfo.status}).` });
+        }
+
         let mercadoPagoResponse;
         try {
-            // Procesar reembolso en Mercado Pago según su documentación
-            mercadoPagoResponse = await payment.refunds.create({
-                payment_id: refundInfo.payment_id
+            mercadoPagoResponse = await payment.refunds.create({ payment_id: String(refundInfo.payment_id) });
+
+            console.log('[ADMIN ID: ${adminId}] Respuesta de Mercado Pago al crear reembolso:', {
+                status: mercadoPagoResponse?.status,
+                id: mercadoPagoResponse?.id,
+                payment_id: mercadoPagoResponse?.payment_id,
             });
 
-            console.log('Respuesta de Mercado Pago:', mercadoPagoResponse);
-
-            if (mercadoPagoResponse.status !== 201 && mercadoPagoResponse.status !== 200) {
-                throw new Error('Error al procesar reembolso en Mercado Pago');
+            if (!mercadoPagoResponse || !mercadoPagoResponse.id) {
+                console.error('[ADMIN ID: ${adminId}] Respuesta inválida o ID de reembolso faltante de Mercado Pago:', mercadoPagoResponse);
+                throw new Error('Respuesta inválida o ID de reembolso faltante de Mercado Pago.');
             }
-        } catch (mpError) {
-            console.error('Error al procesar reembolso en Mercado Pago:', mpError);
 
-            // Actualizar la solicitud con error
-            await pool.query(
-                `UPDATE refund_requests SET status = 'error', admin_notes = $1, processed_at = NOW(), admin_id = $2 WHERE id = $3`,
-                [`Error al procesar en Mercado Pago: ${mpError.message}`, adminId, refundId]
-            );
+        } catch (mpError) {
+            console.error('[ADMIN ID: ${adminId}] Error al procesar reembolso con Mercado Pago:', {
+                message: mpError.message,
+                cause: mpError.cause,
+                stack: mpError.stack,
+                payment_id: refundInfo.payment_id
+            });
+            let errorMessage = 'Error al procesar el reembolso con Mercado Pago.';
+            if (mpError.cause) {
+                try {
+                    const causeError = typeof mpError.cause === 'string' ? JSON.parse(mpError.cause) : mpError.cause;
+                    if (causeError.message) errorMessage += ` Detalles: ${causeError.message}`;
+                    if (causeError.error) errorMessage += ` (${causeError.error})`;
+                    if (causeError.status) errorMessage += ` Status MP: ${causeError.status}`;
+                } catch (parseError) { /* no hacer nada si no se puede parsear */ }
+            }
+
+            const updateFailQuery = `
+                UPDATE refund_requests 
+                SET status = $1, admin_notes = $2, updated_at = NOW(), processed_by_admin_id = $3
+                WHERE id = $4
+            `;
+            await pool.query(updateFailQuery, [
+                'failed_mp',
+                `Error Mercado Pago: ${mpError.message.substring(0, 200)}. ${adminNotes || ''}`.trim(),
+                adminId, // Guardar el ID del admin que intentó procesar
+                refundRequestId
+            ]);
+            console.log(`[ADMIN ID: ${adminId}] Solicitud de reembolso ID: ${refundRequestId} marcada como 'failed_mp'.`);
 
             return res.status(500).json({
                 success: false,
-                message: 'Error al procesar el reembolso en Mercado Pago',
-                error: mpError.message
+                message: errorMessage,
+                mp_error_details: mpError.cause
             });
         }
 
-        // Actualizar el estado de la solicitud en la base de datos
+        const mercadoPagoRefundId = mercadoPagoResponse.id;
+        console.log(`[ADMIN ID: ${adminId}] Reembolso procesado en Mercado Pago. ID de Reembolso MP: ${mercadoPagoRefundId}`);
+
         const updateQuery = `
             UPDATE refund_requests 
-            SET 
-                status = 'approved',
-                processed_at = NOW(),
-                admin_id = $1,
-                mercadopago_refund_id = $2
-            WHERE id = $3
+            SET status = $1, mercado_pago_refund_id = $2, admin_notes = $3, approved_at = NOW(), updated_at = NOW(), processed_by_admin_id = $4
+            WHERE id = $5
             RETURNING *
         `;
+        const updateResult = await pool.query(updateQuery, ['approved', mercadoPagoRefundId, adminNotes, adminId, refundRequestId]);
 
-        const refundId = mercadoPagoResponse.body?.id || 'unknown';
-        const updateResult = await pool.query(updateQuery, [adminId, refundId, refundId]);
+        if (updateResult.rows.length === 0) {
+            console.error(`[ADMIN ID: ${adminId}] No se pudo actualizar la solicitud de reembolso ID: ${refundRequestId} después de la aprobación de MP.`);
+            return res.status(500).json({ success: false, message: 'Reembolso procesado en MP, pero falló la actualización local. Por favor, revisa.' });
+        }
 
-        // Enviar correo al usuario
+        const approvedRefundDetails = updateResult.rows[0];
+        console.log(`[ADMIN ID: ${adminId}] Solicitud de reembolso ID: ${refundRequestId} actualizada a 'approved' en BD.`);
+
         const userMailOptions = {
             from: process.env.ADMIN_EMAIL,
             to: refundInfo.user_email,
-            subject: '✅ Tu solicitud de reembolso ha sido aprobada',
+            subject: '🎉 ¡Tu Solicitud de Reembolso ha sido APROBADA! | Circuit Prompt',
             html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
-                    <h2 style="color: #333; border-bottom: 2px solid #00ADEF; padding-bottom: 10px;">Reembolso Aprobado</h2>
-                    
-                    <div style="background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #00ADEF;">
-                        <p>Nos complace informarte que tu solicitud de reembolso para <strong>${refundInfo.service_name}</strong> ha sido aprobada.</p>
-                        <p>Monto reembolsado: <strong>$${refundInfo.amount}</strong></p>
-                        <p>ID de la transacción: <strong>${refundId}</strong></p>
-                        <p>El reembolso se procesará a través de Mercado Pago y podría tomar de 3 a 15 días hábiles en reflejarse en tu método de pago original, dependiendo de tu entidad bancaria.</p>
-                    </div>
-                    
-                    <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
-                        Gracias por tu paciencia. Si tienes alguna pregunta, no dudes en contactarnos.
-                    </p>
+            <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+                <h2 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">¡Reembolso Aprobado!</h2>
+                <p>Hola,</p>
+                <p>Nos complace informarte que tu solicitud de reembolso para el servicio <strong>${refundInfo.service_name}</strong> (ID de Solicitud: ${refundInfo.id}) ha sido <strong>APROBADA</strong>.</p>
+                <div style="background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #4CAF50;">
+                    <p><strong>Monto Reembolsado:</strong> $${refundInfo.amount}</p>
+                    <p><strong>ID de Pago Original (Mercado Pago):</strong> ${refundInfo.payment_id}</p>
+                    <p><strong>ID de Reembolso (Mercado Pago):</strong> ${mercadoPagoRefundId}</p>
                 </div>
+                <p style="margin-top: 20px;">El monto debería reflejarse en tu cuenta o tarjeta (dependiendo de tu método de pago original) en los próximos días hábiles. Los tiempos exactos pueden variar según tu banco o emisor de tarjeta.</p>
+                <p>Si tienes alguna pregunta sobre este reembolso, por favor, contacta a nuestro soporte.</p>
+                <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
+                    Gracias por tu comprensión,<br>El equipo de Circuit Prompt
+                </p>
+            </div>
             `
         };
-
-        await transporter.sendMail(userMailOptions);
+        transporter.sendMail(userMailOptions).catch(error => {
+            console.error(`[ADMIN ID: ${adminId}] Error enviando email de aprobación de reembolso al usuario ${refundInfo.user_email}:`, error);
+        });
 
         return res.status(200).json({
             success: true,
-            message: 'Reembolso aprobado y procesado correctamente',
-            refund: updateResult.rows[0]
+            message: 'Reembolso aprobado y procesado exitosamente.',
+            refund_details: approvedRefundDetails
         });
 
     } catch (error) {
-        console.error('Error al aprobar reembolso:', error);
+        console.error(`[ADMIN ID: ${adminId || 'N/A'}] Error catastrófico al aprobar reembolso ID: ${refundRequestId}:`, error);
         return res.status(500).json({
             success: false,
-            message: 'Error al aprobar y procesar el reembolso',
+            message: 'Error interno del servidor al aprobar el reembolso.',
             error: error.message
         });
     }
 };
 
-// [ADMIN] Rechazar un reembolso
+// [ADMIN] Rechazar una solicitud de reembolso
 export const rejectRefund = async (req, res) => {
-    const { refundId } = req.params;
-    const { reason } = req.body;
-    const adminId = req.user.id;
+    const { refundRequestId } = req.params;
+    const { adminNotes, rejectionReason } = req.body;
+    const adminId = req.user?.id; // Asumiendo que el ID del admin está en req.user.id
+
+    if (!adminId) {
+        console.warn('[ADMIN] Intento de rechazar reembolso sin ID de administrador en la sesión.');
+        return res.status(401).json({ success: false, message: 'No autorizado: Se requiere sesión de administrador.' });
+    }
+
+    if (!rejectionReason || rejectionReason.trim() === "") {
+        return res.status(400).json({ success: false, message: "Es necesario proveer una razón de rechazo para el usuario." });
+    }
+    if (!adminNotes || adminNotes.trim() === "") {
+        return res.status(400).json({ success: false, message: "Es necesario proveer notas administrativas para el rechazo." });
+    }
+
+    console.log(`[ADMIN ID: ${adminId}] Solicitud para rechazar reembolso ID: ${refundRequestId}`);
 
     try {
-        // Obtener información de la solicitud
-        const queryRefund = `
-            SELECT * FROM refund_requests 
-            WHERE id = $1 AND status = 'pending'
-        `;
-
-        const refundResult = await pool.query(queryRefund, [refundId]);
+        const refundQuery = 'SELECT * FROM refund_requests WHERE id = $1';
+        const refundResult = await pool.query(refundQuery, [refundRequestId]);
 
         if (refundResult.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Solicitud de reembolso no encontrada o ya procesada'
-            });
+            console.warn(`[ADMIN ID: ${adminId}] Solicitud de reembolso ID: ${refundRequestId} no encontrada para rechazar.`);
+            return res.status(404).json({ success: false, message: 'Solicitud de reembolso no encontrada.' });
         }
 
         const refundInfo = refundResult.rows[0];
+        console.log('[ADMIN ID: ${adminId}] Información de la solicitud a rechazar:', refundInfo);
 
-        // Actualizar el estado de la solicitud
+        if (refundInfo.status === 'rejected') {
+            console.warn(`[ADMIN ID: ${adminId}] Reembolso ID: ${refundRequestId} ya está rechazado.`);
+            return res.status(400).json({ success: false, message: 'Esta solicitud de reembolso ya ha sido rechazada previamente.' });
+        }
+        if (refundInfo.status === 'approved') {
+            console.warn(`[ADMIN ID: ${adminId}] Reembolso ID: ${refundRequestId} ya fue aprobado. No se puede rechazar.`);
+            return res.status(400).json({ success: false, message: 'Esta solicitud ya fue aprobada y procesada. No se puede rechazar ahora.' });
+        }
+        if (refundInfo.status !== 'pending') {
+            console.warn(`[ADMIN ID: ${adminId}] Reembolso ID: ${refundRequestId} no está en estado pendiente. Estado actual: ${refundInfo.status}`);
+            return res.status(400).json({ success: false, message: `La solicitud no está en estado pendiente (actual: ${refundInfo.status}).` });
+        }
+
         const updateQuery = `
             UPDATE refund_requests 
-            SET 
-                status = 'rejected',
-                admin_notes = $1,
-                processed_at = NOW(),
-                admin_id = $2
-            WHERE id = $3
+            SET status = $1, admin_notes = $2, rejection_reason_user = $3, rejected_at = NOW(), updated_at = NOW(), processed_by_admin_id = $4
+            WHERE id = $5
             RETURNING *
         `;
+        const updateResult = await pool.query(updateQuery, ['rejected', adminNotes, rejectionReason, adminId, refundRequestId]);
 
-        const updateResult = await pool.query(updateQuery, [reason, adminId, refundId]);
+        if (updateResult.rows.length === 0) {
+            console.error(`[ADMIN ID: ${adminId}] No se pudo actualizar la solicitud de reembolso ID: ${refundRequestId} a rechazada.`);
+            return res.status(500).json({ success: false, message: 'Error al actualizar el estado de la solicitud de reembolso.' });
+        }
 
-        // Enviar correo al usuario
+        const rejectedRefundDetails = updateResult.rows[0];
+        console.log(`[ADMIN ID: ${adminId}] Solicitud de reembolso ID: ${refundRequestId} actualizada a 'rejected' en BD.`);
+
         const userMailOptions = {
             from: process.env.ADMIN_EMAIL,
             to: refundInfo.user_email,
-            subject: 'Respuesta a tu solicitud de reembolso',
+            subject: '⚠️ Actualización sobre tu Solicitud de Reembolso | Circuit Prompt',
             html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
-                    <h2 style="color: #333; border-bottom: 2px solid #FF5757; padding-bottom: 10px;">Solicitud de Reembolso No Aprobada</h2>
-                    
-                    <div style="background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #FF5757;">
-                        <p>Lamentablemente, tu solicitud de reembolso para <strong>${refundInfo.service_name}</strong> no ha sido aprobada.</p>
-                        <p><strong>Motivo:</strong> ${reason}</p>
-                        <p>Si deseas discutir esta decisión o necesitas más información, por favor contáctanos respondiendo a este correo.</p>
-                    </div>
-                    
-                    <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
-                        Gracias por tu comprensión.
-                    </p>
+            <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+                <h2 style="color: #333; border-bottom: 2px solid #FF6347; padding-bottom: 10px;">Solicitud de Reembolso No Aprobada</h2>
+                <p>Hola,</p>
+                <p>Te escribimos para informarte sobre tu solicitud de reembolso para el servicio <strong>${refundInfo.service_name}</strong> (ID de Solicitud: ${refundInfo.id}).</p>
+                <div style="background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #FF6347;">
+                    <p>Después de una cuidadosa revisión, tu solicitud de reembolso <strong>NO ha sido aprobada</strong>.</p>
+                    <p><strong>Razón:</strong> ${rejectionReason}</p>
+                    <p><strong>Monto Solicitado:</strong> $${refundInfo.amount}</p>
+                    <p><strong>ID de Pago Original (Mercado Pago):</strong> ${refundInfo.payment_id}</p>
                 </div>
+                <p style="margin-top: 20px;">Entendemos que esta puede no ser la noticia que esperabas. Si tienes preguntas sobre esta decisión o deseas proporcionar información adicional, por favor, contacta a nuestro equipo de soporte respondiendo a este correo o visitando nuestra sección de ayuda.</p>
+                <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">
+                    Atentamente,<br>El equipo de Circuit Prompt
+                </p>
+            </div>
             `
         };
-
-        await transporter.sendMail(userMailOptions);
+        transporter.sendMail(userMailOptions).catch(error => {
+            console.error(`[ADMIN ID: ${adminId}] Error enviando email de rechazo de reembolso al usuario ${refundInfo.user_email}:`, error);
+        });
 
         return res.status(200).json({
             success: true,
-            message: 'Reembolso rechazado correctamente',
-            refund: updateResult.rows[0]
+            message: 'Solicitud de reembolso rechazada y usuario notificado.',
+            refund_details: rejectedRefundDetails
         });
 
     } catch (error) {
-        console.error('Error al rechazar reembolso:', error);
+        console.error(`[ADMIN ID: ${adminId || 'N/A'}] Error catastrófico al rechazar reembolso ID: ${refundRequestId}:`, error);
         return res.status(500).json({
             success: false,
-            message: 'Error al rechazar el reembolso',
+            message: 'Error interno del servidor al rechazar el reembolso.',
             error: error.message
         });
     }

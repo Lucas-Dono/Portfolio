@@ -1148,58 +1148,87 @@ const Services: React.FC = () => {
 
   // Cargar precios desde la API
   useEffect(() => {
+    let isMounted = true;
+    const CACHE_KEY = 'cachedPrecios';
+    const CACHE_TIME_KEY = 'lastPricesUpdate';
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
+
     const cargarPrecios = async () => {
       try {
-        setCargandoPrecios(true);
+        // Verificar si ya tenemos datos en caché y si son recientes
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        const lastUpdate = localStorage.getItem(CACHE_TIME_KEY);
+        const now = Date.now();
+
+        // Si tenemos datos en caché y son recientes, usarlos
+        if (cachedData && lastUpdate && (now - parseInt(lastUpdate)) < CACHE_DURATION) {
+          if (isMounted) {
+            const { planes, paquetes, addons } = JSON.parse(cachedData);
+            setPlanesPrecios(planes);
+            setPaquetesPrecios(paquetes);
+            setAddonsPrecios(addons);
+            setCargandoPrecios(false);
+          }
+          return;
+        }
+
+        if (isMounted) {
+          setCargandoPrecios(true);
+        }
 
         // Cargar planes (servicios básicos)
         const planes = await preciosAPI.obtenerServicios();
         const planesFiltrados = planes.filter(p => !p.isPaquete);
-        setPlanesPrecios(planesFiltrados);
 
         // Cargar paquetes (servicios especiales)
         const paquetes = planes.filter(p => p.isPaquete);
-        setPaquetesPrecios(paquetes);
 
         // Cargar addons
         const addons = await preciosAPI.obtenerAddons();
-        setAddonsPrecios(addons);
 
-        console.log('Precios cargados:', { planesFiltrados, paquetes, addons });
-        setCargandoPrecios(false);
+        if (isMounted) {
+          setPlanesPrecios(planesFiltrados);
+          setPaquetesPrecios(paquetes);
+          setAddonsPrecios(addons);
+          setCargandoPrecios(false);
+
+          // Guardar en caché
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            planes: planesFiltrados,
+            paquetes,
+            addons
+          }));
+          localStorage.setItem(CACHE_TIME_KEY, now.toString());
+        }
       } catch (error) {
         console.error('Error al cargar precios:', error);
-        setCargandoPrecios(false);
-
-        // Si falla la carga, usar datos estáticos por defecto
-        console.log('Usando datos estáticos para precios');
+        if (isMounted) {
+          setCargandoPrecios(false);
+        }
       }
     };
 
+    // Cargar precios solo una vez al montar el componente
     cargarPrecios();
 
-    // Recarga los precios cuando el componente vuelve a ser visible
+    // Recargar los precios solo cuando el usuario vuelve a la pestaña después de 5 minutos
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('Recargando precios por cambio de visibilidad');
-        cargarPrecios();
+        const lastUpdate = localStorage.getItem(CACHE_TIME_KEY);
+        const now = Date.now();
+
+        if (!lastUpdate || (now - parseInt(lastUpdate)) > CACHE_DURATION) {
+          cargarPrecios();
+        }
       }
     };
-
-    // Recarga los precios en intervalos regulares (cada 30 segundos)
-    const intervalId = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        console.log('Recargando precios por intervalo');
-        cargarPrecios();
-      }
-    }, 30000);
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Limpiar el listener y el intervalo cuando se desmonte el componente
+    // Limpiar el listener cuando se desmonte el componente
     return () => {
+      isMounted = false;
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(intervalId);
     };
   }, []);
 

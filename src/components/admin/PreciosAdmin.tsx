@@ -160,39 +160,87 @@ const PreciosAdmin: React.FC = () => {
 
   // Cargar servicios desde la API
   useEffect(() => {
+    let isMounted = true;
+    const CACHE_KEY = 'cachedAdminServicios';
+    const CACHE_TIME_KEY = 'lastAdminUpdate';
+    const CACHE_DURATION = 60 * 1000; // 1 minuto en milisegundos
+    let focusTimeout: NodeJS.Timeout;
+
+    const cargarServicios = async () => {
+      try {
+        // Verificar si ya tenemos datos en caché y si son recientes
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        const lastUpdate = localStorage.getItem(CACHE_TIME_KEY);
+        const now = Date.now();
+
+        // Si tenemos datos en caché y son recientes, usarlos
+        if (cachedData && lastUpdate && (now - parseInt(lastUpdate)) < CACHE_DURATION) {
+          if (isMounted) {
+            const serviciosObtenidos = JSON.parse(cachedData);
+            setServicios(serviciosObtenidos);
+            setCargando(false);
+          }
+          return;
+        }
+
+        if (isMounted) {
+          setCargando(true);
+        }
+
+        // Obtener servicios desde la API
+        const serviciosObtenidos = await preciosAPI.obtenerServicios();
+
+        if (isMounted) {
+          setServicios(serviciosObtenidos);
+          setCargando(false);
+
+          // Guardar en caché
+          localStorage.setItem(CACHE_KEY, JSON.stringify(serviciosObtenidos));
+          localStorage.setItem(CACHE_TIME_KEY, now.toString());
+        }
+      } catch (error) {
+        console.error('Error al cargar servicios:', error);
+        if (isMounted) {
+          setCargando(false);
+          setMensaje({
+            text: 'Error al cargar los servicios. Por favor, intenta de nuevo.',
+            type: 'error'
+          });
+        }
+      }
+    };
+
+    // Cargar servicios solo una vez al montar el componente
     cargarServicios();
 
-    // Recargar al volver de otra pestaña
+    // Recargar al volver de otra pestaña solo si han pasado más de 5 minutos
     const handleFocus = () => {
-      cargarServicios();
+      // Limpiar el timeout anterior si existe
+      if (focusTimeout) {
+        clearTimeout(focusTimeout);
+      }
+
+      // Establecer un nuevo timeout con debounce de 500ms
+      focusTimeout = setTimeout(() => {
+        const lastUpdate = localStorage.getItem(CACHE_TIME_KEY);
+        const now = Date.now();
+
+        if (!lastUpdate || (now - parseInt(lastUpdate)) > CACHE_DURATION) {
+          cargarServicios();
+        }
+      }, 500);
     };
 
     window.addEventListener('focus', handleFocus);
 
     return () => {
+      isMounted = false;
+      if (focusTimeout) {
+        clearTimeout(focusTimeout);
+      }
       window.removeEventListener('focus', handleFocus);
     };
   }, []);
-
-  // Extraer la función de carga para reutilizarla
-  const cargarServicios = async () => {
-    try {
-      setCargando(true);
-
-      // Obtener servicios desde la API
-      const serviciosObtenidos = await preciosAPI.obtenerServicios();
-      setServicios(serviciosObtenidos);
-
-      setCargando(false);
-    } catch (error) {
-      console.error('Error al cargar servicios:', error);
-      setCargando(false);
-      setMensaje({
-        text: 'Error al cargar los servicios. Por favor, intenta de nuevo.',
-        type: 'error'
-      });
-    }
-  };
 
   // Función para cargar los addons
   const cargarAddons = async () => {

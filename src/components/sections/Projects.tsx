@@ -37,7 +37,7 @@ interface StyledComponentProps {
 // Estilos
 const ProjectsSection = styled.section.withConfig({
   shouldForwardProp: (prop) => !['ref'].includes(prop)
-})<StyledComponentProps>`
+}) <StyledComponentProps>`
   /* padding: 100px 0; */
   position: relative;
   overflow: hidden;
@@ -108,10 +108,10 @@ const SectionDescription = styled.p`
 
 // Añadir interfaz explícita que incluya props de motion y children
 interface FilterContainerProps extends React.HTMLAttributes<HTMLDivElement> {
-    children?: React.ReactNode;
+  children?: React.ReactNode;
 }
 
-const FilterContainer = styled(motion.div)<FilterContainerProps>`
+const FilterContainer = styled(motion.div) <FilterContainerProps>`
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
@@ -135,7 +135,7 @@ const FilterContainer = styled(motion.div)<FilterContainerProps>`
   }
 `;
 
-const FilterButton = styled(motion.button)<{ $isActive: boolean }>`
+const FilterButton = styled(motion.button) <{ $isActive: boolean }>`
   padding: 0.6rem 1.5rem;
   font-size: 0.95rem;
   font-weight: 500;
@@ -540,7 +540,7 @@ const ModalBody = styled.div`
 `;
 
 // Añadir interfaz para ModalProjectImage
-interface ModalProjectImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {}
+interface ModalProjectImageProps extends React.ImgHTMLAttributes<HTMLImageElement> { }
 const ModalProjectImage = styled.img<ModalProjectImageProps>`
     width: 100%;
     height: auto;
@@ -646,33 +646,33 @@ const projectsData: Project[] = [
     id: 'tech-store',
     title: 'Tech Store',
     description: 'Tienda online con React, Material-UI y Context API para gestión de estado.',
-    images: ['/images/tech-store.webp'],
+    images: ['/Tech-Store/Image1.png', '/Tech-Store/Image2.png', '/Tech-Store/Image3.png', '/Tech-Store/Image4.png', '/Tech-Store/Image5.png', '/Tech-Store/Image6.png', '/Tech-Store/Image7.png', '/Tech-Store/Image8.png',],
     category: 'Web App',
     technologies: ['React', 'Material-UI', 'Context API'],
-    demoUrl: 'https://tech-store-livid.vercel.app',
-    repoUrl: 'https://github.com/lucashozo/Tech-store',
-    openMode: 'url'
+    demoUrl: 'https://tech-store-sql.vercel.app/',
+    repoUrl: 'https://github.com/Lucas-Dono/Tech-storeSQL',
+    openMode: 'modal'
   },
   {
     id: 'freevibes',
     title: 'FreeVibes',
     description: 'Reproductor de música integrado con spotify, youtube y lastFm para poder escuchar música de forma gratuita.',
-    images: [],
+    images: ['/freevibes/Image1.png', '/freevibes/Image2.png', '/freevibes/Image3.png', '/freevibes/Image4.png', '/freevibes/Image5.png', '/freevibes/Image6.png', '/freevibes/Image7.png', '/freevibes/Image8.png'],
     category: 'Web App',
     technologies: ['React', 'TypeScript', 'Styled Comp.', 'YouTube API', 'MongoDB', 'Spotify API', 'LastFM API', 'Express', 'Node.js', 'LRCLIB API'],
     demoUrl: 'https://freevibes.vercel.app',
-    repoUrl: 'https://github.com/lucashozo/FreeVibes',
-    openMode: 'url'
+    repoUrl: 'https://github.com/Lucas-Dono/Freevibes',
+    openMode: 'modal'
   },
   {
     id: 'automessenger',
     title: 'AutoMessenger',
-    description: 'Programa backend que maneja una IA GPT para contestar mensajes de manera autónoma en WhatsApp, Gmail u otros sitios web de forma económica. Incluye un frontend para su configuración.',
-    images: [],
+    description: 'Programa backend que maneja una IA GPT para contestar mensajes de manera autónoma en WhatsApp, Gmail u otros sitios web de forma económica. Incluye un frontend para su configuración, la versión de imágen aún no es pública debido a su temprano desarrollo',
+    images: ['/ai/Image1.jpeg', '/ai/Image2.jpeg', '/ai/Image3.jpeg'],
     category: 'Backend',
     technologies: ['Node.js', 'Express', 'OpenAI API', 'React', 'MongoDB', 'Websockets'],
     demoUrl: '',
-    repoUrl: '',
+    repoUrl: 'https://github.com/Lucas-Dono/Whatsapp-Bot',
     openMode: 'modal'
   }
 ];
@@ -683,27 +683,27 @@ const Projects: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const controls = useAnimation();
   const filterContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Categorías únicas para los filtros
-  const categories = useMemo(() => 
-      ['All', ...new Set(projectsData.map(p => p.category))] as const,
+  const categories = useMemo(() =>
+    ['All', ...new Set(projectsData.map(p => p.category))] as const,
     []);
-  
+
   // Función para filtrar proyectos por categoría
   const handleFilterChange = (category: Category | 'All') => {
     setActiveFilter(category);
   };
-  
+
   // Función para desplazarse al filtro seleccionado
   const scrollToActiveFilter = () => {
     if (filterContainerRef.current && window.innerWidth <= 480) {
       const container = filterContainerRef.current;
       const activeButton = container.querySelector('[data-active="true"]') as HTMLElement;
-      
+
       if (activeButton) {
         const containerWidth = container.offsetWidth;
         const scrollLeft = activeButton.offsetLeft - containerWidth / 2 + activeButton.offsetWidth / 2;
-        
+
         container.scrollTo({
           left: scrollLeft,
           behavior: 'smooth'
@@ -711,28 +711,28 @@ const Projects: React.FC = () => {
       }
     }
   };
-  
+
   useEffect(() => {
     controls.start("visible");
   }, [controls]);
-  
+
   useEffect(() => {
     scrollToActiveFilter();
   }, [activeFilter]);
-  
+
   const openModal = (project: Project) => {
     setSelectedProject(project);
   };
-  
+
   const closeModal = () => {
     setSelectedProject(null);
   };
-  
+
   const filteredProjects = useMemo(() => {
-      if (activeFilter === 'All') return projectsData;
-      return projectsData.filter(p => p.category === activeFilter);
+    if (activeFilter === 'All') return projectsData;
+    return projectsData.filter(p => p.category === activeFilter);
   }, [activeFilter]);
-  
+
   const staggerContainerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -745,7 +745,7 @@ const Projects: React.FC = () => {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
   };
-  
+
   const modalOverlayVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.3 } },
@@ -757,14 +757,14 @@ const Projects: React.FC = () => {
     visible: { scale: 1, opacity: 1, transition: { duration: 0.4, ease: "easeOut" } },
     exit: { scale: 0.9, opacity: 0, transition: { duration: 0.3, ease: "easeIn" } }
   };
-  
+
   return (
-    <ProjectsSection 
+    <ProjectsSection
       id="projects"
     >
       <SectionContent>
-        <motion.h2 
-          style={{ 
+        <motion.h2
+          style={{
             textAlign: 'center',
             fontSize: 'clamp(2.2rem, 7vw, 4.5rem)', // Tamaño de fuente reducido en móviles
             fontWeight: 700,
@@ -781,63 +781,63 @@ const Projects: React.FC = () => {
         >
           Mis Proyectos
         </motion.h2>
-         <motion.div 
-           style={{ 
-              height: '4px', 
-              width: '100px',
-              background: 'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)',
-              boxShadow: '0 0 12px rgba(255, 0, 255, 0.5)',
-              borderRadius: '4px',
-              margin: '0.5rem auto 1.5rem auto'
-            }}
-           initial={{ width: 0, opacity: 0 }}
-           whileInView={{ width: 100, opacity: 1 }}
-           viewport={{ once: true }}
-           transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
-         />
-         <motion.p 
-           style={{
-              fontFamily: 'Inter, sans-serif',
-              fontSize: '1.2rem',
-              maxWidth: '750px',
-              margin: '0 auto 3rem auto',
-              lineHeight: 1.7,
-              color: 'rgba(255, 255, 255, 0.8)',
-              textAlign: 'center'
-            }}
-           initial={{ opacity: 0, y: 20 }}
-           whileInView={{ opacity: 1, y: 0 }}
-           viewport={{ once: true }}
-           transition={{ duration: 0.7, delay: 0.5, ease: "easeOut" }}
-         >
-           Explora algunos de mis trabajos recientes.
-         </motion.p>
+        <motion.div
+          style={{
+            height: '4px',
+            width: '100px',
+            background: 'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)',
+            boxShadow: '0 0 12px rgba(255, 0, 255, 0.5)',
+            borderRadius: '4px',
+            margin: '0.5rem auto 1.5rem auto'
+          }}
+          initial={{ width: 0, opacity: 0 }}
+          whileInView={{ width: 100, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+        />
+        <motion.p
+          style={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '1.2rem',
+            maxWidth: '750px',
+            margin: '0 auto 3rem auto',
+            lineHeight: 1.7,
+            color: 'rgba(255, 255, 255, 0.8)',
+            textAlign: 'center'
+          }}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.5, ease: "easeOut" }}
+        >
+          Explora algunos de mis trabajos recientes.
+        </motion.p>
 
         <FilterContainer
-           variants={staggerContainerVariants}
-           initial="hidden"
-           animate={controls}
+          variants={staggerContainerVariants}
+          initial="hidden"
+          animate={controls}
           ref={filterContainerRef}
         >
           {categories.map(category => (
-              <FilterButton
-                key={category}
+            <FilterButton
+              key={category}
               $isActive={activeFilter === category}
-                onClick={() => handleFilterChange(category)}
-              variants={fadeInUpVariants} 
+              onClick={() => handleFilterChange(category)}
+              variants={fadeInUpVariants}
               whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.95 }}
               data-active={activeFilter === category ? "true" : "false"}
-              >
-                {category}
-              </FilterButton>
-            ))}
-          </FilterContainer>
+            >
+              {category}
+            </FilterButton>
+          ))}
+        </FilterContainer>
 
         <ProjectsGrid
-           variants={staggerContainerVariants}
-           initial="hidden"
-           animate={controls}
+          variants={staggerContainerVariants}
+          initial="hidden"
+          animate={controls}
         >
           <AnimatePresence mode='wait'>
             {filteredProjects.map((project) => (
@@ -848,7 +848,7 @@ const Projects: React.FC = () => {
                 animate="visible"
                 exit="hidden"
                 layout
-                whileHover={{ y: -10 }} 
+                whileHover={{ y: -10 }}
                 onClick={() => {
                   if (project.openMode === 'url' && project.demoUrl) {
                     window.open(project.demoUrl, '_blank');
@@ -863,7 +863,7 @@ const Projects: React.FC = () => {
                     <ProjectImageCarousel images={project.images} alt={project.title} />
                   ) : (
                     <ProjectPlaceholder>
-                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
                     </ProjectPlaceholder>
                   )}
                 </ProjectImage>
@@ -877,61 +877,61 @@ const Projects: React.FC = () => {
                   </TechContainer>
                 </CardContent>
               </ProjectCard>
-          ))}
+            ))}
           </AnimatePresence>
         </ProjectsGrid>
 
-        {/* Modal */} 
+        {/* Modal */}
         <AnimatePresence>
-            {selectedProject && (
-                <ProjectModalOverlay
-                    variants={modalOverlayVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    onClick={closeModal}
-                >
-                    <ProjectModalContent
-                        variants={modalContentVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <CloseButton onClick={closeModal} aria-label="Cerrar modal">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        </CloseButton>
-                        <ModalHeader>
-                            <ModalTitle>{selectedProject.title}</ModalTitle>
-                        </ModalHeader>
-                        <ModalBody>
-                             {selectedProject.images && selectedProject.images.length > 0 && (
-                                <ModalProjectImage src={selectedProject.images[0]} alt={selectedProject.title} />
-                             )}
-                            <ModalProjectDescription>{selectedProject.description}</ModalProjectDescription>
-                            <ModalTechList>
-                                {selectedProject.technologies.map((tech, index) => (
-                                    <TechTag key={index}>{tech}</TechTag>
-                                ))}
-                            </ModalTechList>
-                            <ModalLinkContainer>
-                                {selectedProject.demoUrl && selectedProject.demoUrl !== '#' && (
-                                    <DemoButton href={selectedProject.demoUrl} target="_blank" rel="noopener noreferrer">
-                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                                        Ver Demo
-                                    </DemoButton>
-                                )}
-                                {selectedProject.repoUrl && (
-                                    <ModalProjectLink href={selectedProject.repoUrl} target="_blank" rel="noopener noreferrer">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-1.5 6-8 0-1.25-.5-2.5-1-3.5.1-.5.4-1.75-.1-3.5 0 0-1-.35-3.5 1.5a12.3 12.3 0 0 0-6.5 0C4.85 2.15 3.85 2.5 3.85 2.5c-.5 1.75-.2 3-.1 3.5-.5 1-1 2.25-1 3.5 0 6.5 3 8 6 8a4.8 4.8 0 0 0-1 3.5v4"/></svg>
-                                        Ver Código
-                                    </ModalProjectLink>
-                                )}
-                            </ModalLinkContainer>
-                        </ModalBody>
-                    </ProjectModalContent>
-                </ProjectModalOverlay>
-            )}
+          {selectedProject && (
+            <ProjectModalOverlay
+              variants={modalOverlayVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              onClick={closeModal}
+            >
+              <ProjectModalContent
+                variants={modalContentVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <CloseButton onClick={closeModal} aria-label="Cerrar modal">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </CloseButton>
+                <ModalHeader>
+                  <ModalTitle>{selectedProject.title}</ModalTitle>
+                </ModalHeader>
+                <ModalBody>
+                  {selectedProject.images && selectedProject.images.length > 0 && (
+                    <ModalProjectImage src={selectedProject.images[0]} alt={selectedProject.title} />
+                  )}
+                  <ModalProjectDescription>{selectedProject.description}</ModalProjectDescription>
+                  <ModalTechList>
+                    {selectedProject.technologies.map((tech, index) => (
+                      <TechTag key={index}>{tech}</TechTag>
+                    ))}
+                  </ModalTechList>
+                  <ModalLinkContainer>
+                    {selectedProject.demoUrl && selectedProject.demoUrl !== '#' && (
+                      <DemoButton href={selectedProject.demoUrl} target="_blank" rel="noopener noreferrer">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                        Ver Demo
+                      </DemoButton>
+                    )}
+                    {selectedProject.repoUrl && (
+                      <ModalProjectLink href={selectedProject.repoUrl} target="_blank" rel="noopener noreferrer">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-1.5 6-8 0-1.25-.5-2.5-1-3.5.1-.5.4-1.75-.1-3.5 0 0-1-.35-3.5 1.5a12.3 12.3 0 0 0-6.5 0C4.85 2.15 3.85 2.5 3.85 2.5c-.5 1.75-.2 3-.1 3.5-.5 1-1 2.25-1 3.5 0 6.5 3 8 6 8a4.8 4.8 0 0 0-1 3.5v4" /></svg>
+                        Ver Código
+                      </ModalProjectLink>
+                    )}
+                  </ModalLinkContainer>
+                </ModalBody>
+              </ProjectModalContent>
+            </ProjectModalOverlay>
+          )}
         </AnimatePresence>
 
       </SectionContent>

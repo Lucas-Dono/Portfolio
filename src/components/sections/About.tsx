@@ -94,33 +94,33 @@ const technologies: Technology[] = [
 // Variantes de animación para elementos
 const fadeInUpVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
-    transition: { 
-      duration: 0.5, 
-      ease: "easeOut" 
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
     }
   }
 };
 
 const staggerContainerVariants = {
   hidden: { opacity: 1 },
-    visible: { 
-      opacity: 1,
+  visible: {
+    opacity: 1,
     transition: {
       staggerChildren: 0.05,
       delayChildren: 0.1
     }
-    }
-  };
-  
+  }
+};
+
 const techItemVariants = {
   hidden: { opacity: 0, y: 20 },
-    visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
-    transition: { 
+    transition: {
       duration: 0.3,
       ease: "easeOut"
     }
@@ -137,28 +137,28 @@ const TechIcon: React.FC<TechIconProps> = ({ name, color, icon }) => {
       b: parseInt(result[3], 16)
     } : { r: 0, g: 0, b: 0 };
   };
-  
+
   const rgb = hexToRgb(color);
-  
+
   // Determinar si el logo necesita fondo blanco (para logos oscuros)
   const needsWhiteBg = ['Next.js', 'Express'].includes(name);
   const bgColor = needsWhiteBg ? 'rgba(255, 255, 255, 0.9)' : `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`;
-  
+
   return (
     <motion.div
       className="tech-item"
-      whileHover={{ 
-        scale: 1.05, 
-        boxShadow: `0 10px 25px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` 
+      whileHover={{
+        scale: 1.05,
+        boxShadow: `0 10px 25px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`
       }}
       variants={techItemVariants}
       initial="hidden"
       animate="visible"
     >
       <div className="tech-icon" style={{ backgroundColor: bgColor }}>
-        <img 
-          src={`/logo/${icon}`} 
-          alt={name} 
+        <img
+          src={`/logo/${icon}`}
+          alt={name}
           className="tech-img"
           loading="eager"
           onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -173,9 +173,9 @@ const TechIcon: React.FC<TechIconProps> = ({ name, color, icon }) => {
 
 const About: React.FC = () => {
   return (
-    <div className="about-section" id="sobre-mi">
+    <div className="about-section" id="sobre-nosotros">
       {/* Eliminar Elementos de fondo */}
-      
+
       <div className="content-container">
         <motion.div
           initial="hidden"
@@ -184,66 +184,54 @@ const About: React.FC = () => {
           variants={fadeInUpVariants}
           className="header-container"
         >
-          <h2 className="section-title">Sobre Mí</h2>
+          <h2 className="section-title">Sobre Nosotros</h2>
           <div className="divider"></div>
         </motion.div>
-        
+
         <div className="about-content">
-          <motion.div 
-            className="about-image"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={fadeInUpVariants}
-          >
-            <div className="image-container">
-              <div className="image-frame"></div>
-              <img src="/profile-image.jpg" alt="Lucas Dono" />
-            </div>
-          </motion.div>
-          
-          <motion.div 
-            className="about-text"
+          <motion.div
+            className="about-text company-description"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.2 }}
             variants={staggerContainerVariants}
           >
             <motion.p variants={fadeInUpVariants} className="text-paragraph highlight">
-              Desarrollador apasionado por crear experiencias digitales atractivas 
-              y funcionales que resuelven problemas reales.
+              Somos una agencia de desarrollo web especializada en crear soluciones
+              digitales innovadoras que impulsan el crecimiento de tu negocio.
             </motion.p>
-            
+
             <motion.p variants={fadeInUpVariants} className="text-paragraph">
-              Habiendo trabajado en el mundo del desarrollo web por un año,
-              tuve el placer de trabajar en proyectos de todo tipo, desde páginas web
-              hasta modelos de IA para automatizar ventas.
+              Nuestro equipo combina experiencia técnica con visión estratégica para
+              desarrollar aplicaciones web robustas, escalables y centradas en el usuario.
+              Desde sitios web corporativos hasta plataformas complejas de comercio electrónico,
+              transformamos ideas en realidades digitales exitosas.
             </motion.p>
-            
+
             <motion.p variants={fadeInUpVariants} className="text-paragraph">
-              Me apasiona el aprendizaje continuo y me mantengo actualizado con las 
-              últimas tendencias y mejores prácticas en desarrollo. Mi objetivo es 
-              crear soluciones elegantes para problemas complejos, siempre con un 
-              enfoque en el rendimiento, la accesibilidad y la experiencia del usuario.
+              Nos mantenemos a la vanguardia de las tecnologías más avanzadas del mercado,
+              garantizando que cada proyecto se desarrolle con las mejores prácticas de la
+              industria. Nuestro enfoque se centra en la calidad, el rendimiento óptimo y
+              la experiencia excepcional del usuario final.
             </motion.p>
-            
+
             <motion.div variants={fadeInUpVariants} className="stats-container">
               <div className="stat-item">
-                <span className="stat-number">1</span>
-                <span className="stat-label">Año de experiencia</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-number">5</span>
-                <span className="stat-label">Proyectos completados</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-number">7</span>
+                <span className="stat-number">12+</span>
                 <span className="stat-label">Tecnologías dominadas</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">100%</span>
+                <span className="stat-label">Proyectos entregados</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">24/7</span>
+                <span className="stat-label">Soporte técnico</span>
               </div>
             </motion.div>
           </motion.div>
         </div>
-        
+
         <motion.div
           className="tech-section"
           initial="hidden"
@@ -252,21 +240,21 @@ const About: React.FC = () => {
           variants={staggerContainerVariants}
         >
           <motion.h3 variants={fadeInUpVariants} className="tech-title">
-            Tecnologías
+            Tecnologías que Manejamos
           </motion.h3>
-          
-          <motion.div 
+
+          <motion.div
             className="tech-grid"
             variants={staggerContainerVariants}
           >
-                {technologies.map((tech, index) => (
-              <TechIcon 
-                key={index} 
-                name={tech.name} 
+            {technologies.map((tech, index) => (
+              <TechIcon
+                key={index}
+                name={tech.name}
                 color={tech.color}
                 icon={tech.icon}
               />
-                ))}
+            ))}
           </motion.div>
         </motion.div>
       </div>

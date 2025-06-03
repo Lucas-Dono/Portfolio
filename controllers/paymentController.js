@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
 import * as refundController from './refundController.js';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -286,52 +287,128 @@ export const createPreference = async (req, res) => {
 };
 
 /**
- * Recibe notificaciones de pago de Mercado Pago
+ * Recibe notificaciones de pago y otros eventos de Mercado Pago
  */
 export const handleWebhook = async (req, res) => {
   try {
-    // Permitir cookies cross-origin de Mercado Pago
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-meli-session-id');
+    console.log('Webhook recibido:', {
+      method: req.method,
+      query: req.query,
+      headers: req.headers,
+      body: req.body
+    });
 
-    console.log('Webhook recibido:', req.method, req.query);
+    // Validar la firma del webhook (¡MUY IMPORTANTE para producción!)
+    const secret = process.env.MP_WEBHOOK_SECRET;
+    if (secret) {
+      const xSignature = req.headers['x-signature'];
+      const xRequestId = req.headers['x-request-id'];
 
-    // Para notificaciones IPN (Instant Payment Notification)
-    if (req.query.topic === 'payment') {
-      const paymentId = req.query.id;
-
-      // Obtener información del pago
-      const payment = new Payment(client);
-      const result = await payment.get({ id: paymentId });
-
-      console.log('Notificación IPN de pago recibida:', {
-        id: result.id,
-        status: result.status,
-        status_detail: result.status_detail,
-        external_reference: result.external_reference
-      });
-
-      // Si el pago fue aprobado, procesar la información
-      if (result.status === 'approved') {
-        // Aquí deberíamos guardar en la base de datos o realizar otras acciones
-        // como enviar un email de confirmación, actualizar inventario, etc.
-
-        // Ejemplo de registro
-        console.log('¡Pago aprobado!', {
-          payment_id: result.id,
-          amount: result.transaction_amount,
-          status: result.status,
-          external_reference: result.external_reference
-        });
+      if (!xSignature || !xRequestId) {
+        console.warn('Webhook sin firma o request-id. Ignorando.');
+        return res.status(400).send('Firma o Request ID faltante.');
       }
+
+      const [ts, hash] = xSignature.split(',');
+      if (!ts || !hash) {
+        console.warn('Formato de firma inválido:', xSignature);
+        return res.status(400).send('Formato de firma inválido.');
+      }
+      const key = hash.substring(3);
+
+      const manifest = `id:${req.query.id};request-id:${xRequestId};ts:${ts.substring(3)};`;
+
+      const hmac = crypto.createHmac('sha256', secret);
+      hmac.update(manifest);
+      const expectedSignature = hmac.digest('hex');
+
+      if (key !== expectedSignature) {
+        console.warn('Firma de Webhook inválida.', {
+          receivedSignature: key,
+          expectedSignature: expectedSignature,
+          manifest: manifest,
+        });
+        return res.status(403).send('Firma inválida.');
+      }
+      console.log('Firma de Webhook validada exitosamente.');
+    } else {
+      console.warn('MP_WEBHOOK_SECRET no está configurado. La validación de firma se omitirá (NO RECOMENDADO PARA PRODUCCIÓN).');
     }
 
-    // Siempre responder OK a Mercado Pago
+    const { topic, id, type, action } = req.query;
+
+    if (topic === 'payment' || type === 'payment') {
+      const paymentId = id || req.body?.data?.id;
+
+      if (!paymentId) {
+        console.error('No se pudo obtener paymentId del webhook:', req.query, req.body);
+        return res.status(400).send('ID de pago faltante.');
+      }
+
+      const paymentInstance = new Payment(client);
+      const paymentInfo = await paymentInstance.get({ id: paymentId });
+
+      console.log('Notificación de Pago/Estado recibida:', {
+        id: paymentInfo.id,
+        status: paymentInfo.status,
+        status_detail: paymentInfo.status_detail,
+        external_reference: paymentInfo.external_reference,
+        topic: topic,
+        type: type,
+        action: action
+      });
+
+      switch (paymentInfo.status) {
+        case 'approved':
+          console.log('Pago aprobado:', paymentInfo.id);
+          break;
+        case 'pending':
+        case 'in_process':
+          console.log('Pago pendiente/en proceso:', paymentInfo.id, paymentInfo.status);
+          break;
+        case 'rejected':
+        case 'cancelled':
+          console.log('Pago rechazado/cancelado:', paymentInfo.id, paymentInfo.status);
+          break;
+        case 'refunded':
+          console.log('Pago reembolsado:', paymentInfo.id);
+          break;
+        case 'charged_back':
+          console.log('Contracargo recibido para el pago:', paymentInfo.id);
+          break;
+        default:
+          console.log('Estado de pago no manejado explícitamente:', paymentInfo.status, paymentInfo.id);
+      }
+
+    } else if (topic === 'merchant_order' || type === 'merchant_order') {
+      const merchantOrderId = id || req.body?.data?.id;
+      console.log('Notificación de Orden de Comerciante recibida:', { merchantOrderId, query: req.query, body: req.body });
+
+    } else if (topic === 'refund' || type === 'refund') {
+      const refundId = id || req.body?.resource?.match(/refunds\/(\d+)/)?.[1] || req.body?.data?.id;
+      if (!refundId) {
+        console.error('No se pudo obtener refundId del webhook de reembolso:', req.query, req.body);
+        return res.status(400).send('ID de reembolso faltante.');
+      }
+      console.log('Notificación de Reembolso recibida:', { refundId, query: req.query, body: req.body });
+
+    } else if (topic === 'chargebacks' || type === 'chargebacks') {
+      const chargebackId = id || req.body?.data?.id;
+      if (!chargebackId) {
+        console.error('No se pudo obtener chargebackId del webhook de contracargo:', req.query, req.body);
+        return res.status(400).send('ID de contracargo faltante.');
+      }
+      console.log('Notificación de Contracargo recibida:', { chargebackId, query: req.query, body: req.body });
+
+    } else {
+      console.log('Webhook con topic/type no manejado explícitamente:', { topic, type, id });
+    }
+
     return res.status(200).send('OK');
+
   } catch (error) {
-    console.error('Error al procesar webhook:', error);
-    return res.status(500).json({ error: error.message });
+    console.error('Error fatal al procesar webhook:', error);
+    return res.status(500).json({ error: error.message || 'Error interno del servidor al procesar webhook' });
   }
 };
 

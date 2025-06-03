@@ -447,10 +447,10 @@ const Contact: React.FC = () => {
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
         >
-          <SectionTitle>Contáctame</SectionTitle>
+          <SectionTitle>Contáctanos</SectionTitle>
           <SectionSubtitle>
-            ¿Tienes un proyecto en mente o una propuesta de trabajo? Estaré
-            encantado de escuchar tus ideas y trabajar juntos para hacerlas realidad.
+            ¿Tienes un proyecto en mente? Estamos aquí para ayudarte a transformar
+            tus ideas en soluciones digitales exitosas. Contáctanos para una consulta gratuita.
           </SectionSubtitle>
         </motion.div>
 
@@ -469,8 +469,8 @@ const Contact: React.FC = () => {
                   </svg>
                 </IconContainer>
                 <InfoContent>
-                  <InfoLabel>Email</InfoLabel>
-                  <InfoValue>contacto@lucashoz.com</InfoValue>
+                  <InfoLabel>Email Comercial</InfoLabel>
+                  <InfoValue>contacto@circuitprompt.com</InfoValue>
                 </InfoContent>
               </ContactItem>
 
@@ -494,14 +494,26 @@ const Contact: React.FC = () => {
                   </svg>
                 </IconContainer>
                 <InfoContent>
-                  <InfoLabel>Disponibilidad</InfoLabel>
-                  <InfoValue>Disponible para proyectos freelance y ofertas laborales</InfoValue>
+                  <InfoLabel>Horario de Atención</InfoLabel>
+                  <InfoValue>Lunes a Viernes: 9:00 - 18:00 (GMT-3)</InfoValue>
+                </InfoContent>
+              </ContactItem>
+
+              <ContactItem variants={fadeInUpVariants}>
+                <IconContainer>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </IconContainer>
+                <InfoContent>
+                  <InfoLabel>Respuesta Garantizada</InfoLabel>
+                  <InfoValue>Respondemos en menos de 24 horas</InfoValue>
                 </InfoContent>
               </ContactItem>
 
               <SocialLinks>
                 <ContactIcon
-                  href="https://github.com/username"
+                  href="https://github.com/Lucas-Dono"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="GitHub"
@@ -512,7 +524,7 @@ const Contact: React.FC = () => {
                 </ContactIcon>
 
                 <ContactIcon
-                  href="https://linkedin.com/in/username"
+                  href="https://www.linkedin.com/in/lucas-dono-6990a9142/"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="LinkedIn"
@@ -523,7 +535,7 @@ const Contact: React.FC = () => {
                 </ContactIcon>
 
                 <ContactIcon
-                  href="https://twitter.com/username"
+                  href="https://twitter.com/circuitprompt"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Twitter"
@@ -534,7 +546,7 @@ const Contact: React.FC = () => {
                 </ContactIcon>
 
                 <ContactIcon
-                  href="https://instagram.com/username"
+                  href="https://instagram.com/circuitprompt"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Instagram"
@@ -554,58 +566,58 @@ const Contact: React.FC = () => {
             viewport={{ once: true, amount: 0.2 }}
             variants={fadeInUpVariants}
           >
-            <FormTitle>Envíame un mensaje</FormTitle>
+            <FormTitle>Solicita una Consulta Gratuita</FormTitle>
 
             <InputGroup>
-              <FormLabel htmlFor="name">Nombre completo</FormLabel>
+              <FormLabel htmlFor="name">Nombre de la empresa o contacto</FormLabel>
               <FormInput
                 type="text"
                 id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Tu nombre"
+                placeholder="Nombre de tu empresa"
                 required
                 aria-required={true}
               />
             </InputGroup>
 
             <InputGroup>
-              <FormLabel htmlFor="email">Correo electrónico</FormLabel>
+              <FormLabel htmlFor="email">Correo electrónico corporativo</FormLabel>
               <FormInput
                 type="email"
                 id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="correo@ejemplo.com"
+                placeholder="contacto@tuempresa.com"
                 required
                 aria-required={true}
               />
             </InputGroup>
 
             <InputGroup>
-              <FormLabel htmlFor="subject">Asunto</FormLabel>
+              <FormLabel htmlFor="subject">Tipo de proyecto</FormLabel>
               <FormInput
                 type="text"
                 id="subject"
                 name="subject"
                 value={formData.subject}
                 onChange={handleChange}
-                placeholder="Asunto de tu mensaje"
+                placeholder="Ej: Desarrollo web, E-commerce, Aplicación móvil"
                 required
                 aria-required={true}
               />
             </InputGroup>
 
             <InputGroup>
-              <FormLabel htmlFor="message">Tu mensaje</FormLabel>
+              <FormLabel htmlFor="message">Describe tu proyecto</FormLabel>
               <FormTextarea
                 id="message"
                 name="message"
                 value={formData.message}
                 onChange={handleChange}
-                placeholder="Escribe tu mensaje aquí..."
+                placeholder="Cuéntanos sobre tu proyecto, objetivos, presupuesto estimado y timeline..."
                 required
                 aria-required={true}
               />
@@ -622,7 +634,7 @@ const Contact: React.FC = () => {
                   padding: '1rem 2rem'
                 }}
               >
-                Enviar mensaje
+                Enviar Solicitud
               </Button>
             </div>
 

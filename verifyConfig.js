@@ -156,6 +156,12 @@ async function updateNginxConfig(port, isProduction = false) {
         if (await fs.access(nginxPath).then(() => true).catch(() => false)) {
             let nginxContent = await fs.readFile(nginxPath, 'utf-8');
 
+            // Actualizar proxy_pass para la ruta principal
+            nginxContent = nginxContent.replace(
+                /proxy_pass http:\/\/app:\d+;/g,
+                `proxy_pass http://app:${port};`
+            );
+
             // Actualizar proxy_pass para las rutas de API
             nginxContent = nginxContent.replace(
                 /proxy_pass http:\/\/app:\d+\/health;/g,
