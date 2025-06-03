@@ -164,19 +164,30 @@ const AdminLogin = () => {
 
         // Limpiar cualquier sesión anterior
         localStorage.clear();
+        sessionStorage.clear();
 
         // Establecer nuevos datos de sesión
         localStorage.setItem('auth_token', authToken);
+        sessionStorage.setItem('auth_token', authToken);
         localStorage.setItem('user_role', 'admin');
+        sessionStorage.setItem('user_role', 'admin');
         localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('auth_user', JSON.stringify({
+        sessionStorage.setItem('isAuthenticated', 'true');
+
+        // Guardar información del usuario administrador
+        const userInfo = {
           name: response.data.user?.name || 'Administrador',
           role: 'admin',
           email: response.data.user?.email || 'admin@example.com'
-        }));
+        };
+
+        localStorage.setItem('user_info', JSON.stringify(userInfo));
+        sessionStorage.setItem('user_info', JSON.stringify(userInfo));
+        localStorage.setItem('auth_user', JSON.stringify(userInfo));
+        sessionStorage.setItem('auth_user', JSON.stringify(userInfo));
 
         setSuccess('Verificación exitosa. Redirigiendo al panel de administración...');
-        console.log('✅ Verificación exitosa, datos guardados en localStorage');
+        console.log('✅ Verificación exitosa, datos guardados:', userInfo);
 
         // Forzar una recarga completa para asegurar la correcta aplicación de la sesión
         setTimeout(() => {

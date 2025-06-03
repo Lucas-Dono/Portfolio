@@ -196,24 +196,24 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
   const hasAuthToken = !!localStorage.getItem('auth_token');
+  const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
 
   // Verificar si el usuario tiene permisos de administrador
-  // En un entorno real, esto se haría verificando roles en el token o consultando a la API
-  const isAdmin = localStorage.getItem('user_role') === 'admin';
+  const isAdmin = userInfo.role === 'admin' || localStorage.getItem('user_role') === 'admin';
 
   console.log('Estado de autenticación (AdminRoute):', {
     isAuthenticated,
     hasAuthToken,
     isAdmin,
+    userInfo,
     pathname: window.location.pathname,
   });
 
-  // Si no está autenticado, redirigir al login
-  if (!isAuthenticated && !hasAuthToken) {
-    console.log('Acceso al panel admin: Requiere iniciar sesión - Redirigiendo a login');
+  // Si no está autenticado o no es admin, redirigir al login
+  if (!isAuthenticated || !hasAuthToken || !isAdmin) {
+    console.log('Acceso al panel admin: Requiere iniciar sesión como administrador - Redirigiendo a login');
     return <Navigate to="/admin/login" replace />;
   }
-
 
   return children;
 };
