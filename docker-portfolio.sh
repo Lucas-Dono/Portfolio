@@ -146,6 +146,60 @@ reiniciar_docker_desktop() {
     fi
 }
 
+# Función para limpiar recursos de Docker y archivos temporales
+limpiar_sistema() {
+    echo -e "${AZUL}🧹 Iniciando limpieza del sistema...${NC}"
+    
+    # Limpiar imágenes Docker no utilizadas
+    echo -e "${AZUL}🗑️ Eliminando imágenes Docker no utilizadas...${NC}"
+    docker image prune -f
+    
+    # Limpiar volúmenes huérfanos
+    echo -e "${AZUL}🗑️ Eliminando volúmenes huérfanos...${NC}"
+    docker volume prune -f
+    
+    # Limpiar contenedores detenidos
+    echo -e "${AZUL}🗑️ Eliminando contenedores detenidos...${NC}"
+    docker container prune -f
+    
+    # Limpiar redes no utilizadas
+    echo -e "${AZUL}🗑️ Eliminando redes no utilizadas...${NC}"
+    docker network prune -f
+    
+    # Limpiar cache de construcción
+    echo -e "${AZUL}🗑️ Eliminando cache de construcción...${NC}"
+    docker builder prune -f
+    
+    # Limpiar archivos de WhatsApp Web (si existen)
+    if [ -d ".wwebjs_auth" ]; then
+        echo -e "${AZUL}🗑️ Limpiando cache de WhatsApp Web...${NC}"
+        find .wwebjs_auth -name "*.html" -mtime +7 -delete 2>/dev/null || true
+        find .wwebjs_cache -name "*.html" -mtime +7 -delete 2>/dev/null || true
+    fi
+    
+    # Limpiar logs antiguos del sistema
+    echo -e "${AZUL}🗑️ Limpiando logs del sistema...${NC}"
+    docker system df
+    
+    echo -e "${VERDE}✅ Limpieza completada${NC}"
+    echo -e "${AZUL}📊 Espacio liberado:${NC}"
+    df -h
+}
+
+# Función para mostrar uso de espacio
+mostrar_uso_espacio() {
+    echo -e "${AZUL}📊 Uso de espacio en disco:${NC}"
+    df -h
+    echo -e "${AZUL}📊 Uso de Docker:${NC}"
+    docker system df
+    echo -e "${AZUL}📊 Volúmenes de Docker:${NC}"
+    docker volume ls
+    echo -e "${AZUL}📊 Tamaño de directorios del proyecto:${NC}"
+    du -sh .wwebjs_* 2>/dev/null || echo "No hay directorios de WhatsApp"
+    du -sh node_modules 2>/dev/null || echo "No hay node_modules"
+    du -sh dist 2>/dev/null || echo "No hay directorio dist"
+}
+
 # Función para mostrar el menú
 mostrar_menu() {
     echo -e "${AZUL}=================================${NC}"
@@ -156,7 +210,9 @@ mostrar_menu() {
     echo -e "${VERDE}3. Detener contenedores${NC}"
     echo -e "${VERDE}4. Ver logs${NC}"
     echo -e "${VERDE}5. Reiniciar Docker Desktop${NC}"
-    echo -e "${VERDE}6. Salir${NC}"
+    echo -e "${VERDE}6. Limpiar sistema (liberar espacio)${NC}"
+    echo -e "${VERDE}7. Mostrar uso de espacio${NC}"
+    echo -e "${VERDE}8. Salir${NC}"
     echo -e "${AZUL}=================================${NC}"
     echo -n "Selecciona una opción: "
 }
@@ -226,6 +282,16 @@ case "$1" in
                     read
                     ;;
                 6)
+                    limpiar_sistema
+                    echo -e "${AZUL}Presiona Enter para continuar...${NC}"
+                    read
+                    ;;
+                7)
+                    mostrar_uso_espacio
+                    echo -e "${AZUL}Presiona Enter para continuar...${NC}"
+                    read
+                    ;;
+                8)
                     echo -e "${VERDE}¡Hasta pronto!${NC}"
                     exit 0
                     ;;

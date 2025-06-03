@@ -136,6 +136,11 @@ services:
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     networks:
       - portfolio_frontend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
 
 networks:
   portfolio_internal:
@@ -146,9 +151,25 @@ networks:
 volumes:
   portfolio_postgres_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/postgres
   app_logs:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/logs
   app_uploads:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/uploads
   nginx_logs:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/nginx_logs
