@@ -87,6 +87,23 @@ compilar_frontend() {
     return 0
 }
 
+# Función para limpiar recursos Docker no utilizados
+limpiar_docker() {
+    echo -e "${AZUL}🧹 Limpiando recursos Docker no utilizados...${NC}"
+    docker container prune -f
+    docker image prune -a -f
+    docker volume prune -f
+    docker network prune -f
+    docker builder prune -f
+}
+
+# Función para mostrar el espacio usado
+mostrar_espacio() {
+    echo -e "${AZUL}📊 Espacio en disco:${NC}"
+    df -h /
+    docker system df
+}
+
 # Función para iniciar los contenedores en producción
 iniciar_produccion() {
     echo -e "${AZUL}=================================${NC}"
@@ -95,6 +112,10 @@ iniciar_produccion() {
 
     verificar_docker || return 1
     verificar_puertos || return 1
+
+    mostrar_espacio
+    limpiar_docker
+    mostrar_espacio
     
     echo -e "${AZUL}🛑 Deteniendo contenedores existentes...${NC}"
     $DOCKER_COMPOSE -f docker-compose-prod.yml down
@@ -140,6 +161,7 @@ iniciar_produccion() {
         echo -e "${AMARILLO}Mostrando logs para diagnóstico:${NC}"
         $DOCKER_COMPOSE -f docker-compose-prod.yml logs
     fi
+    mostrar_espacio
 }
 
 # Función para detener los contenedores
@@ -185,7 +207,8 @@ mostrar_menu() {
     echo -e "${VERDE}4. Ver logs${NC}"
     echo -e "${VERDE}5. Solucionar problemas de permisos${NC}"
     echo -e "${VERDE}6. Actualizar docker-compose-prod.yml${NC}"
-    echo -e "${VERDE}7. Salir${NC}"
+    echo -e "${VERDE}7. Limpieza profunda de Docker y sistema${NC}"
+    echo -e "${VERDE}8. Salir${NC}"
     echo -e "${AZUL}=================================${NC}"
     echo -n "Selecciona una opción: "
 }
@@ -247,6 +270,12 @@ case "$1" in
                     read
                     ;;
                 7)
+                    limpiar_docker
+                    mostrar_espacio
+                    echo -e "${AZUL}Presiona Enter para continuar...${NC}"
+                    read
+                    ;;
+                8)
                     echo -e "${VERDE}¡Hasta pronto!${NC}"
                     exit 0
                     ;;
