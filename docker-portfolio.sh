@@ -27,34 +27,83 @@ verificar_docker() {
     return 0
 }
 
+# Función para actualizar variables en .env según entorno
+actualizar_env() {
+    local modo="$1"
+    local env_file=".env"
+    if [ ! -f "$env_file" ]; then
+        echo -e "${ROJO}❌ No se encontró el archivo .env en el directorio actual.${NC}"
+        exit 1
+    fi
+
+    if [ "$modo" = "prod" ]; then
+        echo -e "${VERDE}🔧 Configurando .env para PRODUCCIÓN...${NC}"
+        sed -i 's/^NODE_ENV=.*/NODE_ENV=production/' "$env_file"
+        sed -i 's/^PORT=.*/PORT=5001/' "$env_file"
+        sed -i 's/^API_PORT=.*/API_PORT=5001/' "$env_file"
+        sed -i 's|^VITE_API_URL=.*|VITE_API_URL=https://circuitprompt.com.ar/api|' "$env_file"
+        sed -i 's|^CORS_FRONT=.*|CORS_FRONT=https://circuitprompt.com.ar|' "$env_file"
+        sed -i 's|^CORS_BACK=.*|CORS_BACK=https://circuitprompt.com.ar|' "$env_file"
+        sed -i 's|^VITE_CORS_FRONT=.*|VITE_CORS_FRONT=https://circuitprompt.com.ar|' "$env_file"
+        sed -i 's|^VITE_CORS_BACK=.*|VITE_CORS_BACK=https://circuitprompt.com.ar|' "$env_file"
+    else
+        echo -e "${VERDE}🔧 Configurando .env para DESARROLLO...${NC}"
+        sed -i 's/^NODE_ENV=.*/NODE_ENV=development/' "$env_file"
+        sed -i 's/^PORT=.*/PORT=3000/' "$env_file"
+        sed -i 's/^API_PORT=.*/API_PORT=3000/' "$env_file"
+        sed -i 's|^VITE_API_URL=.*|VITE_API_URL=http://localhost:3000/api|' "$env_file"
+        sed -i 's|^CORS_FRONT=.*|CORS_FRONT=http://localhost:3000|' "$env_file"
+        sed -i 's|^CORS_BACK=.*|CORS_BACK=http://localhost:3000|' "$env_file"
+        sed -i 's|^VITE_CORS_FRONT=.*|VITE_CORS_FRONT=http://localhost:3000|' "$env_file"
+        sed -i 's|^VITE_CORS_BACK=.*|VITE_CORS_BACK=http://localhost:3000|' "$env_file"
+    fi
+
+    echo -e "${VERDE}✅ Archivo .env modificado correctamente:${NC}"
+    grep -E 'NODE_ENV|PORT=|API_PORT=|VITE_API_URL=|CORS_FRONT=|CORS_BACK=|VITE_CORS_FRONT=|VITE_CORS_BACK=' "$env_file"
+}
+
 # Función para iniciar los contenedores
 iniciar_docker() {
+    local modo="$1"
+    local compose_file="docker-compose-dev.yml"
+    if [ "$modo" = "prod" ]; then
+        compose_file="docker-compose-prod.yml"
+    fi
+
     echo -e "${AZUL}=================================${NC}"
-    echo -e "${VERDE}Iniciando Portfolio en Desarrollo${NC}"
+    echo -e "${VERDE}Iniciando Portfolio en $([ "$modo" = "prod" ] && echo 'Producción' || echo 'Desarrollo')${NC}"
     echo -e "${AZUL}=================================${NC}"
 
     verificar_docker || return 1
     
     echo -e "${AZUL}🛑 Deteniendo contenedores existentes...${NC}"
-    $DOCKER_COMPOSE -f docker-compose-dev.yml down
+    $DOCKER_COMPOSE -f "$compose_file" down
     
     # Comprobar si se debe iniciar limpio (eliminar volúmenes)
-    if [ "$1" = "clean" ]; then
+    if [ "$2" = "clean" ]; then
         echo -e "${AMARILLO}⚠️ Modo limpio: Eliminando volumen de datos...${NC}"
         docker volume rm portfolio_postgres_data &> /dev/null || true
     else
         echo -e "${VERDE}✅ Conservando datos existentes${NC}"
     fi
     
-    echo -e "${AZUL}🚀 Iniciando contenedores...${NC}"
-    $DOCKER_COMPOSE -f docker-compose-dev.yml up -d
+    actualizar_env "$modo"
+    
+    echo -e "${AZUL}�� Iniciando contenedores...${NC}"
+    $DOCKER_COMPOSE -f "$compose_file" up -d
     
     echo -e "${AZUL}📊 Estado de los contenedores:${NC}"
     docker ps
     
-    echo -e "${VERDE}✅ Entorno de desarrollo iniciado correctamente${NC}"
-    echo -e "${VERDE}🌐 Frontend: http://localhost:3000${NC}"
-    echo -e "${VERDE}🖥️ Backend: http://localhost:5001${NC}"
+    if [ "$modo" = "prod" ]; then
+        echo -e "${VERDE}✅ Entorno de producción iniciado correctamente${NC}"
+        echo -e "${VERDE}🌐 Frontend: https://circuitprompt.com.ar${NC}"
+        echo -e "${VERDE}🖥️ Backend: https://circuitprompt.com.ar/api${NC}"
+    else
+        echo -e "${VERDE}✅ Entorno de desarrollo iniciado correctamente${NC}"
+        echo -e "${VERDE}🌐 Frontend: http://localhost:3000${NC}"
+        echo -e "${VERDE}🖥️ Backend: http://localhost:3000/api${NC}"
+    fi
 }
 
 # Función para detener los contenedores
@@ -115,10 +164,18 @@ mostrar_menu() {
 # Comprobar argumentos de línea de comandos
 case "$1" in
     start)
-        iniciar_docker
+        if [ "$2" = "prod" ]; then
+            iniciar_docker "prod"
+        else
+            iniciar_docker "dev"
+        fi
         ;;
     start-clean)
-        iniciar_docker "clean"
+        if [ "$2" = "prod" ]; then
+            iniciar_docker "prod" "clean"
+        else
+            iniciar_docker "dev" "clean"
+        fi
         ;;
     stop)
         detener_docker
@@ -136,12 +193,20 @@ case "$1" in
             read opcion
             case $opcion in
                 1)
-                    iniciar_docker
+                    if [ "$2" = "prod" ]; then
+                        iniciar_docker "prod"
+                    else
+                        iniciar_docker "dev"
+                    fi
                     echo -e "${AZUL}Presiona Enter para continuar...${NC}"
                     read
                     ;;
                 2)
-                    iniciar_docker "clean"
+                    if [ "$2" = "prod" ]; then
+                        iniciar_docker "prod" "clean"
+                    else
+                        iniciar_docker "dev" "clean"
+                    fi
                     echo -e "${AZUL}Presiona Enter para continuar...${NC}"
                     read
                     ;;
