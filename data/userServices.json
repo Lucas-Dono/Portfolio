@@ -10,8 +10,8 @@
       "status": "development",
       "domain": null,
       "createdAt": "2025-05-16T01:56:56.438Z",
-      "updatedAt": "2025-05-16T01:57:58.149Z",
-      "progress": 10,
+      "updatedAt": "2025-06-03T21:02:22.726Z",
+      "progress": 0,
       "stage": "Planificación",
       "nextTask": "Diseño inicial",
       "payment": {
@@ -57,14 +57,7 @@
           "completed": false
         }
       ],
-      "previews": [
-        {
-          "id": 1,
-          "url": "https://placehold.co/600x400/00FFFF/1e1e1e?text=Design+Preview",
-          "title": "Diseño Inicial",
-          "description": "Vista previa del diseño inicial"
-        }
-      ],
+      "previews": [],
       "details": {
         "serviceTitle": "Página Web 5 Rutas",
         "paymentDate": "2025-05-16T01:56:56.428Z"

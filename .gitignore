@@ -25,10 +25,10 @@ node_modules
 /build
 
 # Variables de entorno (COMENTADAS PARA REPOSITORIO PRIVADO)
-# .env
-# .env.*
-# !.env.example
-# !.env.template
+ .env
+ .env.*
+ !.env.example
+ !.env.template
 
 # Archivos temporales
 *.local

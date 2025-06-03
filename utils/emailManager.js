@@ -177,7 +177,7 @@ export const sendEmailVerification = async (email_to, token, isNewUser = true) =
  */
 export const sendTwoFactorEmail = async (email_to, token) => {
     const baseUrl = process.env.CORS_FRONT || 'http://localhost:3001';
-    const verificationLink = `${baseUrl}/admin/verify?token=${token}`;
+    const verificationLink = `${baseUrl}/admin/verify/${token}`;
 
     try {
         console.log(`🔐 Enviando correo de verificación a: ${email_to}`);

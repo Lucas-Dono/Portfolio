@@ -1162,7 +1162,7 @@ export const requestTwoFactorAuth = async (req, res) => {
     });
 
     // Enviar correo de verificación al administrador
-    const targetEmail = process.env.ADMIN_EMAIL || 'lucasdono391@gmail.com';
+    const targetEmail = process.env.Email || 'lucasdono391@gmail.com';
     console.log(`📧 Enviando correo de verificación a ${targetEmail}`);
 
     const emailSent = await sendTwoFactorEmail(targetEmail, twoFactorToken);

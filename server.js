@@ -605,7 +605,7 @@ const transporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: process.env.ADMIN_EMAIL,
+    user: process.env.ADMIN_EMAIL || 'no_reply@circuitprompt.com.ar',
     pass: process.env.EMAIL_PASS
   }
 });
@@ -638,8 +638,8 @@ async function fallback(error, formData) {
   try {
     // Envía email de notificación de error
     await transporter.sendMail({
-      from: process.env.ADMIN_EMAIL,
-      to: process.env.Email || process.env.ADMIN_EMAIL, // Usar Email personal si está disponible
+      from: process.env.ADMIN_EMAIL || 'no_reply@circuitprompt.com.ar',
+      to: process.env.Email, // Tu correo personal como destinatario
       subject: '⚠️ Error de WhatsApp Bot',
       text: `Error al enviar mensaje por WhatsApp:\n${error.message}`
     });
@@ -1419,8 +1419,8 @@ async function enterpriseContactFallback(error, formData) {
 
     // Enviar email usando el transporter existente
     await transporter.sendMail({
-      from: process.env.ADMIN_EMAIL,
-      to: process.env.Email || process.env.ADMIN_EMAIL, // Usar Email personal si está disponible
+      from: process.env.ADMIN_EMAIL || 'no_reply@circuitprompt.com.ar',
+      to: process.env.Email, // Tu correo personal como destinatario
       subject: subject,
       text: text
     });

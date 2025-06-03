@@ -1596,10 +1596,15 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   const [layouts, setLayouts] = useState<Layout[]>(defaultLayout);
 
   // Lista de respuestas rápidas
-  const quickReplies = [
+  const quickReplies = hasActiveProjects ? [
     '¿Cómo va mi proyecto?',
+    '¿Qué incluirá mi sitio?',
     '¿Cuándo estará listo?',
-    'Quiero hacer un cambio',
+    'Quiero hacer un cambio'
+  ] : [
+    '¿Qué servicios ofrecen?',
+    '¿Cuánto cuesta?',
+    'Quiero ver ejemplos',
     'Necesito ayuda'
   ];
 
@@ -1704,27 +1709,37 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   useEffect(() => {
     if (isAuthenticated && !loading) {
       if (hasActiveProjects && isFirstLogin) {
-        // Iniciar la conversación con un retraso para efecto natural (usuario con proyecto)
+        // Iniciar la conversación con información específica del proyecto
         setTimeout(() => {
-          addMessage('assistant', '¡Hola! 👋 Soy Chloe, tu asistente virtual. Estoy aquí para ayudarte a configurar tu nuevo sitio web.');
+          const projectType = projectInfo.businessType === 'ecommerce' ? 'tienda online' :
+            projectInfo.businessType === 'blog' ? 'blog' :
+              projectInfo.businessType === 'portfolio' ? 'portfolio' :
+                'sitio web';
+
+          addMessage('assistant', `¡Hola! 👋 Soy Chloe, tu asistente virtual especializada en desarrollo web. Veo que tienes un proyecto de ${projectType} llamado "${projectInfo.name}" en desarrollo.`);
         }, 500);
 
         setTimeout(() => {
-          addMessage('assistant', 'Me gustaría conocer más sobre tu proyecto para poder ofrecerte la mejor experiencia personalizada. ¿Podrías contarme un poco sobre qué tipo de sitio web estás buscando crear?');
+          addMessage('assistant', `Tu proyecto está actualmente al ${progress.percentage}% de completarse y estamos en la fase de "${progress.stage}". ¿Te gustaría que te cuente más detalles sobre el progreso, las características que incluirá tu sitio, o tienes alguna pregunta específica?`);
         }, 2500);
       } else if (hasActiveProjects && !isFirstLogin) {
-        // Si no es la primera vez, cargar mensajes anteriores (en un entorno real, estos se cargarían desde la API)
+        // Si no es la primera vez, mensaje de bienvenida personalizado
+        const projectType = projectInfo.businessType === 'ecommerce' ? 'tienda online' :
+          projectInfo.businessType === 'blog' ? 'blog' :
+            projectInfo.businessType === 'portfolio' ? 'portfolio' :
+              'sitio web';
+
         setMessages([
-          { role: 'assistant', content: '¡Hola de nuevo! 👋 ¿En qué puedo ayudarte hoy con tu proyecto?' }
+          { role: 'assistant', content: `¡Hola de nuevo! 👋 Tu ${projectType} "${projectInfo.name}" está progresando muy bien. Actualmente está al ${progress.percentage}% de completarse. ¿En qué puedo ayudarte hoy?` }
         ]);
       } else {
         // Usuario sin proyectos activos
         setMessages([
-          { role: 'assistant', content: '¡Hola! 👋 Soy Chloe, tu asistente virtual. Veo que aún no tienes proyectos activos. ¿Te gustaría conocer nuestros servicios de desarrollo web?' }
+          { role: 'assistant', content: '¡Hola! 👋 Soy Chloe, tu asistente virtual especializada en desarrollo web. Veo que aún no tienes proyectos activos. ¿Te gustaría conocer nuestros servicios de desarrollo web? Puedo ayudarte a encontrar la solución perfecta para tu presencia online.' }
         ]);
       }
     }
-  }, [isAuthenticated, isFirstLogin, hasActiveProjects, loading]);
+  }, [isAuthenticated, isFirstLogin, hasActiveProjects, loading, projectInfo, progress]);
 
   // Efecto para hacer scroll al último mensaje
   useEffect(() => {
@@ -1958,7 +1973,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
             // Actualizar el progreso del proyecto
             setProgress({
-              percentage: mainService.progress || 30,
+              percentage: mainService.progress !== undefined ? mainService.progress : 30,
               stage: mainService.stage || 'Desarrollo en curso',
               nextTask: mainService.nextTask || 'Configuración del diseño responsivo',
               milestones: mainService.milestones || [
@@ -1974,27 +1989,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
             if (mainService.previews && mainService.previews.length > 0) {
               setPreviewImages(mainService.previews);
             } else {
-              // Usar imágenes de previsualización por defecto
-              setPreviewImages([
-                {
-                  id: 1,
-                  url: 'https://placehold.co/600x400/00FFFF/1e1e1e?text=Home+Page',
-                  title: 'Página de inicio',
-                  description: 'Vista principal de la página de inicio'
-                },
-                {
-                  id: 2,
-                  url: 'https://placehold.co/600x400/FF00FF/1e1e1e?text=About+Page',
-                  title: 'Página Sobre Nosotros',
-                  description: 'Información sobre la empresa y servicios'
-                },
-                {
-                  id: 3,
-                  url: 'https://placehold.co/600x400/00A0FF/1e1e1e?text=Services+Page',
-                  title: 'Página de Servicios',
-                  description: 'Listado de servicios ofrecidos'
-                }
-              ]);
+              // No hay imágenes de previsualización disponibles
+              setPreviewImages([]);
             }
           }
         } else {
@@ -2167,102 +2163,183 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       return;
     }
 
-    // Si tiene proyectos activos, usar la lógica original
-    // Simulación de respuestas basadas en palabras clave
-    if (isFirstLogin) {
-      if (lowerCaseMessage.includes('tienda') || lowerCaseMessage.includes('ecommerce') || lowerCaseMessage.includes('vender')) {
-        setTimeout(() => {
-          addMessage('assistant', 'Una tienda online es una excelente opción. ¿Ya tienes productos que quieres vender o estás empezando desde cero?');
+    // Si tiene proyectos activos, usar respuestas inteligentes basadas en el estado del proyecto
+    setTimeout(() => {
+      // Respuestas sobre el progreso del proyecto
+      if (lowerCaseMessage.includes('progreso') || lowerCaseMessage.includes('avance') || lowerCaseMessage.includes('como va')) {
+        const currentMilestone = progress.milestones.find(m => !m.completed);
+        const completedMilestones = progress.milestones.filter(m => m.completed);
 
-          // Actualizar el estado de la información del proyecto
-          setProjectInfo(prev => ({
-            ...prev,
-            description: 'Tienda en línea para venta de productos',
-            businessType: 'ecommerce'
-          }));
-        }, 1000);
-      } else if (lowerCaseMessage.includes('blog') || lowerCaseMessage.includes('contenido') || lowerCaseMessage.includes('artículos')) {
-        setTimeout(() => {
-          addMessage('assistant', 'Un blog es una excelente manera de compartir tus ideas. ¿Sobre qué temas te gustaría escribir principalmente?');
+        let progressMessage = `Tu proyecto "${projectInfo.name}" está al ${progress.percentage}% de completarse. `;
+        progressMessage += `Actualmente estamos en la fase de "${progress.stage}".\\n\\n`;
 
-          setProjectInfo(prev => ({
-            ...prev,
-            description: 'Blog para publicación de contenido',
-            businessType: 'blog'
-          }));
-        }, 1000);
-      } else if (lowerCaseMessage.includes('portafolio') || lowerCaseMessage.includes('trabajo') || lowerCaseMessage.includes('profesional')) {
-        setTimeout(() => {
-          addMessage('assistant', 'Un portafolio profesional es la mejor carta de presentación. ¿Qué tipo de trabajos o servicios te gustaría mostrar?');
-
-          setProjectInfo(prev => ({
-            ...prev,
-            description: 'Portafolio profesional para mostrar trabajos',
-            businessType: 'portfolio'
-          }));
-        }, 1000);
-      } else if (lowerCaseMessage.includes('negocio') || lowerCaseMessage.includes('empresa') || lowerCaseMessage.includes('servicios')) {
-        setTimeout(() => {
-          addMessage('assistant', '¡Genial! Un sitio para tu negocio. ¿Tu empresa ya está establecida o estás comenzando?');
-
-          setProjectInfo(prev => ({
-            ...prev,
-            description: 'Sitio web corporativo para empresa',
-            businessType: 'business',
-            hasBusinessInfo: true
-          }));
-        }, 1000);
-      } else {
-        // Respuesta genérica si no detecta intención clara
-        setTimeout(() => {
-          addMessage('assistant', 'Gracias por compartir esa información. ¿Podrías contarme si ya tienes un negocio establecido o estás empezando desde cero?');
-        }, 1000);
-      }
-
-      // Después de varias interacciones, marcar como que ya no es primera vez
-      if (messages.length > 4) {
-        localStorage.setItem('firstLogin', 'false');
-        setIsFirstLogin(false);
-
-        setTimeout(() => {
-          addMessage('assistant', 'Perfecto, he guardado toda esta información. Ya puedes ver una previsualización básica de cómo podría quedar tu sitio en la sección de imágenes. Seguiremos avanzando en el desarrollo según el plan establecido.');
-
-          // Incrementar el progreso después de la configuración inicial
-          setProgress(prev => ({
-            ...prev,
-            percentage: 35,
-            nextTask: 'Desarrollo de página de inicio'
-          }));
-
-          // En un entorno real, enviamos la actualización a la API
-          // if (authToken) {
-          //   fetch('/api/projects/update-progress', {
-          //     method: 'POST',
-          //     headers: {
-          //       'Content-Type': 'application/json',
-          //       'Authorization': `Bearer ${authToken}`
-          //     },
-          //     body: JSON.stringify({ 
-          //       percentage: 35,
-          //       stage: 'Desarrollo en curso',
-          //       nextTask: 'Desarrollo de página de inicio'
-          //     })
-          //   });
-          // }
-        }, 1500);
-      }
-    } else {
-      // Respuestas para usuarios que ya han pasado la configuración inicial
-      setTimeout(() => {
-        if (lowerCaseMessage.includes('progreso') || lowerCaseMessage.includes('avance')) {
-          addMessage('assistant', `Tu proyecto está al ${progress.percentage}% de completarse. Actualmente estamos en la fase de "${progress.stage}" y el próximo paso será "${progress.nextTask}".`);
-        } else if (lowerCaseMessage.includes('cambiar') || lowerCaseMessage.includes('modificar')) {
-          addMessage('assistant', 'Puedes solicitar cambios en cualquier momento. ¿Qué te gustaría modificar específicamente de tu sitio web?');
-        } else {
-          addMessage('assistant', 'Entiendo. Tomaré nota de esto para el desarrollo de tu sitio. ¿Hay algo más en lo que pueda ayudarte hoy?');
+        if (completedMilestones.length > 0) {
+          progressMessage += `✅ **Etapas completadas:**\\n`;
+          completedMilestones.forEach(milestone => {
+            progressMessage += `• ${milestone.name}\\n`;
+          });
         }
-      }, 1000);
-    }
+
+        if (currentMilestone) {
+          progressMessage += `\\n🔄 **Próxima etapa:** ${currentMilestone.name}\\n`;
+          progressMessage += `**Próximo paso:** ${progress.nextTask}`;
+        }
+
+        addMessage('assistant', progressMessage);
+      }
+
+      // Respuestas sobre la composición del proyecto
+      else if (lowerCaseMessage.includes('composición') || lowerCaseMessage.includes('incluye') || lowerCaseMessage.includes('tendrá') || lowerCaseMessage.includes('características')) {
+        let compositionMessage = `Tu proyecto "${projectInfo.name}" incluirá las siguientes características:\\n\\n`;
+
+        // Personalizar según el tipo de proyecto
+        if (projectInfo.businessType === 'ecommerce') {
+          compositionMessage += `🛒 **Tienda Online Completa:**\\n`;
+          compositionMessage += `• Catálogo de productos con imágenes\\n`;
+          compositionMessage += `• Carrito de compras integrado\\n`;
+          compositionMessage += `• Sistema de pagos con MercadoPago\\n`;
+          compositionMessage += `• Panel de administración de productos\\n`;
+          compositionMessage += `• Gestión de inventario\\n`;
+          compositionMessage += `• Sistema de envíos\\n`;
+        } else if (projectInfo.businessType === 'blog') {
+          compositionMessage += `📝 **Blog Profesional:**\\n`;
+          compositionMessage += `• Sistema de gestión de contenido\\n`;
+          compositionMessage += `• Categorías y etiquetas\\n`;
+          compositionMessage += `• Comentarios de usuarios\\n`;
+          compositionMessage += `• Newsletter integrado\\n`;
+          compositionMessage += `• SEO optimizado\\n`;
+        } else if (projectInfo.businessType === 'portfolio') {
+          compositionMessage += `🎨 **Portfolio Profesional:**\\n`;
+          compositionMessage += `• Galería de proyectos\\n`;
+          compositionMessage += `• Sección sobre ti/empresa\\n`;
+          compositionMessage += `• Formulario de contacto\\n`;
+          compositionMessage += `• Testimonios de clientes\\n`;
+          compositionMessage += `• CV/Experiencia descargable\\n`;
+        } else {
+          compositionMessage += `🌐 **Sitio Web Profesional:**\\n`;
+          compositionMessage += `• Página de inicio atractiva\\n`;
+          compositionMessage += `• Sección sobre nosotros\\n`;
+          compositionMessage += `• Servicios/Productos\\n`;
+          compositionMessage += `• Formulario de contacto\\n`;
+          compositionMessage += `• Integración con redes sociales\\n`;
+        }
+
+        compositionMessage += `\\n✨ **Características generales:**\\n`;
+        compositionMessage += `• Diseño responsive (móvil y desktop)\\n`;
+        compositionMessage += `• Optimización SEO\\n`;
+        compositionMessage += `• Velocidad de carga optimizada\\n`;
+        compositionMessage += `• Certificado SSL incluido\\n`;
+        compositionMessage += `• Panel de administración\\n`;
+
+        addMessage('assistant', compositionMessage);
+      }
+
+      // Respuestas sobre cambios o modificaciones
+      else if (lowerCaseMessage.includes('cambiar') || lowerCaseMessage.includes('modificar') || lowerCaseMessage.includes('agregar')) {
+        let changeMessage = `¡Por supuesto! Puedes solicitar cambios en cualquier momento durante el desarrollo. `;
+
+        if (progress.percentage < 50) {
+          changeMessage += `Como tu proyecto está en las etapas iniciales (${progress.percentage}%), es el momento perfecto para hacer ajustes sin costo adicional.\\n\\n`;
+        } else if (progress.percentage < 80) {
+          changeMessage += `Tu proyecto está en desarrollo avanzado (${progress.percentage}%). Algunos cambios menores son posibles, pero cambios mayores podrían afectar el cronograma.\\n\\n`;
+        } else {
+          changeMessage += `Tu proyecto está casi terminado (${progress.percentage}%). Los cambios en esta etapa son limitados para mantener la calidad y el cronograma.\\n\\n`;
+        }
+
+        changeMessage += `**¿Qué te gustaría modificar específicamente?**\\n`;
+        changeMessage += `• Diseño o colores\\n`;
+        changeMessage += `• Contenido o textos\\n`;
+        changeMessage += `• Funcionalidades\\n`;
+        changeMessage += `• Estructura de páginas\\n\\n`;
+        changeMessage += `Puedes contactar directamente al desarrollador usando el botón de WhatsApp para discutir los detalles.`;
+
+        addMessage('assistant', changeMessage);
+      }
+
+      // Respuestas sobre tiempos de entrega
+      else if (lowerCaseMessage.includes('cuándo') || lowerCaseMessage.includes('tiempo') || lowerCaseMessage.includes('entrega') || lowerCaseMessage.includes('listo')) {
+        const remainingPercentage = 100 - progress.percentage;
+        const estimatedDays = Math.ceil((remainingPercentage / 100) * 14); // Estimación basada en 14 días total
+
+        let timeMessage = `Basándome en el progreso actual (${progress.percentage}%), tu proyecto estará listo en aproximadamente **${estimatedDays} días**.\\n\\n`;
+
+        timeMessage += `📅 **Cronograma estimado:**\\n`;
+        progress.milestones.forEach((milestone, index) => {
+          const daysForMilestone = Math.ceil(((index + 1) / progress.milestones.length) * 14);
+          const status = milestone.completed ? '✅' : '⏳';
+          timeMessage += `${status} ${milestone.name}: ${milestone.completed ? 'Completado' : `Día ${daysForMilestone}`}\\n`;
+        });
+
+        timeMessage += `\\n*Los tiempos pueden variar según la complejidad de los cambios solicitados y la disponibilidad de contenido por parte del cliente.*`;
+
+        addMessage('assistant', timeMessage);
+      }
+
+      // Respuestas sobre el dominio
+      else if (lowerCaseMessage.includes('dominio') || lowerCaseMessage.includes('url') || lowerCaseMessage.includes('dirección')) {
+        let domainMessage = '';
+
+        if (projectInfo.domain && projectInfo.domain !== 'pendiente.com') {
+          domainMessage = `Tu sitio web estará disponible en: **${projectInfo.domain}**\\n\\n`;
+        } else {
+          domainMessage = `Aún no has configurado tu dominio personalizado. `;
+        }
+
+        domainMessage += `🌐 **Opciones de dominio:**\\n`;
+        domainMessage += `• **Dominio gratuito:** subdominio.circuitprompt.com.ar\\n`;
+        domainMessage += `• **Dominio personalizado:** tuempresa.com (costo adicional)\\n\\n`;
+        domainMessage += `Si ya tienes un dominio, podemos configurarlo para que apunte a tu nuevo sitio. ¿Te gustaría que te ayude con la configuración del dominio?`;
+
+        addMessage('assistant', domainMessage);
+      }
+
+      // Respuestas sobre hosting y mantenimiento
+      else if (lowerCaseMessage.includes('hosting') || lowerCaseMessage.includes('mantenimiento') || lowerCaseMessage.includes('servidor')) {
+        let hostingMessage = `🖥️ **Hosting y Mantenimiento incluido:**\\n\\n`;
+        hostingMessage += `✅ **Hosting gratuito el primer año**\\n`;
+        hostingMessage += `✅ **Certificado SSL incluido**\\n`;
+        hostingMessage += `✅ **Copias de seguridad automáticas**\\n`;
+        hostingMessage += `✅ **Actualizaciones de seguridad**\\n`;
+        hostingMessage += `✅ **Soporte técnico 24/7**\\n\\n`;
+        hostingMessage += `Después del primer año, el hosting tiene un costo de mantenimiento muy accesible. Te notificaremos con anticipación para que puedas renovar sin interrupciones.`;
+
+        addMessage('assistant', hostingMessage);
+      }
+
+      // Respuestas sobre SEO y posicionamiento
+      else if (lowerCaseMessage.includes('seo') || lowerCaseMessage.includes('google') || lowerCaseMessage.includes('posicionamiento') || lowerCaseMessage.includes('búsqueda')) {
+        let seoMessage = `🔍 **Optimización SEO incluida:**\\n\\n`;
+        seoMessage += `✅ **SEO Técnico:**\\n`;
+        seoMessage += `• Estructura HTML optimizada\\n`;
+        seoMessage += `• Meta tags y descripciones\\n`;
+        seoMessage += `• Sitemap XML automático\\n`;
+        seoMessage += `• Velocidad de carga optimizada\\n\\n`;
+        seoMessage += `✅ **SEO de Contenido:**\\n`;
+        seoMessage += `• Títulos y encabezados optimizados\\n`;
+        seoMessage += `• URLs amigables\\n`;
+        seoMessage += `• Imágenes optimizadas\\n\\n`;
+        seoMessage += `📈 **Servicios adicionales disponibles:**\\n`;
+        seoMessage += `• Análisis de palabras clave\\n`;
+        seoMessage += `• Optimización avanzada\\n`;
+        seoMessage += `• Configuración de Google Analytics\\n`;
+        seoMessage += `• Google My Business`;
+
+        addMessage('assistant', seoMessage);
+      }
+
+      // Respuesta genérica inteligente
+      else {
+        const responses = [
+          `Entiendo tu consulta sobre "${projectInfo.name}". ¿Podrías ser más específico sobre qué aspecto del proyecto te interesa conocer?`,
+          `Estoy aquí para ayudarte con cualquier duda sobre tu proyecto. Puedo contarte sobre el progreso, características, tiempos de entrega, o cualquier otro aspecto.`,
+          `¡Perfecto! Tomaré nota de esto para el desarrollo de tu sitio. ¿Hay algo más específico en lo que pueda ayudarte hoy?`,
+          `Gracias por tu mensaje. Si necesitas hacer cambios o tienes dudas específicas, no dudes en contactar al desarrollador directamente por WhatsApp.`
+        ];
+
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        addMessage('assistant', randomResponse);
+      }
+    }, 1000);
   };
 
   // Función para manejar el envío de mensajes
@@ -2322,16 +2399,16 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       };
 
       console.log('Enviando solicitud de reembolso:', refundData);
-      console.log('URL de API:', `${API_BASE_URL}/payments/refunds/request`);
+      console.log('URL de API:', `${API_BASE_URL} /payments/refunds / request`);
 
       // Usar axios en lugar de fetch para mejor manejo de errores
       const response = await axios.post(
-        `${API_BASE_URL}/payments/refunds/request`,
+        `${API_BASE_URL} /payments/refunds / request`,
         refundData,
         {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token} `
           }
         }
       );
@@ -2529,7 +2606,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
                 <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
               </svg>
               <div style={{ color: '#fff', fontWeight: '500', textAlign: 'center' }}>
-                Vista previa en desarrollo
+                Acá verás la vista previa de tu sitio web
               </div>
             </PreviewMockup>
           )}
@@ -3036,11 +3113,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
         </svg>
         <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
+@keyframes spin {
+  0 % { transform: rotate(0deg); }
+  100 % { transform: rotate(360deg); }
+}
+`}</style>
         <div>Cargando datos del proyecto...</div>
       </div>
     );
@@ -3205,9 +3282,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       setLoading(true);
 
       // Obtener servicios del usuario desde la API
-      const response = await fetch(`${API_BASE_URL}/services/user`, {
+      const response = await fetch(`${API_BASE_URL} /services/user`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${token} `,
           'Content-Type': 'application/json'
         }
       });
@@ -3301,7 +3378,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         <>
           <ContentGrid height={windowSize.height}>
             <ResponsiveGridLayout
-              className={`layout ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''}`}
+              className={`layout ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} `}
               layout={layouts}
               cols={6}
               rowHeight={Math.max(80, Math.floor((windowSize.height - 150) / 8))}

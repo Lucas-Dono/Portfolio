@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import GlobalStyles from './styles/GlobalStyles';
 import { ScrollProvider, useScroll } from './contexts/ScrollContext';
 import Intro from './components/sections/Intro';
@@ -221,23 +221,64 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 // Componente AdminVerify para la página de verificación de token
 const AdminVerify = () => {
   const navigate = useNavigate();
+  const { token } = useParams<{ token: string }>();
   const [verifying, setVerifying] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const location = useLocation();
 
   useEffect(() => {
-    // Redirigir a la página de login con el token en la URL
-    // El componente AdminLogin se encargará de procesar el token
-    const params = new URLSearchParams(location.search);
-    const token = params.get('token');
+    const verifyToken = async () => {
+      if (!token) {
+        setVerifying(false);
+        setError('No se encontró un token de verificación válido');
+        return;
+      }
 
-    if (token) {
-      navigate(`/admin/login?token=${token}`, { replace: true });
-    } else {
-      setVerifying(false);
-      setError('No se encontró un token de verificación válido');
-    }
-  }, [location, navigate]);
+      try {
+        console.log('🔐 Verificando token de administrador:', token.substring(0, 10) + '...');
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/admin/verify/${token}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.token) {
+          console.log('✅ Verificación exitosa, autenticando administrador');
+
+          // Guardar el token JWT en todas las formas de almacenamiento
+          localStorage.setItem('auth_token', data.token);
+          sessionStorage.setItem('auth_token', data.token);
+          document.cookie = `auth_token=${data.token}; path=/; max-age=2592000; SameSite=Lax`;
+          localStorage.setItem('isAuthenticated', 'true');
+          sessionStorage.setItem('isAuthenticated', 'true');
+          document.cookie = `isAuthenticated=true; path=/; max-age=2592000; SameSite=Lax`;
+
+          // Guardar información del usuario administrador
+          if (data.user) {
+            localStorage.setItem('user_info', JSON.stringify(data.user));
+            sessionStorage.setItem('user_info', JSON.stringify(data.user));
+          }
+
+          // Redirigir al panel de administración
+          console.log('🚀 Redirigiendo al panel de administración');
+          navigate('/admin', { replace: true });
+        } else {
+          console.error('❌ Error en verificación:', data.error);
+          setError(data.error || 'Token de verificación inválido o expirado');
+        }
+      } catch (error) {
+        console.error('❌ Error al verificar token:', error);
+        setError('Error de conexión. Por favor, intenta de nuevo.');
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    verifyToken();
+  }, [token, navigate]);
 
   return (
     <div style={{
@@ -264,30 +305,48 @@ const AdminVerify = () => {
           fontSize: '1.8rem',
           marginBottom: '1.5rem',
           color: '#00FFFF'
-        }}>Verificando Acceso</h1>
+        }}>
+          {verifying ? 'Verificando Acceso' : error ? 'Error de Verificación' : 'Acceso Verificado'}
+        </h1>
 
         {verifying ? (
-          <p>Verificando token de autenticación...</p>
-        ) : (
           <div>
-            <p style={{ color: '#FF5252' }}>{error}</p>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              border: '4px solid #333',
+              borderTop: '4px solid #00FFFF',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 1rem'
+            }}></div>
+            <p>Verificando token de autenticación...</p>
+          </div>
+        ) : error ? (
+          <div>
+            <p style={{ color: '#FF5252', marginBottom: '1.5rem' }}>{error}</p>
             <button
               onClick={() => navigate('/admin/login')}
               style={{
                 background: 'linear-gradient(135deg, #00d2ff, #3a7bd5)',
                 color: 'white',
                 border: 'none',
-                padding: '0.85rem',
+                padding: '0.85rem 1.5rem',
                 borderRadius: '6px',
                 fontSize: '1rem',
                 fontWeight: 600,
                 cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                marginTop: '1.5rem'
+                transition: 'all 0.2s ease'
               }}
             >
               Volver al inicio de sesión
             </button>
+          </div>
+        ) : (
+          <div>
+            <p style={{ color: '#4CAF50', marginBottom: '1.5rem' }}>
+              ¡Verificación exitosa! Redirigiendo al panel de administración...
+            </p>
           </div>
         )}
       </div>
@@ -554,7 +613,7 @@ const AppRoutes = () => {
       } />
 
       {/* Ruta para la página de verificación de token */}
-      <Route path="/admin/verify" element={<AdminVerify />} />
+      <Route path="/admin/verify/:token" element={<AdminVerify />} />
 
       {/* Ruta para la página de términos y condiciones */}
       <Route path="/terms" element={

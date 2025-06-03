@@ -199,18 +199,14 @@ export const GlobalStyles = createGlobalStyle<{ theme: CustomTheme }>`
     margin-bottom: 2rem;
     border-left: 4px solid var(--accent);
     padding-left: 1.5rem;
-    position: relative;
-    
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 4px;
-      height: 100%;
-      background: var(--gradient-accent);
-      box-shadow: 0 0 3px var(--accent); /* Reducido shadow */
-    }
+    background: rgba(0, 255, 255, 0.05);
+    border-radius: 0 8px 8px 0;
+  }
+  
+  /* Animación para el spinner de verificación */
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 `;
 

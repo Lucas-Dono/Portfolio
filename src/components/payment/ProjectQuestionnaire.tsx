@@ -64,10 +64,10 @@ const StepDot = styled.div<{ active: boolean, completed: boolean }>`
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: ${props => 
-    props.completed ? '#00FFFF' : 
-    props.active ? 'rgba(0, 255, 255, 0.5)' : 
-    'rgba(255, 255, 255, 0.2)'
+  background-color: ${props =>
+    props.completed ? '#00FFFF' :
+      props.active ? 'rgba(0, 255, 255, 0.5)' :
+        'rgba(255, 255, 255, 0.2)'
   };
   transition: all 0.3s ease;
 `;
@@ -284,6 +284,14 @@ const questionsByServiceType: Record<string, Array<{
       placeholder: 'Ej. Cafetería El Aroma'
     },
     {
+      id: 'contactPhone',
+      question: '¿Cuál es tu número de contacto?',
+      description: 'Necesitamos tu número para comunicarnos contigo durante el desarrollo del proyecto en caso de dudas o aclaraciones.',
+      type: 'text',
+      required: true,
+      placeholder: 'Ej. +54 9 11 1234-5678 o 11 1234-5678'
+    },
+    {
       id: 'businessDescription',
       question: 'Describe brevemente tu negocio o proyecto',
       description: 'Una descripción concisa de lo que haces, tus servicios o productos.',
@@ -313,7 +321,7 @@ const questionsByServiceType: Record<string, Array<{
       placeholder: '#3a7bd5'
     }
   ],
-  
+
   // Preguntas específicas para landing page
   landing: [
     {
@@ -346,7 +354,7 @@ const questionsByServiceType: Record<string, Array<{
       placeholder: 'Ej. 1. Header con logo y menú\n2. Banner principal con imagen y llamado a la acción\n3. Sección Sobre Nosotros\n4. Galería de productos/servicios\n5. Testimonios\n6. Formulario de contacto\n7. Footer con información de contacto'
     }
   ],
-  
+
   // Preguntas para sitios web de 5 rutas
   web5: [
     {
@@ -387,7 +395,7 @@ const questionsByServiceType: Record<string, Array<{
       placeholder: 'URLs o nombres de sitios que te gusten como referencia'
     }
   ],
-  
+
   // Preguntas para sitios web de 7+ rutas
   web7: [
     {
@@ -456,7 +464,7 @@ const questionsByServiceType: Record<string, Array<{
       placeholder: 'URLs o nombres de sitios que te gusten como referencia'
     }
   ],
-  
+
   // Preguntas para blog
   blog: [
     {
@@ -481,7 +489,7 @@ const questionsByServiceType: Record<string, Array<{
       ]
     }
   ],
-  
+
   // Preguntas para tiendas online
   ecommerce: [
     {
@@ -516,7 +524,7 @@ const questionsByServiceType: Record<string, Array<{
       ]
     }
   ],
-  
+
   // Preguntas para portfolio
   portfolio: [
     {
@@ -539,7 +547,7 @@ const questionsByServiceType: Record<string, Array<{
 // Función para determinar qué preguntas mostrar basado en el tipo de servicio
 const getQuestionsForServiceType = (serviceType: string) => {
   let questions = [...questionsByServiceType.common];
-  
+
   // Agregar preguntas específicas según el tipo de servicio
   switch (serviceType) {
     case 'landing':
@@ -564,31 +572,31 @@ const getQuestionsForServiceType = (serviceType: string) => {
       // Si no hay un tipo específico, solo usar preguntas comunes
       break;
   }
-  
+
   return questions;
 };
 
 // Componente principal
-const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({ 
-  serviceType, 
-  onComplete, 
-  onClose = () => {}, 
-  isVisible 
+const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
+  serviceType,
+  onComplete,
+  onClose = () => { },
+  isVisible
 }) => {
   // Estado para las respuestas y paso actual
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Obtener las preguntas para este tipo de servicio
   const questions = getQuestionsForServiceType(serviceType);
-  
+
   // Reiniciar cuando cambia el tipo de servicio
   useEffect(() => {
     setAnswers({});
     setCurrentStep(0);
   }, [serviceType]);
-  
+
   // Función para actualizar una respuesta
   const updateAnswer = (questionId: string, value: any) => {
     setAnswers(prev => ({
@@ -596,51 +604,59 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
       [questionId]: value
     }));
   };
-  
+
   // Verificar si el paso actual tiene campos requeridos completos
   const isCurrentStepValid = () => {
     const currentQuestion = questions[currentStep];
     if (!currentQuestion.required) return true;
-    
+
     const answer = answers[currentQuestion.id];
     if (answer === undefined || answer === '') return false;
-    
+
     if (Array.isArray(answer) && answer.length === 0) return false;
-    
+
+    // Validación especial para número de teléfono
+    if (currentQuestion.id === 'contactPhone') {
+      const phoneRegex = /^(\+54\s?9?\s?)?(\d{2,4})\s?(\d{4})-?(\d{4})$|^(\+54\s?9?\s?)?(\d{10,11})$/;
+      if (!phoneRegex.test(answer.toString().trim())) {
+        return false;
+      }
+    }
+
     // Validación especial para web5 - exactamente 5 páginas
-    if (serviceType === 'web5' && 
-        currentQuestion.id === 'desiredPages' && 
-        Array.isArray(answer) && 
-        answer.length !== 5) {
+    if (serviceType === 'web5' &&
+      currentQuestion.id === 'desiredPages' &&
+      Array.isArray(answer) &&
+      answer.length !== 5) {
       return false;
     }
-    
+
     // Validación especial para web7 - mínimo 7 páginas
-    if (serviceType === 'web7' && 
-        currentQuestion.id === 'desiredPages' && 
-        Array.isArray(answer) && 
-        answer.length < 7) {
+    if (serviceType === 'web7' &&
+      currentQuestion.id === 'desiredPages' &&
+      Array.isArray(answer) &&
+      answer.length < 7) {
       return false;
     }
-    
+
     return true;
   };
-  
+
   // Manejar el cambio en inputs
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
-    
+
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
-      
+
       // Caso especial para web5 - limitar a 5 selecciones
       if (serviceType === 'web5' && name === 'desiredPages') {
         const currentSelections = answers[name] || [];
-        
+
         if (checked) {
           // Si ya hay 5 seleccionadas y quiere añadir otra, no permitirlo
           if (currentSelections.length >= 5) return;
-          
+
           updateAnswer(name, [...currentSelections, value]);
         } else {
           // Si desmarca una opción, eliminamos de la lista
@@ -648,10 +664,10 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
         }
       } else {
         // Comportamiento normal para otros checkboxes
-        updateAnswer(name, 
-          answers[name] 
-            ? checked 
-              ? [...answers[name], value] 
+        updateAnswer(name,
+          answers[name]
+            ? checked
+              ? [...answers[name], value]
               : answers[name].filter((v: string) => v !== value)
             : checked ? [value] : []
         );
@@ -660,7 +676,7 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
       updateAnswer(name, value);
     }
   };
-  
+
   // Avanzar al siguiente paso
   const nextStep = () => {
     if (currentStep < questions.length - 1) {
@@ -670,21 +686,21 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
       submitAnswers();
     }
   };
-  
+
   // Volver al paso anterior
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
   };
-  
+
   // Enviar respuestas
   const submitAnswers = async () => {
     setIsSubmitting(true);
-    
+
     try {
       // Aquí podrías enviar las respuestas a tu backend si fuera necesario
-      
+
       // Notificar al componente padre que se ha completado
       onComplete(answers);
     } catch (error) {
@@ -693,13 +709,13 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
       setIsSubmitting(false);
     }
   };
-  
+
   // Renderizar el contenido según el tipo de pregunta actual
   const renderQuestionContent = () => {
     const currentQuestion = questions[currentStep];
-    
+
     if (!currentQuestion) return null;
-    
+
     // Establecer valor por defecto si no existe
     if (answers[currentQuestion.id] === undefined) {
       switch (currentQuestion.type) {
@@ -713,9 +729,23 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
           updateAnswer(currentQuestion.id, '');
       }
     }
-    
+
     // Mensajes de validación específicos para limites de páginas
     const renderValidationMessage = () => {
+      // Validación para número de teléfono
+      if (currentQuestion.id === 'contactPhone') {
+        const phoneValue = answers[currentQuestion.id] || '';
+        const phoneRegex = /^(\+54\s?9?\s?)?(\d{2,4})\s?(\d{4})-?(\d{4})$|^(\+54\s?9?\s?)?(\d{10,11})$/;
+
+        if (phoneValue && !phoneRegex.test(phoneValue.toString().trim())) {
+          return <ErrorMessage>Por favor ingresa un número de teléfono válido (ej: 11 1234-5678 o +54 9 11 1234-5678)</ErrorMessage>;
+        }
+
+        if (phoneValue && phoneRegex.test(phoneValue.toString().trim())) {
+          return <InfoMessage>✓ Número de teléfono válido</InfoMessage>;
+        }
+      }
+
       if (serviceType === 'web5' && currentQuestion.id === 'desiredPages') {
         const selected = answers[currentQuestion.id] ? answers[currentQuestion.id].length : 0;
         if (selected === 5) {
@@ -724,7 +754,7 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
           return <InfoMessage>Tu plan incluye exactamente 5 páginas. Por favor selecciona {5 - selected} página(s) más.</InfoMessage>;
         }
       }
-      
+
       if (serviceType === 'web7' && currentQuestion.id === 'desiredPages') {
         const selected = answers[currentQuestion.id] ? answers[currentQuestion.id].length : 0;
         if (selected >= 7) {
@@ -733,10 +763,10 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
           return <InfoMessage>Tu plan incluye 7 o más páginas. Por favor selecciona al menos {7 - selected} página(s) más.</InfoMessage>;
         }
       }
-      
+
       return null;
     };
-    
+
     switch (currentQuestion.type) {
       case 'text':
         return (
@@ -748,9 +778,10 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
               placeholder={currentQuestion.placeholder}
               required={currentQuestion.required}
             />
+            {renderValidationMessage()}
           </InputGroup>
         );
-        
+
       case 'textarea':
         return (
           <InputGroup>
@@ -763,7 +794,7 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
             />
           </InputGroup>
         );
-        
+
       case 'select':
         return (
           <InputGroup>
@@ -782,7 +813,7 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
             </SelectInput>
           </InputGroup>
         );
-        
+
       case 'checkbox':
         return (
           <CheckboxGroup>
@@ -801,7 +832,7 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
             {renderValidationMessage()}
           </CheckboxGroup>
         );
-        
+
       case 'radio':
         return (
           <RadioGroup>
@@ -819,7 +850,7 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
             ))}
           </RadioGroup>
         );
-        
+
       case 'color':
         return (
           <InputGroup>
@@ -831,12 +862,12 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
             />
           </InputGroup>
         );
-        
+
       default:
         return null;
     }
   };
-  
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -856,15 +887,15 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
               <Title>Información de tu proyecto</Title>
               <StepIndicator>
                 {questions.map((_, index) => (
-                  <StepDot 
-                    key={index} 
-                    active={index === currentStep} 
-                    completed={index < currentStep} 
+                  <StepDot
+                    key={index}
+                    active={index === currentStep}
+                    completed={index < currentStep}
                   />
                 ))}
               </StepIndicator>
             </Header>
-            
+
             <Body>
               {questions[currentStep] && (
                 <>
@@ -872,19 +903,19 @@ const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
                   {questions[currentStep].description && (
                     <Description>{questions[currentStep].description}</Description>
                   )}
-                  
+
                   {renderQuestionContent()}
-                  
+
                   <ButtonsContainer>
-                    <Button 
+                    <Button
                       onClick={prevStep}
                       disabled={currentStep === 0}
                     >
                       Anterior
                     </Button>
-                    
-                    <Button 
-                      primary 
+
+                    <Button
+                      primary
                       onClick={nextStep}
                       disabled={!isCurrentStepValid() || isSubmitting}
                     >
