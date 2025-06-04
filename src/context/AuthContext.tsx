@@ -60,6 +60,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Hook para redirección cuando se requiere aceptar términos
   useEffect(() => {
     if (requiresTermsRedirect) {
+      // Verificar si estamos en una ruta de administrador
+      const currentPath = window.location.pathname;
+      const isAdminRoute = currentPath.startsWith('/admin');
+
+      // Si estamos en una ruta de administrador, no hacer logout ni redirección
+      if (isAdminRoute) {
+        console.log('⚠️ Usuario en ruta de administrador sin términos aceptados, pero no se requiere redirección');
+        setRequiresTermsRedirect(false);
+        return;
+      }
+
       // Establecer flag para mostrar mensaje al usuario
       localStorage.setItem('requires_terms_acceptance', 'true');
       // Limpiar el estado de redirección
@@ -88,7 +99,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(localUser);
 
         // Verificar si el usuario tiene el campo termsAccepted
-        if (typeof localUser.termsAccepted === 'undefined' || localUser.termsAccepted === false) {
+        // Excepción para administradores: no requieren aceptación de términos
+        if ((typeof localUser.termsAccepted === 'undefined' || localUser.termsAccepted === false) &&
+          localUser.id !== 'admin-user' && localUser.role !== 'admin') {
           console.log('⚠️ Usuario local sin aceptación de términos, requiere aceptarlos');
           // Iniciar proceso de redirección
           setRequiresTermsRedirect(true);
@@ -107,7 +120,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(userData);
 
             // Verificar términos y condiciones en la respuesta del servidor
-            if (typeof userData.termsAccepted === 'undefined' || userData.termsAccepted === false) {
+            // Excepción para administradores: no requieren aceptación de términos
+            if ((typeof userData.termsAccepted === 'undefined' || userData.termsAccepted === false) &&
+              userData.id !== 'admin-user' && userData.role !== 'admin') {
               console.log('⚠️ Usuario del servidor sin aceptación de términos, requiere aceptarlos');
               setRequiresTermsRedirect(true);
             }
@@ -128,7 +143,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(userData);
 
             // Verificar términos y condiciones
-            if (typeof userData.termsAccepted === 'undefined' || userData.termsAccepted === false) {
+            // Excepción para administradores: no requieren aceptación de términos
+            if ((typeof userData.termsAccepted === 'undefined' || userData.termsAccepted === false) &&
+              userData.id !== 'admin-user' && userData.role !== 'admin') {
               console.log('⚠️ Usuario sin aceptación de términos, requiere aceptarlos');
               setRequiresTermsRedirect(true);
             }

@@ -24,6 +24,7 @@ export interface AuthUser {
   avatar?: string;
   provider?: string;
   providerId?: string;
+  role?: string;
   termsAccepted?: boolean;
   termsAcceptedAt?: string;
 }
