@@ -12,7 +12,7 @@ if command -v apt-get &> /dev/null; then
         ca-certificates \
         fonts-liberation \
         libappindicator3-1 \
-        libasound2 \
+        libasound2t64 \
         libatk-bridge2.0-0 \
         libatk1.0-0 \
         libc6 \
@@ -22,7 +22,7 @@ if command -v apt-get &> /dev/null; then
         libexpat1 \
         libfontconfig1 \
         libgbm1 \
-        libgcc1 \
+        libgcc-s1 \
         libglib2.0-0 \
         libgtk-3-0 \
         libnspr4 \
@@ -100,8 +100,8 @@ fi
 echo "🔄 Reinstalando dependencias de Node.js..."
 
 # Reinstalar whatsapp-web.js y puppeteer
-npm uninstall whatsapp-web.js puppeteer-core
-npm install whatsapp-web.js@latest
+npm uninstall whatsapp-web.js puppeteer-core --force
+npm install whatsapp-web.js@latest --force
 
 echo "🎯 Configurando Puppeteer..."
 
@@ -110,9 +110,9 @@ npx puppeteer browsers install chrome
 
 echo "🧪 Probando configuración..."
 
-# Crear script de prueba
-cat > test-puppeteer.js << 'EOF'
-const puppeteer = require('puppeteer-core');
+# Crear script de prueba como .mjs para compatibilidad con ESM
+cat > test-puppeteer.mjs << 'EOF'
+import puppeteer from 'puppeteer-core';
 
 (async () => {
   try {
@@ -144,14 +144,14 @@ const puppeteer = require('puppeteer-core');
 EOF
 
 # Ejecutar prueba
-node test-puppeteer.js
+node test-puppeteer.mjs
 
 if [ $? -eq 0 ]; then
     echo "🎉 WhatsApp Web configurado correctamente"
     echo "📱 Puedes reiniciar el servidor y acceder a /admin/qr para generar el código QR"
     
     # Limpiar archivo de prueba
-    rm test-puppeteer.js
+    rm test-puppeteer.mjs
     
     # Crear directorio para sesiones si no existe
     mkdir -p .wwebjs_auth
@@ -160,6 +160,6 @@ if [ $? -eq 0 ]; then
     echo "📁 Directorio de sesiones creado en .wwebjs_auth"
 else
     echo "❌ Hubo problemas con la configuración. Revisa los logs arriba."
-    rm test-puppeteer.js
+    rm test-puppeteer.mjs
     exit 1
 fi 
