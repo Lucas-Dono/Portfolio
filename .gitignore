@@ -15,6 +15,9 @@ lerna-debug.log*
 node_modules
 /.pnp
 .pnp.js
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 # Testing
 /coverage
@@ -34,6 +37,14 @@ node_modules
 *.local
 .temp
 .cache
+.vite-temp
+.npm
+.tmp
+temp/
+backup/
+*.tar.gz
+*.zip
+*.rar
 
 # Editor directories y archivos
 .vscode/*
@@ -48,19 +59,35 @@ node_modules
 *.sw?
 
 # Uploads
-# /uploads/*
-# !/uploads/.gitkeep
+/uploads/*
+!/uploads/.gitkeep
 
 # Certificados y claves (COMENTADAS PARA REPOSITORIO PRIVADO)
-# *.pem
-# *.key
-# *.crt
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
 
 # Docker
 .docker/data
-# /nginx/certbot/conf/*
-# /nginx/certbot/www/*
+/nginx/certbot/conf/*
+/nginx/certbot/www/*
+docker-compose.override.yml
 
 # Otros
 .eslintcache
 .netlify
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*.swp
+*~
+
+# Archivos de configuración específicos
+config/backup/
+secrets/
+postgres-config/
+backup-env.txt
