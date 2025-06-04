@@ -74,40 +74,52 @@ cat > .env.whatsapp << EOF
 PUPPETEER_EXECUTABLE_PATH=$CHROMIUM_PATH
 EOF
 
+# Verificar si existe la carpeta server
+if [ ! -d "server" ]; then
+    echo "📁 Creando directorio server..."
+    mkdir -p server
+fi
+
 echo "📝 Creando archivo de configuración para WhatsApp..."
 cat > server/whatsapp-config.js << EOF
 // Configuración para WhatsApp Web.js
-module.exports = {
-    puppeteerOptions: {
-        executablePath: '$CHROMIUM_PATH',
-        headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process',
-            '--disable-gpu',
-            '--disable-extensions'
-        ]
-    }
+export const puppeteerOptions = {
+    executablePath: '$CHROMIUM_PATH',
+    headless: true,
+    args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu',
+        '--disable-extensions'
+    ]
 };
+
+export default { puppeteerOptions };
 EOF
 
-# Crear un script de prueba definitivo
+# Crear un script de prueba definitivo usando módulos ES
 echo "🧪 Creando script de prueba con la configuración correcta..."
 
-cat > test-whatsapp-final.js << EOF
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const path = require('path');
+cat > test-whatsapp-final.mjs << EOF
+// Importar correctamente un módulo CommonJS en un entorno ESM
+import pkg from 'whatsapp-web.js';
+const { Client, LocalAuth } = pkg;
 
-// Cargar configuración personalizada
-const whatsappConfig = require('./server/whatsapp-config');
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { puppeteerOptions } from './server/whatsapp-config.js';
+
+// Obtener __dirname equivalente en ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 console.log('🔍 Iniciando cliente de WhatsApp Web...');
-console.log('📂 Ruta de Chromium:', whatsappConfig.puppeteerOptions.executablePath);
+console.log('📂 Ruta de Chromium:', puppeteerOptions.executablePath);
 console.log('📂 Ruta de almacenamiento:', path.join(__dirname, '.wwebjs_auth'));
 
 // Crear cliente con configuración personalizada
@@ -116,7 +128,7 @@ const client = new Client({
         clientId: "test-whatsapp",
         dataPath: path.join(__dirname, '.wwebjs_auth')
     }),
-    puppeteer: whatsappConfig.puppeteerOptions
+    puppeteer: puppeteerOptions
 });
 
 // Manejar eventos
@@ -151,52 +163,44 @@ client.initialize()
     });
 EOF
 
-# Modificar server.js para usar la configuración
-echo "🔧 Verificando si necesitamos modificar server.js..."
-
-# Ejecutar el script de prueba
+# Ejecutar el script de prueba (usando .mjs para módulos ES)
 echo "🚀 Probando WhatsApp Web con la nueva configuración..."
-node test-whatsapp-final.js
+node test-whatsapp-final.mjs
 
 if [ $? -eq 0 ]; then
     echo "✅ Configuración de WhatsApp Web exitosa"
     
-    # Instrucciones para reiniciar con la nueva configuración
+    # Actualizar .env con WHATSAPP_DISABLE_WEB=false
+    if grep -q "WHATSAPP_DISABLE_WEB" .env; then
+        # Reemplazar la línea existente
+        sed -i 's/WHATSAPP_DISABLE_WEB=.*/WHATSAPP_DISABLE_WEB=false/' .env
+        echo "✅ Actualizado .env con WHATSAPP_DISABLE_WEB=false"
+    else
+        # Añadir la línea si no existe
+        echo "WHATSAPP_DISABLE_WEB=false" >> .env
+        echo "✅ Añadido WHATSAPP_DISABLE_WEB=false a .env"
+    fi
+    
+    # Instrucciones para reiniciar el servicio
     echo "
-📋 INSTRUCCIONES PARA REINICIAR EL SERVICIO CON LA NUEVA CONFIGURACIÓN:
-1. Ejecuta: pm2 restart circuitprompt --env-path=.env.whatsapp
-2. Verifica el log: pm2 logs circuitprompt
-3. Accede a /admin/qr para escanear el código QR
+📋 INSTRUCCIONES PARA REINICIAR EL SERVICIO:
+1. Ejecuta: node server.js
+2. Accede a /admin/qr para escanear el código QR
 "
 else
     echo "❌ Todavía hay problemas con WhatsApp Web."
     echo "
-📋 INTENTA EJECUTAR ESTOS COMANDOS ADICIONALES:
+📋 PROBLEMAS COMUNES Y SOLUCIONES:
 
-# Verificar si hay errores de instalación de Chromium
-ldd $CHROMIUM_PATH | grep 'not found'
+1. PROBLEMA DE PUPPETEER: Comprueba que Puppeteer puede usar el navegador
+   export PUPPETEER_EXECUTABLE_PATH=$CHROMIUM_PATH
+   npx puppeteer-test
 
-# Verificar permisos
-ls -la $CHROMIUM_PATH
+2. PROBLEMA DE PERMISOS: Comprueba que tienes permisos en el navegador
+   ls -la $CHROMIUM_PATH
 
-# Ejecutar en modo no-sandbox (como último recurso)
-export PUPPETEER_EXECUTABLE_PATH=$CHROMIUM_PATH
-node -e \"
-const puppeteer = require('puppeteer-core');
-(async () => {
-  try {
-    const browser = await puppeteer.launch({
-      executablePath: '$CHROMIUM_PATH',
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-    console.log('✅ Navegador iniciado correctamente');
-    await browser.close();
-  } catch (error) {
-    console.error('❌ Error:', error);
-  }
-})()
-\"
+3. INTENTA LA SOLUCIÓN NO-SANDBOX (último recurso):
+   Modifica server/whatsapp-config.js para añadir '--no-sandbox' a los argumentos
 "
     exit 1
 fi 

@@ -322,9 +322,10 @@ let qrCode = '';
 const whatsappDisabled = process.env.WHATSAPP_DISABLE_WEB === 'true';
 
 if (!whatsappDisabled) {
-  // Configuración de Puppeteer
+  // Configuración de Puppeteer que sabemos que funciona
   const puppeteerOptions = {
-    headless: true,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
+    headless: 'new',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -333,15 +334,16 @@ if (!whatsappDisabled) {
       '--no-first-run',
       '--no-zygote',
       '--single-process',
-      '--disable-gpu'
+      '--disable-gpu',
+      '--disable-extensions',
+      '--disable-software-rasterizer',
+      '--disable-infobars',
+      '--window-position=0,0',
+      '--ignore-certificate-errors',
+      '--ignore-certificate-errors-spki-list',
+      '--remote-debugging-port=9222'
     ]
   };
-
-  // Usar variable de entorno si está definida
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    console.log(`✅ Usando Chromium desde variable de entorno: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
-    puppeteerOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-  }
 
   client = new Client({
     authStrategy: new LocalAuth({
