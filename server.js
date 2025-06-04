@@ -215,7 +215,10 @@ app.use((req, res, next) => {
 // Middleware de autenticación básica para rutas /admin
 app.use('/admin', (req, res, next) => {
   // Excluir rutas de autenticación y login
-  if (req.path.startsWith('/api/auth/') || req.path === '/login') {
+  if (req.path.startsWith('/api/auth/') ||
+    req.path === '/login' ||
+    req.path.includes('/verify/') ||
+    req.path.startsWith('/api/')) {
     return next();
   }
 

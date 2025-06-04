@@ -197,29 +197,29 @@ iniciar_produccion() {
     echo -e "${AZUL}🔍 Verificando estado de los contenedores...${NC}"
     for i in {1..6}; do
         if $DOCKER_COMPOSE -f docker-compose-prod.yml ps | grep -q "healthy\|running"; then
-            echo -e "${VERDE}✅ Entorno de producción iniciado correctamente${NC}"
-            
-            # Obtener el puerto del archivo .env.prod
-            APP_PORT=$(grep "PORT=" .env.prod 2>/dev/null | cut -d '=' -f2)
-            [ -z "$APP_PORT" ] && APP_PORT=5001
-            
-            echo -e "${VERDE}🌐 Aplicación: http://localhost:${APP_PORT}${NC}"
-            echo -e "${VERDE}🔐 Admin: http://localhost:${APP_PORT}/admin${NC}"
-            
-            # Mostrar servicios en ejecución
-            echo -e "${AZUL}📊 Estado de los contenedores:${NC}"
-            $DOCKER_COMPOSE -f docker-compose-prod.yml ps
+        echo -e "${VERDE}✅ Entorno de producción iniciado correctamente${NC}"
+        
+        # Obtener el puerto del archivo .env.prod
+        APP_PORT=$(grep "PORT=" .env.prod 2>/dev/null | cut -d '=' -f2)
+        [ -z "$APP_PORT" ] && APP_PORT=5001
+        
+        echo -e "${VERDE}🌐 Aplicación: http://localhost:${APP_PORT}${NC}"
+        echo -e "${VERDE}🔐 Admin: http://localhost:${APP_PORT}/admin${NC}"
+        
+        # Mostrar servicios en ejecución
+        echo -e "${AZUL}📊 Estado de los contenedores:${NC}"
+        $DOCKER_COMPOSE -f docker-compose-prod.yml ps
             break
-        else
+    else
             echo -e "${AMARILLO}⏳ Esperando servicios... (intento $i/6)${NC}"
             sleep 10
         fi
         
         if [ $i -eq 6 ]; then
             echo -e "${ROJO}❌ Algunos contenedores no están saludables${NC}"
-            echo -e "${AMARILLO}Mostrando logs para diagnóstico:${NC}"
+        echo -e "${AMARILLO}Mostrando logs para diagnóstico:${NC}"
             $DOCKER_COMPOSE -f docker-compose-prod.yml logs --tail=50
-        fi
+    fi
     done
     
     mostrar_espacio
