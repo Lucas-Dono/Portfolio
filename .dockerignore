@@ -49,11 +49,12 @@ LICENSE
 # Archivos de configuración local
 .editorconfig
 .prettierrc
-.eslintrc
 .stylelintrc
-tsconfig.json
-tsconfig.*.json
-!tsconfig.prod.json
+
+# Archivos de configuración de TypeScript (permitir todos los necesarios)
+# tsconfig.json
+# tsconfig.*.json
+# !tsconfig.prod.json
 
 # Archivos de desarrollo de Docker
 Dockerfile*
@@ -73,7 +74,7 @@ docker-compose*
 .wwebjs_cache_backup
 
 # Archivos de desarrollo de Node
-.npmrc
+# .npmrc  <- Necesario para la construcción
 .yarnrc
 package-lock.json
 yarn.lock
