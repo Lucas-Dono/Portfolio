@@ -166,8 +166,13 @@ iniciar_produccion() {
     export NODE_ENV=production
     export PORT=5001
     
-    # Forzar recrear contenedores para evitar problemas de caché
-    $DOCKER_COMPOSE -f docker-compose-prod.yml up -d --force-recreate --build --no-cache
+    # Primero construir las imágenes sin caché
+    echo -e "${AZUL}🏗️ Construyendo imágenes...${NC}"
+    $DOCKER_COMPOSE -f docker-compose-prod.yml build --no-cache
+    
+    # Luego iniciar los contenedores
+    echo -e "${AZUL}🚀 Iniciando contenedores...${NC}"
+    $DOCKER_COMPOSE -f docker-compose-prod.yml up -d
     
     # Verificar estado
     sleep 5
