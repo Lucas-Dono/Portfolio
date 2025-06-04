@@ -322,24 +322,33 @@ let qrCode = '';
 const whatsappDisabled = process.env.WHATSAPP_DISABLE_WEB === 'true';
 
 if (!whatsappDisabled) {
+  // Configuración de Puppeteer
+  const puppeteerOptions = {
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process',
+      '--disable-gpu'
+    ]
+  };
+
+  // Usar variable de entorno si está definida
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    console.log(`✅ Usando Chromium desde variable de entorno: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
+    puppeteerOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+
   client = new Client({
     authStrategy: new LocalAuth({
       clientId: "contact-bot",
       dataPath: process.env.WHATSAPP_DATA_PATH || './.wwebjs_auth'
     }),
-    puppeteer: {
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-gpu'
-      ]
-    }
+    puppeteer: puppeteerOptions
   });
 
   client.on('qr', qr => {
