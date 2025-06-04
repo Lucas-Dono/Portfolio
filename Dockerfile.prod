@@ -11,7 +11,7 @@ COPY package*.json ./
 COPY tsconfig*.json ./
 
 # Instalar TODAS las dependencias, incluyendo las de desarrollo necesarias para compilar
-RUN npm ci --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 
 # Copiar solo los archivos necesarios para la compilación
 COPY src/ ./src/
