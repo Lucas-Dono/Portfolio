@@ -9,6 +9,8 @@ WORKDIR /app
 # Copiar primero los archivos de configuración para aprovechar la caché de Docker
 COPY package*.json ./
 COPY tsconfig*.json ./
+COPY .npmrc ./
+COPY eslint.config.js ./
 
 # Instalar TODAS las dependencias, incluyendo las de desarrollo necesarias para compilar
 RUN npm install --legacy-peer-deps
@@ -31,6 +33,14 @@ COPY migrations/ ./migrations/
 COPY security/ ./security/
 COPY server.js ./
 COPY init-db.sql ./
+
+# Asegurarse de que todos los archivos estén en su lugar
+RUN ls -la && \
+    echo "Verificando archivos críticos:" && \
+    [ -f "index.html" ] && echo "✓ index.html presente" || echo "✗ index.html faltante" && \
+    [ -f "vite.config.ts" ] && echo "✓ vite.config.ts presente" || echo "✗ vite.config.ts faltante" && \
+    [ -f "package.json" ] && echo "✓ package.json presente" || echo "✗ package.json faltante" && \
+    [ -f "tsconfig.json" ] && echo "✓ tsconfig.json presente" || echo "✗ tsconfig.json faltante"
 
 # Compilar la aplicación
 RUN npm run build
