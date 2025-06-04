@@ -263,9 +263,8 @@ export const getRefundStatus = async (req, res) => {
 export const getRefundRequests = async (req, res) => {
     try {
         const query = `
-            SELECT r.*, u.email as user_email, u.name as user_name
+            SELECT r.*
             FROM refund_requests r
-            LEFT JOIN users u ON r.user_id = u.id
             ORDER BY r.created_at DESC
         `;
 
@@ -560,9 +559,8 @@ export const getRefundStats = async (req, res) => {
 
         // Obtener los reembolsos más recientes (últimos 5)
         const recentQuery = `
-            SELECT r.*, u.email as user_email, u.name as user_name
+            SELECT r.*
             FROM refund_requests r
-            LEFT JOIN users u ON r.user_id = u.id
             ORDER BY r.created_at DESC
             LIMIT 5
         `;

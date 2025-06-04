@@ -146,10 +146,13 @@ export const obtenerPromocionesState = (): Record<string, Promocion | null> => {
   const todasLasPromociones = obtenerPromociones();
   const resultado: Record<string, Promocion | null> = {};
 
-  // Solo devolver promociones activas
+  // Solo devolver promociones activas y disponibles
   todasLasPromociones.forEach(promo => {
-    if (promo.activa) {
-      resultado[promo.servicioId] = promo;
+    if (promo.activa && promo.cantidadUsada < promo.cantidadLimite) {
+      // Verificar si no ha expirado
+      if (!promo.fechaExpiracion || promo.fechaExpiracion > new Date()) {
+        resultado[promo.servicioId] = promo;
+      }
     }
   });
 
