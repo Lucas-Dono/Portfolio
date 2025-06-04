@@ -1,0 +1,112 @@
+# Dependencias
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Archivos de desarrollo
+.git
+.gitignore
+.env
+.env.*
+!.env.prod
+.vscode
+.idea
+*.md
+*.log
+
+# Archivos de construcción
+dist
+build
+coverage
+.next
+out
+
+# Archivos temporales
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Archivos de caché
+.cache
+.npm
+.eslintcache
+.stylelintcache
+
+# Archivos de prueba
+__tests__
+*.test.*
+*.spec.*
+test
+tests
+
+# Archivos de documentación
+docs
+*.md
+LICENSE
+
+# Archivos de configuración local
+.editorconfig
+.prettierrc
+.eslintrc
+.stylelintrc
+tsconfig.json
+tsconfig.*.json
+!tsconfig.prod.json
+
+# Archivos de desarrollo de Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Archivos de desarrollo de TypeScript
+*.tsbuildinfo
+
+# Archivos de desarrollo de Puppeteer
+.whatsapp
+.whatsapp-session
+.wwebjs_auth
+.wwebjs_cache
+.wwebjs_sessions
+.wwebjs_auth_backup
+.wwebjs_cache_backup
+
+# Archivos de desarrollo de Node
+.npmrc
+.yarnrc
+package-lock.json
+yarn.lock
+
+# Archivos de desarrollo de IDE
+.idea
+.vscode
+*.sublime-*
+*.code-workspace
+
+# Archivos de desarrollo de sistema
+*.bak
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Archivos de desarrollo de base de datos
+*.sqlite
+*.sqlite3
+*.db
+
+# Archivos de desarrollo de logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de desarrollo de caché
+.cache
+.parcel-cache
+.npm
+.eslintcache
+.stylelintcache 

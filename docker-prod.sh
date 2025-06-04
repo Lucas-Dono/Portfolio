@@ -90,11 +90,39 @@ compilar_frontend() {
 # Función para limpiar recursos Docker no utilizados
 limpiar_docker() {
     echo -e "${AZUL}🧹 Limpiando recursos Docker no utilizados...${NC}"
+    
+    # Detener todos los contenedores
+    docker stop $(docker ps -aq) 2>/dev/null || true
+    
+    # Eliminar contenedores
     docker container prune -f
+    
+    # Eliminar imágenes no utilizadas
     docker image prune -a -f
+    
+    # Eliminar volúmenes no utilizados
     docker volume prune -f
+    
+    # Eliminar redes no utilizadas
     docker network prune -f
+    
+    # Limpiar caché de construcción
     docker builder prune -f
+    
+    # Limpiar archivos de WhatsApp Web
+    if [ -d ".wwebjs_auth" ]; then
+        echo -e "${AZUL}🗑️ Limpiando cache de WhatsApp Web...${NC}"
+        rm -rf .wwebjs_auth/* .wwebjs_cache/* .wwebjs_sessions/* 2>/dev/null || true
+    fi
+    
+    # Limpiar archivos temporales
+    echo -e "${AZUL}🗑️ Limpiando archivos temporales...${NC}"
+    find . -type f -name "*.tmp" -delete
+    find . -type f -name "*.temp" -delete
+    find . -type f -name "*.bak" -delete
+    find . -type f -name "*~" -delete
+    
+    echo -e "${VERDE}✅ Limpieza completada${NC}"
 }
 
 # Función para mostrar el espacio usado
@@ -139,7 +167,7 @@ iniciar_produccion() {
     export PORT=5001
     
     # Forzar recrear contenedores para evitar problemas de caché
-    $DOCKER_COMPOSE -f docker-compose-prod.yml up -d --force-recreate --build
+    $DOCKER_COMPOSE -f docker-compose-prod.yml up -d --force-recreate --build --no-cache
     
     # Verificar estado
     sleep 5
