@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🔧 Solucionando problemas de WhatsApp Web..."
+echo "🔧 Solucionando problemas de WhatsApp Web (versión CommonJS)..."
 
 # Crear directorio para almacenar la sesión si no existe
 mkdir -p .wwebjs_auth
@@ -14,27 +14,20 @@ npm uninstall whatsapp-web.js puppeteer puppeteer-core --force
 npm install whatsapp-web.js@latest puppeteer@22.8.2 puppeteer-core@22.8.2 --force
 
 # Crear un script de prueba para verificar la configuración
-echo "🧪 Creando script de prueba para WhatsApp Web..."
+echo "🧪 Creando script de prueba para WhatsApp Web (CommonJS)..."
 
-cat > test-whatsapp.mjs << 'EOF'
-// Importar módulo CommonJS correctamente en ESM
-import pkg from 'whatsapp-web.js';
-const { Client, LocalAuth } = pkg;
-
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+cat > test-whatsapp.cjs << 'EOF'
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const path = require('path');
 
 console.log('🔍 Iniciando cliente de WhatsApp Web...');
-console.log('📂 Ruta de almacenamiento:', join(__dirname, '.wwebjs_auth'));
+console.log('📂 Ruta de almacenamiento:', path.join(__dirname, '.wwebjs_auth'));
 
 // Crear cliente con configuración mínima
 const client = new Client({
   authStrategy: new LocalAuth({
     clientId: "test-whatsapp",
-    dataPath: join(__dirname, '.wwebjs_auth')
+    dataPath: path.join(__dirname, '.wwebjs_auth')
   }),
   puppeteer: {
     headless: true,
@@ -84,17 +77,33 @@ EOF
 
 # Ejecutar el script de prueba
 echo "🚀 Probando WhatsApp Web..."
-node test-whatsapp.mjs
+node test-whatsapp.cjs
 
 if [ $? -eq 0 ]; then
   echo "✅ Configuración de WhatsApp Web exitosa"
   echo "📱 Puedes reiniciar el servidor y acceder a /admin/qr para generar el código QR"
   
   # Limpiar archivo de prueba
-  rm test-whatsapp.mjs
+  rm test-whatsapp.cjs
 else
-  echo "❌ Hubo problemas con WhatsApp Web. Verifica si necesitas instalar dependencias adicionales."
-  rm test-whatsapp.mjs
+  echo "❌ Hubo problemas con WhatsApp Web. Verificando la ruta de Chromium..."
+  
+  # Intentar identificar y solucionar problemas de Chromium
+  echo "🔍 Buscando rutas de Chromium..."
+  which chromium-browser
+  which chromium
+  which google-chrome
+  which chrome
+  
+  echo "📦 Verificando puppeteer..."
+  node -e "console.log(require('puppeteer-core')._preferredRevision)"
+  
+  echo "🛠️ Intentando instalar Chromium manualmente..."
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install puppeteer@22.8.2 puppeteer-core@22.8.2 --force
+  node -e "require('puppeteer').executablePath()"
+  
+  echo "❌ Por favor, revisa los logs y ejecuta los comandos necesarios para instalar Chromium en tu sistema."
+  rm test-whatsapp.cjs
   exit 1
 fi
 
