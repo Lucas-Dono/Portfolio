@@ -33,7 +33,7 @@ interface PreviewImage {
 }
 
 // URL base de la API
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.miportfolio.com';
+const API_URL = import.meta.env.VITE_API_URL || 'https://circuitprompt.com.ar/api';
 
 // Estilos
 const AdminContainer = styled.div`

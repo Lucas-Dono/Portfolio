@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import axios from 'axios';
 
 // URL de la API
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.miportfolio.com';
+const API_URL = import.meta.env.VITE_API_URL || 'https://circuitprompt.com.ar/api';
 
 const AdminLoginContainer = styled.div`
   min-height: 100vh;
