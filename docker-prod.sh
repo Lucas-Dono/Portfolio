@@ -89,38 +89,39 @@ compilar_frontend() {
 
 # Función para limpiar recursos Docker no utilizados
 limpiar_docker() {
-    echo -e "${AZUL}🧹 Limpiando recursos Docker no utilizados...${NC}"
+    echo -e "${AZUL}🧹 Limpieza optimizada de Docker...${NC}"
     
-    # Detener todos los contenedores
-    docker stop $(docker ps -aq) 2>/dev/null || true
-    
-    # Eliminar contenedores
+    # Limpiar solo lo necesario para evitar perder caché útil
+    echo -e "${AZUL}🗑️ Limpiando contenedores detenidos...${NC}"
     docker container prune -f
     
-    # Eliminar imágenes no utilizadas
-    docker image prune -a -f
+    echo -e "${AZUL}🗑️ Limpiando imágenes sin etiqueta...${NC}"
+    docker image prune -f
     
-    # Eliminar volúmenes no utilizados
+    echo -e "${AZUL}🗑️ Limpiando volúmenes huérfanos...${NC}"
     docker volume prune -f
     
-    # Eliminar redes no utilizadas
+    echo -e "${AZUL}🗑️ Limpiando redes no utilizadas...${NC}"
     docker network prune -f
     
-    # Limpiar caché de construcción
-    docker builder prune -f
+    # Solo limpiar caché de construcción si es necesario
+    if [ "$1" = "deep" ]; then
+        echo -e "${AZUL}🗑️ Limpieza profunda: eliminando caché de construcción...${NC}"
+        docker builder prune -f
+    fi
     
     # Limpiar archivos de WhatsApp Web
     if [ -d ".wwebjs_auth" ]; then
         echo -e "${AZUL}🗑️ Limpiando cache de WhatsApp Web...${NC}"
-        rm -rf .wwebjs_auth/* .wwebjs_cache/* .wwebjs_sessions/* 2>/dev/null || true
+        find .wwebjs_auth -name "*.html" -mtime +1 -delete 2>/dev/null || true
+        find .wwebjs_cache -name "*.html" -mtime +1 -delete 2>/dev/null || true
     fi
     
-    # Limpiar archivos temporales
+    # Limpiar archivos temporales específicos
     echo -e "${AZUL}🗑️ Limpiando archivos temporales...${NC}"
-    find . -type f -name "*.tmp" -delete
-    find . -type f -name "*.temp" -delete
-    find . -type f -name "*.bak" -delete
-    find . -type f -name "*~" -delete
+    find . -maxdepth 2 -name "*.tmp" -delete 2>/dev/null || true
+    find . -maxdepth 2 -name "*.temp" -delete 2>/dev/null || true
+    find . -maxdepth 2 -name "*.bak" -delete 2>/dev/null || true
     
     echo -e "${VERDE}✅ Limpieza completada${NC}"
 }
@@ -142,7 +143,14 @@ iniciar_produccion() {
     verificar_puertos || return 1
 
     mostrar_espacio
-    limpiar_docker
+    
+    # Solo limpieza profunda si es modo clean
+    if [ "$1" = "clean" ]; then
+        limpiar_docker "deep"
+    else
+        limpiar_docker
+    fi
+    
     mostrar_espacio
     
     echo -e "${AZUL}🛑 Deteniendo contenedores existentes...${NC}"
@@ -157,43 +165,63 @@ iniciar_produccion() {
         solucionar_permisos
     fi
     
-    # La compilación del frontend se realiza dentro del contenedor
-    echo -e "${AZUL}🔧 La compilación del frontend se realizará dentro del contenedor Docker${NC}"
+    echo -e "${AZUL}🔧 Optimizando construcción Docker...${NC}"
     
     echo -e "${AZUL}🚀 Iniciando contenedores de producción...${NC}"
     
     # Exportar variables necesarias para el entorno
     export NODE_ENV=production
     export PORT=5001
+    export DOCKER_BUILDKIT=1
+    export COMPOSE_DOCKER_CLI_BUILD=1
     
-    # Primero construir las imágenes sin caché
-    echo -e "${AZUL}🏗️ Construyendo imágenes...${NC}"
-    $DOCKER_COMPOSE -f docker-compose-prod.yml build --no-cache
+    # Construir con optimizaciones
+    echo -e "${AZUL}🏗️ Construyendo imágenes con optimizaciones...${NC}"
+    if [ "$1" = "clean" ]; then
+        # Solo usar --no-cache en modo clean
+        $DOCKER_COMPOSE -f docker-compose-prod.yml build --no-cache --parallel
+    else
+        # Usar caché para construcción más rápida
+        $DOCKER_COMPOSE -f docker-compose-prod.yml build --parallel
+    fi
     
-    # Luego iniciar los contenedores
+    # Iniciar contenedores
     echo -e "${AZUL}🚀 Iniciando contenedores...${NC}"
     $DOCKER_COMPOSE -f docker-compose-prod.yml up -d
     
-    # Verificar estado
-    sleep 5
-    if ! $DOCKER_COMPOSE -f docker-compose-prod.yml ps | grep -q "unhealthy"; then
-        echo -e "${VERDE}✅ Entorno de producción iniciado correctamente${NC}"
+    # Verificar estado con timeout más largo
+    echo -e "${AZUL}⏳ Esperando que los servicios estén listos...${NC}"
+    sleep 10
+    
+    # Verificar salud de los contenedores
+    echo -e "${AZUL}🔍 Verificando estado de los contenedores...${NC}"
+    for i in {1..6}; do
+        if $DOCKER_COMPOSE -f docker-compose-prod.yml ps | grep -q "healthy\|running"; then
+            echo -e "${VERDE}✅ Entorno de producción iniciado correctamente${NC}"
+            
+            # Obtener el puerto del archivo .env.prod
+            APP_PORT=$(grep "PORT=" .env.prod 2>/dev/null | cut -d '=' -f2)
+            [ -z "$APP_PORT" ] && APP_PORT=5001
+            
+            echo -e "${VERDE}🌐 Aplicación: http://localhost:${APP_PORT}${NC}"
+            echo -e "${VERDE}🔐 Admin: http://localhost:${APP_PORT}/admin${NC}"
+            
+            # Mostrar servicios en ejecución
+            echo -e "${AZUL}📊 Estado de los contenedores:${NC}"
+            $DOCKER_COMPOSE -f docker-compose-prod.yml ps
+            break
+        else
+            echo -e "${AMARILLO}⏳ Esperando servicios... (intento $i/6)${NC}"
+            sleep 10
+        fi
         
-        # Obtener el puerto del archivo .env.prod
-        APP_PORT=$(grep "PORT=" .env.prod 2>/dev/null | cut -d '=' -f2)
-        [ -z "$APP_PORT" ] && APP_PORT=5001
-        
-        echo -e "${VERDE}🌐 Aplicación: http://localhost:${APP_PORT}${NC}"
-        echo -e "${VERDE}🔐 Admin: http://localhost:${APP_PORT}/admin${NC}"
-        
-        # Mostrar servicios en ejecución
-        echo -e "${AZUL}📊 Estado de los contenedores:${NC}"
-        $DOCKER_COMPOSE -f docker-compose-prod.yml ps
-    else
-        echo -e "${ROJO}❌ Hubo problemas al iniciar algunos contenedores${NC}"
-        echo -e "${AMARILLO}Mostrando logs para diagnóstico:${NC}"
-        $DOCKER_COMPOSE -f docker-compose-prod.yml logs
-    fi
+        if [ $i -eq 6 ]; then
+            echo -e "${ROJO}❌ Algunos contenedores no están saludables${NC}"
+            echo -e "${AMARILLO}Mostrando logs para diagnóstico:${NC}"
+            $DOCKER_COMPOSE -f docker-compose-prod.yml logs --tail=50
+        fi
+    done
+    
     mostrar_espacio
 }
 
@@ -303,7 +331,7 @@ case "$1" in
                     read
                     ;;
                 7)
-                    limpiar_docker
+                    limpiar_docker "deep"
                     mostrar_espacio
                     echo -e "${AZUL}Presiona Enter para continuar...${NC}"
                     read

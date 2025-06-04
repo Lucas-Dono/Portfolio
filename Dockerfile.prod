@@ -1,81 +1,95 @@
-# Etapa de construcción
-FROM node:20-alpine AS builder
+# ===================================
+# ETAPA 1: Construcción del Frontend
+# ===================================
+FROM node:20-alpine AS frontend-builder
 
-# Instalar dependencias necesarias para compilación
+# Instalar solo las dependencias mínimas necesarias para el frontend
 RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-# Copiar primero los archivos de configuración para aprovechar la caché de Docker
+# Copiar archivos de configuración para aprovechar caché de Docker
 COPY package*.json ./
-COPY tsconfig*.json ./
 COPY .npmrc ./
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
 COPY eslint.config.js ./
 
-# Instalar TODAS las dependencias, incluyendo las de desarrollo necesarias para compilar
-RUN npm install --legacy-peer-deps
+# Instalar dependencias con optimizaciones (compatible con servidores)
+RUN npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline
 
-# Copiar archivos de configuración de Vite y otros archivos necesarios
+# Copiar archivos necesarios para el frontend
 COPY index.html ./
-COPY vite.config.ts ./
-COPY .env* ./
 COPY public/ ./public/
-
-# Copiar solo los archivos necesarios para la compilación
 COPY src/ ./src/
-COPY routes/ ./routes/
-COPY controllers/ ./controllers/
-COPY models/ ./models/
-COPY config/ ./config/
-COPY utils/ ./utils/
-COPY templates/ ./templates/
-COPY migrations/ ./migrations/
-COPY security/ ./security/
-COPY server.js ./
-COPY init-db.sql ./
 
-# Asegurarse de que todos los archivos estén en su lugar
-RUN ls -la && \
-    echo "Verificando archivos críticos:" && \
-    [ -f "index.html" ] && echo "✓ index.html presente" || echo "✗ index.html faltante" && \
-    [ -f "vite.config.ts" ] && echo "✓ vite.config.ts presente" || echo "✗ vite.config.ts faltante" && \
-    [ -f "package.json" ] && echo "✓ package.json presente" || echo "✗ package.json faltante" && \
-    [ -f "tsconfig.json" ] && echo "✓ tsconfig.json presente" || echo "✗ tsconfig.json faltante"
-
-# Compilar la aplicación
+# Construir el frontend
 RUN npm run build
 
-# Etapa final con imagen mínima
-FROM node:20-alpine
+# Limpiar node_modules y reinstalar solo dependencias de producción
+RUN rm -rf node_modules && \
+    npm install --legacy-peer-deps --production --no-audit --no-fund --prefer-offline
 
-# Crear usuario sin privilegios para ejecutar la aplicación
+# ===================================
+# ETAPA 2: Imagen Final de Producción
+# ===================================
+FROM node:20-alpine AS production
+
+# Instalar solo las herramientas mínimas necesarias
+RUN apk add --no-cache curl dumb-init
+
+# Crear usuario sin privilegios
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Crear directorios necesarios y establecer permisos
-RUN mkdir -p /app/logs /app/uploads && \
+# Crear directorios con permisos correctos
+RUN mkdir -p /app/logs /app/uploads /app/dist && \
     chown -R appuser:appgroup /app
 
 WORKDIR /app
 
-# Copiar solo los archivos necesarios para producción
-COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
-COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
-COPY --from=builder --chown=appuser:appgroup /app/package.json ./
-COPY --from=builder --chown=appuser:appgroup /app/server.js ./
-COPY --from=builder --chown=appuser:appgroup /app/init-db.sql ./
+# Copiar solo node_modules de producción desde el builder
+COPY --from=frontend-builder --chown=appuser:appgroup /app/node_modules ./node_modules
 
-# Configurar variables de entorno para producción
-ENV NODE_ENV=production
+# Copiar el frontend compilado
+COPY --from=frontend-builder --chown=appuser:appgroup /app/dist ./dist
 
-# Exponer puertos
+# Copiar archivos de configuración mínimos
+COPY --chown=appuser:appgroup package.json ./
+
+# Copiar archivos del backend (solo los necesarios)
+COPY --chown=appuser:appgroup server.js ./
+COPY --chown=appuser:appgroup init-db.sql ./
+
+# Copiar directorios del backend de forma selectiva
+COPY --chown=appuser:appgroup routes/ ./routes/
+COPY --chown=appuser:appgroup controllers/ ./controllers/
+COPY --chown=appuser:appgroup models/ ./models/
+COPY --chown=appuser:appgroup config/ ./config/
+COPY --chown=appuser:appgroup utils/ ./utils/
+COPY --chown=appuser:appgroup templates/ ./templates/
+COPY --chown=appuser:appgroup migrations/ ./migrations/
+COPY --chown=appuser:appgroup security/ ./security/
+COPY --chown=appuser:appgroup src/ia/ ./src/ia/
+
+# Variables de entorno optimizadas
+ENV NODE_ENV=production \
+    NODE_OPTIONS="--max-old-space-size=512" \
+    NPM_CONFIG_LOGLEVEL=warn \
+    NPM_CONFIG_AUDIT=false \
+    NPM_CONFIG_FUND=false
+
+# Exponer puerto
 EXPOSE 5001
 
 # Cambiar al usuario no privilegiado
 USER appuser
 
-# Configurar health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+# Health check optimizado
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:5001/health || exit 1
 
-# Comando para iniciar la aplicación
-CMD ["node", "dist/server.js"] 
+# Usar dumb-init para manejo correcto de señales
+ENTRYPOINT ["dumb-init", "--"]
+
+# Comando optimizado para producción
+CMD ["node", "--max-old-space-size=512", "server.js"] 
