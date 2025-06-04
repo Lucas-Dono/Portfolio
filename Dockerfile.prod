@@ -13,9 +13,14 @@ COPY tsconfig*.json ./
 # Instalar TODAS las dependencias, incluyendo las de desarrollo necesarias para compilar
 RUN npm install --legacy-peer-deps
 
+# Copiar archivos de configuración de Vite y otros archivos necesarios
+COPY index.html ./
+COPY vite.config.ts ./
+COPY .env* ./
+COPY public/ ./public/
+
 # Copiar solo los archivos necesarios para la compilación
 COPY src/ ./src/
-COPY public/ ./public/
 COPY routes/ ./routes/
 COPY controllers/ ./controllers/
 COPY models/ ./models/
