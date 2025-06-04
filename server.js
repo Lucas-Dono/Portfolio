@@ -214,16 +214,35 @@ app.use((req, res, next) => {
 
 // Middleware de autenticación básica para rutas /admin
 app.use('/admin', (req, res, next) => {
-  // Excluir rutas de autenticación
-  if (req.path.startsWith('/api/auth/')) {
+  // Excluir rutas de autenticación y login
+  if (req.path.startsWith('/api/auth/') || req.path === '/login') {
     return next();
   }
-  basicAuth({
+
+  // Verificar autenticación básica
+  const auth = basicAuth({
     users: {
       [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'password'
     },
-    challenge: true
-  })(req, res, next);
+    challenge: true,
+    unauthorizedResponse: (req) => {
+      // Si es una petición AJAX, devolver JSON
+      if (req.headers['x-requested-with'] === 'XMLHttpRequest' ||
+        req.headers['content-type'] === 'application/json') {
+        return { error: 'Unauthorized' };
+      }
+      // Si es una petición normal, redirigir al login
+      return 'Redirecting to login...';
+    }
+  });
+
+  auth(req, res, (err) => {
+    if (err) {
+      // Redirigir a login en lugar de mostrar popup de autenticación básica
+      return res.redirect('/admin/login');
+    }
+    next();
+  });
 });
 
 // Rutas de autenticación (ahora usando SQL)
@@ -607,7 +626,55 @@ app.get('/admin/whatsapp', async (req, res) => {
 
 // Ruta principal de admin: redirige al panel de administración
 app.get('/admin', (req, res) => {
-  res.redirect('/admin/whatsapp');
+  // Verificar si está en desarrollo y WhatsApp está deshabilitado
+  if (process.env.NODE_ENV !== 'production' && process.env.WHATSAPP_DISABLE_WEB === 'true') {
+    res.send(`
+      <html>
+        <head>
+          <title>Admin Panel - Desarrollo</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+            .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+            .info { background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+            a { color: #007bff; text-decoration: none; }
+            a:hover { text-decoration: underline; }
+            .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>🔧 Panel de Administración - Modo Desarrollo</h1>
+            
+            <div class="warning">
+              <strong>⚠️ Entorno de Desarrollo Detectado</strong><br>
+              WhatsApp Web está deshabilitado en este entorno para evitar conflictos.
+            </div>
+            
+            <div class="info">
+              <strong>📋 Opciones Disponibles:</strong><br>
+              • <a href="/admin/test-email">Probar sistema de email</a><br>
+              • <a href="/">Volver al sitio principal</a><br>
+              • <a href="/api/health">Ver estado del servidor</a>
+            </div>
+            
+            <h3>🌐 Variables de Entorno Detectadas:</h3>
+            <ul>
+              <li><strong>NODE_ENV:</strong> ${process.env.NODE_ENV || 'no definido'}</li>
+              <li><strong>WHATSAPP_DISABLE_WEB:</strong> ${process.env.WHATSAPP_DISABLE_WEB || 'no definido'}</li>
+              <li><strong>PORT:</strong> ${process.env.PORT || 'no definido'}</li>
+              <li><strong>DATABASE_URL:</strong> ${process.env.DATABASE_URL ? 'configurado' : 'no configurado'}</li>
+            </ul>
+            
+            <p><em>Para acceder al panel completo de WhatsApp, despliega en producción.</em></p>
+          </div>
+        </body>
+      </html>
+    `);
+  } else {
+    // En producción o con WhatsApp habilitado, redirigir al panel de WhatsApp
+    res.redirect('/admin/whatsapp');
+  }
 });
 
 // Configuración de Email (SMTP) para notificaciones de error con DonWeb
