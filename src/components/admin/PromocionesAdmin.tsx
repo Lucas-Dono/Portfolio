@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Promocion } from '../../types/promo';
+import * as promocionesAPI from '../../api/promocionesAPI';
 
 // Estilos
 const AdminContainer = styled.div`
@@ -187,8 +188,8 @@ const Badge = styled.span<{ tipo: string }>`
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
-  background: ${props => props.tipo === 'GRATIS' 
-    ? 'rgba(0, 255, 0, 0.1)' 
+  background: ${props => props.tipo === 'GRATIS'
+    ? 'rgba(0, 255, 0, 0.1)'
     : 'rgba(255, 255, 0, 0.1)'
   };
   color: ${props => props.tipo === 'GRATIS' ? '#00ff00' : '#ffff00'};
@@ -200,11 +201,23 @@ const StatusBadge = styled.span<{ activa: boolean }>`
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
-  background: ${props => props.activa 
-    ? 'rgba(0, 255, 0, 0.1)' 
+  background: ${props => props.activa
+    ? 'rgba(0, 255, 0, 0.1)'
     : 'rgba(255, 0, 0, 0.1)'
   };
   color: ${props => props.activa ? '#00ff00' : '#ff5555'};
+`;
+
+const ErrorMessage = styled.div`
+  color: #ff5555;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+`;
+
+const SuccessMessage = styled.div`
+  color: #00ff00;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
 `;
 
 // Datos simulados de servicios
@@ -228,9 +241,12 @@ interface PromocionForm {
 }
 
 const PromocionesAdmin: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'listado' | 'crear'>('listado');
+  const [activeTab, setActiveTab] = useState<'listado' | 'crear' | 'editar'>('listado');
   const [promociones, setPromociones] = useState<Promocion[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [editingPromocion, setEditingPromocion] = useState<Promocion | null>(null);
   const [formData, setFormData] = useState<PromocionForm>({
     servicioId: '',
     tipo: 'GRATIS',
@@ -238,51 +254,36 @@ const PromocionesAdmin: React.FC = () => {
     cantidadLimite: 3,
     activa: true
   });
-  
-  // Simular carga de promociones
+
+  // Cargar promociones desde la API
   useEffect(() => {
-    const cargarPromociones = async () => {
-      try {
-        setCargando(true);
-        
-        // Simulación - esto debería ser una llamada a la API real
-        const promocionesSimuladas: Promocion[] = [
-          {
-            id: 'promo-basic-gratis',
-            servicioId: 'basic',
-            tipo: 'GRATIS',
-            cantidadLimite: 3,
-            cantidadUsada: 1,
-            activa: true,
-            fechaCreacion: new Date(),
-          },
-          {
-            id: 'promo-standard-descuento',
-            servicioId: 'standard',
-            tipo: 'DESCUENTO',
-            valorDescuento: 20,
-            cantidadLimite: 5,
-            cantidadUsada: 2,
-            activa: true,
-            fechaCreacion: new Date(),
-            fechaExpiracion: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 días
-          }
-        ];
-        
-        setPromociones(promocionesSimuladas);
-        setCargando(false);
-      } catch (error) {
-        console.error('Error al cargar promociones:', error);
-        setCargando(false);
-      }
-    };
-    
     cargarPromociones();
   }, []);
-  
+
+  const cargarPromociones = async () => {
+    try {
+      setCargando(true);
+      setError(null);
+      const promocionesData = await promocionesAPI.obtenerPromociones();
+      setPromociones(promocionesData);
+    } catch (error) {
+      console.error('Error al cargar promociones:', error);
+      setError('Error al cargar las promociones');
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const limpiarMensajes = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
+    limpiarMensajes();
+
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData(prev => ({ ...prev, [name]: checked }));
@@ -290,91 +291,144 @@ const PromocionesAdmin: React.FC = () => {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
-  
+
   const handleSwitchChange = (name: string) => {
+    limpiarMensajes();
     setFormData(prev => ({ ...prev, [name]: !prev[name as keyof PromocionForm] }));
   };
-  
+
+  const resetForm = () => {
+    setFormData({
+      servicioId: '',
+      tipo: 'GRATIS',
+      valorDescuento: 0,
+      cantidadLimite: 3,
+      activa: true
+    });
+    setEditingPromocion(null);
+    limpiarMensajes();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      // Simulación - esto debería enviar los datos a la API
-      const nuevaPromocion: Promocion = {
-        id: `promo-${Date.now()}`,
-        servicioId: formData.servicioId,
-        tipo: formData.tipo,
-        valorDescuento: formData.tipo === 'DESCUENTO' ? formData.valorDescuento : undefined,
-        cantidadLimite: formData.cantidadLimite,
-        cantidadUsada: 0,
-        activa: formData.activa,
-        fechaCreacion: new Date(),
-        fechaExpiracion: formData.fechaExpiracion ? new Date(formData.fechaExpiracion) : undefined
-      };
-      
-      // Añadir la nueva promoción a la lista (en producción, esto vendría de la API)
-      setPromociones(prev => [...prev, nuevaPromocion]);
-      
-      // Reiniciar el formulario
-      setFormData({
-        servicioId: '',
-        tipo: 'GRATIS',
-        valorDescuento: 0,
-        cantidadLimite: 3,
-        activa: true
-      });
-      
-      // Cambiar a la pestaña de listado
+      limpiarMensajes();
+      setCargando(true);
+
+      if (editingPromocion) {
+        // Actualizar promoción existente
+        await promocionesAPI.actualizarPromocion(editingPromocion.id, {
+          servicioId: formData.servicioId,
+          tipo: formData.tipo,
+          valorDescuento: formData.tipo === 'DESCUENTO' ? formData.valorDescuento : undefined,
+          cantidadLimite: formData.cantidadLimite,
+          activa: formData.activa,
+          fechaExpiracion: formData.fechaExpiracion ? new Date(formData.fechaExpiracion) : undefined
+        });
+        setSuccess('Promoción actualizada exitosamente');
+      } else {
+        // Crear nueva promoción
+        await promocionesAPI.crearPromocion({
+          servicioId: formData.servicioId,
+          tipo: formData.tipo,
+          valorDescuento: formData.tipo === 'DESCUENTO' ? formData.valorDescuento : undefined,
+          cantidadLimite: formData.cantidadLimite,
+          activa: formData.activa,
+          fechaExpiracion: formData.fechaExpiracion ? new Date(formData.fechaExpiracion) : undefined
+        });
+        setSuccess('Promoción creada exitosamente');
+      }
+
+      // Recargar promociones
+      await cargarPromociones();
+
+      // Reiniciar el formulario y cambiar a la pestaña de listado
+      resetForm();
       setActiveTab('listado');
-      
-      alert('Promoción creada exitosamente');
+
     } catch (error) {
-      console.error('Error al crear promoción:', error);
-      alert('Error al crear la promoción');
+      console.error('Error al guardar promoción:', error);
+      setError(editingPromocion ? 'Error al actualizar la promoción' : 'Error al crear la promoción');
+    } finally {
+      setCargando(false);
     }
   };
-  
-  const handleEliminar = (id: string) => {
+
+  const handleEliminar = async (id: string) => {
     if (window.confirm('¿Estás seguro que deseas eliminar esta promoción?')) {
-      // Simulación - esto debería llamar a la API para eliminar
-      setPromociones(prev => prev.filter(promo => promo.id !== id));
-      alert('Promoción eliminada exitosamente');
+      try {
+        limpiarMensajes();
+        setCargando(true);
+        await promocionesAPI.eliminarPromocion(id);
+        setSuccess('Promoción eliminada exitosamente');
+        await cargarPromociones();
+      } catch (error) {
+        console.error('Error al eliminar promoción:', error);
+        setError('Error al eliminar la promoción');
+      } finally {
+        setCargando(false);
+      }
     }
   };
-  
-  const handleToggleActiva = (id: string) => {
-    setPromociones(prev => prev.map(promo => 
-      promo.id === id ? { ...promo, activa: !promo.activa } : promo
-    ));
+
+  const handleEditar = (promocion: Promocion) => {
+    setEditingPromocion(promocion);
+    setFormData({
+      servicioId: promocion.servicioId,
+      tipo: promocion.tipo,
+      valorDescuento: promocion.valorDescuento || 0,
+      cantidadLimite: promocion.cantidadLimite,
+      fechaExpiracion: promocion.fechaExpiracion ? promocion.fechaExpiracion.toISOString().split('T')[0] : '',
+      activa: promocion.activa
+    });
+    setActiveTab('editar');
+    limpiarMensajes();
   };
-  
+
+  const handleCancelar = () => {
+    resetForm();
+    setActiveTab('listado');
+  };
+
   const obtenerNombreServicio = (servicioId: string) => {
     return servicios.find(s => s.id === servicioId)?.title || servicioId;
   };
-  
+
   return (
     <AdminContainer>
       <Title>Gestión de Promociones</Title>
-      
+
       <TabsContainer>
-        <Tab 
-          active={activeTab === 'listado'} 
+        <Tab
+          active={activeTab === 'listado'}
           onClick={() => setActiveTab('listado')}
         >
           Listado de Promociones
         </Tab>
-        <Tab 
-          active={activeTab === 'crear'} 
-          onClick={() => setActiveTab('crear')}
+        <Tab
+          active={activeTab === 'crear'}
+          onClick={() => {
+            resetForm();
+            setActiveTab('crear');
+          }}
         >
           Crear Nueva Promoción
         </Tab>
+        {activeTab === 'editar' && (
+          <Tab active={true}>
+            Editar Promoción
+          </Tab>
+        )}
       </TabsContainer>
-      
+
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+      {success && <SuccessMessage>{success}</SuccessMessage>}
+
       {activeTab === 'listado' ? (
         <Card>
           <h2 style={{ marginBottom: '1.5rem' }}>Promociones Activas e Inactivas</h2>
-          
+
           {cargando ? (
             <p>Cargando promociones...</p>
           ) : promociones.length === 0 ? (
@@ -411,13 +465,13 @@ const PromocionesAdmin: React.FC = () => {
                     </td>
                     <td>{promo.fechaCreacion.toLocaleDateString()}</td>
                     <td>
-                      {promo.fechaExpiracion 
-                        ? promo.fechaExpiracion.toLocaleDateString() 
+                      {promo.fechaExpiracion
+                        ? promo.fechaExpiracion.toLocaleDateString()
                         : 'Sin vencimiento'}
                     </td>
                     <td>
-                      <ActionButton onClick={() => handleToggleActiva(promo.id)}>
-                        {promo.activa ? 'Desactivar' : 'Activar'}
+                      <ActionButton onClick={() => handleEditar(promo)}>
+                        Editar
                       </ActionButton>
                       <ActionButton onClick={() => handleEliminar(promo.id)}>
                         Eliminar
@@ -431,12 +485,14 @@ const PromocionesAdmin: React.FC = () => {
         </Card>
       ) : (
         <Card>
-          <h2 style={{ marginBottom: '1.5rem' }}>Crear Nueva Promoción</h2>
-          
+          <h2 style={{ marginBottom: '1.5rem' }}>
+            {editingPromocion ? 'Editar Promoción' : 'Crear Nueva Promoción'}
+          </h2>
+
           <form onSubmit={handleSubmit}>
             <FormGroup>
               <Label htmlFor="servicioId">Servicio</Label>
-              <Select 
+              <Select
                 id="servicioId"
                 name="servicioId"
                 value={formData.servicioId}
@@ -451,10 +507,10 @@ const PromocionesAdmin: React.FC = () => {
                 ))}
               </Select>
             </FormGroup>
-            
+
             <FormGroup>
               <Label htmlFor="tipo">Tipo de Promoción</Label>
-              <Select 
+              <Select
                 id="tipo"
                 name="tipo"
                 value={formData.tipo}
@@ -465,11 +521,11 @@ const PromocionesAdmin: React.FC = () => {
                 <option value="DESCUENTO">Descuento Porcentual</option>
               </Select>
             </FormGroup>
-            
+
             {formData.tipo === 'DESCUENTO' && (
               <FormGroup>
                 <Label htmlFor="valorDescuento">Valor del Descuento (%)</Label>
-                <Input 
+                <Input
                   id="valorDescuento"
                   name="valorDescuento"
                   type="number"
@@ -481,10 +537,10 @@ const PromocionesAdmin: React.FC = () => {
                 />
               </FormGroup>
             )}
-            
+
             <FormGroup>
               <Label htmlFor="cantidadLimite">Cantidad Límite</Label>
-              <Input 
+              <Input
                 id="cantidadLimite"
                 name="cantidadLimite"
                 type="number"
@@ -494,10 +550,10 @@ const PromocionesAdmin: React.FC = () => {
                 required
               />
             </FormGroup>
-            
+
             <FormGroup>
               <Label htmlFor="fechaExpiracion">Fecha de Expiración (opcional)</Label>
-              <Input 
+              <Input
                 id="fechaExpiracion"
                 name="fechaExpiracion"
                 type="date"
@@ -505,10 +561,10 @@ const PromocionesAdmin: React.FC = () => {
                 onChange={handleFormChange}
               />
             </FormGroup>
-            
+
             <FormGroup>
               <Switch>
-                <input 
+                <input
                   id="activa"
                   name="activa"
                   type="checkbox"
@@ -516,16 +572,16 @@ const PromocionesAdmin: React.FC = () => {
                   onChange={() => handleSwitchChange('activa')}
                 />
                 <label htmlFor="activa"></label>
-                <span>Activar Promoción Inmediatamente</span>
+                <span>Promoción Activa</span>
               </Switch>
             </FormGroup>
-            
+
             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-              <Button type="button" onClick={() => setActiveTab('listado')}>
+              <Button type="button" onClick={handleCancelar}>
                 Cancelar
               </Button>
-              <Button type="submit" primary>
-                Crear Promoción
+              <Button type="submit" primary disabled={cargando}>
+                {cargando ? 'Guardando...' : (editingPromocion ? 'Actualizar Promoción' : 'Crear Promoción')}
               </Button>
             </div>
           </form>
