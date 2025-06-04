@@ -196,23 +196,60 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
   const hasAuthToken = !!localStorage.getItem('auth_token');
-  const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
 
   // Verificar si el usuario tiene permisos de administrador
-  const isAdmin = userInfo.role === 'admin' || localStorage.getItem('user_role') === 'admin';
+  // En un entorno real, esto se haría verificando roles en el token o consultando a la API
+  const isAdmin = localStorage.getItem('user_role') === 'admin';
 
   console.log('Estado de autenticación (AdminRoute):', {
     isAuthenticated,
     hasAuthToken,
     isAdmin,
-    userInfo,
+    userRole: localStorage.getItem('user_role'),
+    sessionUserRole: sessionStorage.getItem('user_role'),
     pathname: window.location.pathname,
   });
 
-  // Si no está autenticado o no es admin, redirigir al login
-  if (!isAuthenticated || !hasAuthToken || !isAdmin) {
-    console.log('Acceso al panel admin: Requiere iniciar sesión como administrador - Redirigiendo a login');
+  // Si no está autenticado, redirigir al login
+  if (!isAuthenticated && !hasAuthToken) {
+    console.log('Acceso al panel admin: Requiere iniciar sesión - Redirigiendo a login');
     return <Navigate to="/admin/login" replace />;
+  }
+
+  // Si está autenticado pero no es administrador, mostrar mensaje de error
+  if ((isAuthenticated || hasAuthToken) && !isAdmin) {
+    console.log('Acceso al panel admin: Usuario autenticado pero sin permisos de administrador');
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#121212',
+        color: '#f5f5f5',
+        padding: '2rem',
+        textAlign: 'center'
+      }}>
+        <h1 style={{ color: '#FF5252', marginBottom: '1rem' }}>Acceso Denegado</h1>
+        <p style={{ marginBottom: '2rem' }}>No tienes permisos de administrador para acceder a esta sección.</p>
+        <button
+          onClick={() => window.location.href = '/admin/login'}
+          style={{
+            background: 'linear-gradient(135deg, #00d2ff, #3a7bd5)',
+            color: 'white',
+            border: 'none',
+            padding: '0.85rem 1.5rem',
+            borderRadius: '6px',
+            fontSize: '1rem',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          Volver al inicio de sesión
+        </button>
+      </div>
+    );
   }
 
   return children;
@@ -255,6 +292,10 @@ const AdminVerify = () => {
           localStorage.setItem('isAuthenticated', 'true');
           sessionStorage.setItem('isAuthenticated', 'true');
           document.cookie = `isAuthenticated=true; path=/; max-age=2592000; SameSite=Lax`;
+
+          // Guardar rol de administrador
+          localStorage.setItem('user_role', 'admin');
+          sessionStorage.setItem('user_role', 'admin');
 
           // Guardar información del usuario administrador
           if (data.user) {

@@ -3113,11 +3113,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
         </svg>
         <style>{`
-@keyframes spin {
+          @keyframes spin {
   0 % { transform: rotate(0deg); }
   100 % { transform: rotate(360deg); }
-}
-`}</style>
+          }
+        `}</style>
         <div>Cargando datos del proyecto...</div>
       </div>
     );
