@@ -261,6 +261,7 @@ const AdminVerify = () => {
   const { token } = useParams<{ token: string }>();
   const [verifying, setVerifying] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isTokenExpired, setIsTokenExpired] = useState(false);
 
   useEffect(() => {
     const verifyToken = async () => {
@@ -308,7 +309,15 @@ const AdminVerify = () => {
           navigate('/admin', { replace: true });
         } else {
           console.error('❌ Error en verificación:', data.error);
-          setError(data.error || 'Token de verificación inválido o expirado');
+
+          // Verificar si el error es por token expirado
+          const errorMessage = data.error || '';
+          if (errorMessage.includes('expirado') || errorMessage.includes('expired')) {
+            setIsTokenExpired(true);
+            setError('El enlace de verificación ha expirado. Los enlaces de verificación son válidos por solo 10 minutos por razones de seguridad.');
+          } else {
+            setError(data.error || 'Token de verificación inválido o expirado');
+          }
         }
       } catch (error) {
         console.error('❌ Error al verificar token:', error);
@@ -366,6 +375,15 @@ const AdminVerify = () => {
         ) : error ? (
           <div>
             <p style={{ color: '#FF5252', marginBottom: '1.5rem' }}>{error}</p>
+            {isTokenExpired && (
+              <p style={{
+                fontSize: '0.9rem',
+                color: 'rgba(255, 255, 255, 0.7)',
+                marginBottom: '1.5rem'
+              }}>
+                Puedes solicitar un nuevo enlace de verificación desde la página de inicio de sesión.
+              </p>
+            )}
             <button
               onClick={() => navigate('/admin/login')}
               style={{
@@ -380,7 +398,7 @@ const AdminVerify = () => {
                 transition: 'all 0.2s ease'
               }}
             >
-              Volver al inicio de sesión
+              {isTokenExpired ? 'Solicitar Nuevo Enlace' : 'Volver al inicio de sesión'}
             </button>
           </div>
         ) : (

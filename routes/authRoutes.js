@@ -10,7 +10,8 @@ import {
   verifyTwoFactorToken,
   verifyEmail,
   verifyLoginTwoFactor,
-  updateUserTwoFactorSettings
+  updateUserTwoFactorSettings,
+  getTokensStatus
 } from '../controllers/authController.js';
 
 const router = express.Router();
@@ -27,5 +28,10 @@ router.get('/verify-login/:token', verifyLoginTwoFactor);
 // Rutas para verificación de dos pasos del admin
 router.post('/admin/request-verification', requestTwoFactorAuth);
 router.get('/admin/verify/:token', verifyTwoFactorToken);
+
+// Ruta para debugging de tokens (solo en desarrollo)
+if (process.env.NODE_ENV === 'development') {
+  router.get('/admin/tokens-status', getTokensStatus);
+}
 
 export default router; 

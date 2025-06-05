@@ -4,6 +4,8 @@ import fetch from 'node-fetch';
 import User from '../models/User.js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { sendEmailVerification, sendTwoFactorEmail } from '../utils/emailManager.js';
 
 dotenv.config();
@@ -25,6 +27,88 @@ const twoFactorTokens = new Map();
 
 // Almacenamiento para tokens de verificación de usuarios
 const userVerificationTokens = new Map();
+
+// Archivo para persistir tokens de dos factores
+const TOKENS_FILE = path.join(process.cwd(), 'temp', 'two-factor-tokens.json');
+
+// Función para cargar tokens desde archivo
+const loadTokensFromFile = () => {
+  try {
+    // Crear directorio temp si no existe
+    const tempDir = path.dirname(TOKENS_FILE);
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    if (fs.existsSync(TOKENS_FILE)) {
+      const data = fs.readFileSync(TOKENS_FILE, 'utf8');
+      const tokens = JSON.parse(data);
+
+      // Cargar tokens válidos (no expirados)
+      const now = Date.now();
+      let validTokens = 0;
+      let expiredTokens = 0;
+
+      for (const [token, tokenData] of Object.entries(tokens)) {
+        if (tokenData.expires > now && !tokenData.used) {
+          twoFactorTokens.set(token, tokenData);
+          validTokens++;
+        } else {
+          expiredTokens++;
+        }
+      }
+
+      console.log(`📂 Tokens cargados desde archivo: ${validTokens} válidos, ${expiredTokens} expirados`);
+    }
+  } catch (error) {
+    console.error('Error al cargar tokens desde archivo:', error);
+  }
+};
+
+// Función para guardar tokens en archivo
+const saveTokensToFile = () => {
+  try {
+    const tokensObj = {};
+    for (const [token, tokenData] of twoFactorTokens.entries()) {
+      tokensObj[token] = tokenData;
+    }
+
+    // Crear directorio temp si no existe
+    const tempDir = path.dirname(TOKENS_FILE);
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    fs.writeFileSync(TOKENS_FILE, JSON.stringify(tokensObj, null, 2));
+    console.log(`💾 Tokens guardados en archivo: ${twoFactorTokens.size} tokens`);
+  } catch (error) {
+    console.error('Error al guardar tokens en archivo:', error);
+  }
+};
+
+// Función para limpiar tokens expirados
+const cleanExpiredTokens = () => {
+  const now = Date.now();
+  let cleaned = 0;
+
+  for (const [token, tokenData] of twoFactorTokens.entries()) {
+    if (tokenData.expires <= now || tokenData.used) {
+      twoFactorTokens.delete(token);
+      cleaned++;
+    }
+  }
+
+  if (cleaned > 0) {
+    console.log(`🧹 Limpieza automática: ${cleaned} tokens expirados eliminados`);
+    saveTokensToFile(); // Guardar cambios
+  }
+};
+
+// Cargar tokens al iniciar el servidor
+loadTokensFromFile();
+
+// Limpiar tokens expirados cada 5 minutos
+setInterval(cleanExpiredTokens, 5 * 60 * 1000);
 
 // Función para generar un token JWT
 const generateToken = (userId, provider = 'email') => {
@@ -1161,6 +1245,11 @@ export const requestTwoFactorAuth = async (req, res) => {
       used: false
     });
 
+    // Guardar tokens en archivo para persistencia
+    saveTokensToFile();
+
+    console.log(`💾 Token guardado: expira en 10 minutos (${new Date(Date.now() + 10 * 60 * 1000).toLocaleString()})`);
+
     // Enviar correo de verificación al administrador
     const targetEmail = process.env.Email || 'lucasdono391@gmail.com';
     console.log(`📧 Enviando correo de verificación a ${targetEmail}`);
@@ -1241,6 +1330,7 @@ export const verifyTwoFactorToken = async (req, res) => {
     if (Date.now() > tokenData.expires) {
       console.log(`❌ Token expirado hace ${Math.abs(expiresIn)} segundos`);
       twoFactorTokens.delete(token); // Eliminar token expirado
+      saveTokensToFile(); // Guardar cambios
       return res.status(400).json({
         success: false,
         error: 'Token de verificación expirado'
@@ -1261,7 +1351,8 @@ export const verifyTwoFactorToken = async (req, res) => {
     // Marcar el token como usado
     tokenData.used = true;
     twoFactorTokens.set(token, tokenData);
-    console.log(`✅ Token marcado como utilizado`);
+    saveTokensToFile(); // Guardar cambios
+    console.log(`✅ Token marcado como utilizado y guardado en archivo`);
 
     // Generar token JWT para la sesión con una expiración más larga (30 días)
     const jwtToken = jwt.sign({
@@ -1622,6 +1713,43 @@ export const updateUserTwoFactorSettings = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error al actualizar configuración 2FA:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Error en el servidor: ' + error.message
+    });
+  }
+};
+
+// Función para verificar el estado de los tokens (debugging)
+export const getTokensStatus = async (req, res) => {
+  try {
+    const now = Date.now();
+    const tokens = [];
+
+    for (const [token, tokenData] of twoFactorTokens.entries()) {
+      const timeLeft = Math.round((tokenData.expires - now) / 1000);
+      const isExpired = tokenData.expires <= now;
+
+      tokens.push({
+        token: token.substring(0, 10) + '...',
+        username: tokenData.username,
+        created: new Date(tokenData.created).toLocaleString(),
+        expires: new Date(tokenData.expires).toLocaleString(),
+        timeLeftSeconds: timeLeft,
+        isExpired,
+        used: tokenData.used,
+        status: isExpired ? 'EXPIRADO' : tokenData.used ? 'USADO' : 'VÁLIDO'
+      });
+    }
+
+    return res.json({
+      success: true,
+      totalTokens: twoFactorTokens.size,
+      serverTime: new Date().toLocaleString(),
+      tokens: tokens.sort((a, b) => b.timeLeftSeconds - a.timeLeftSeconds)
+    });
+  } catch (error) {
+    console.error('Error al obtener estado de tokens:', error);
     return res.status(500).json({
       success: false,
       error: 'Error en el servidor: ' + error.message

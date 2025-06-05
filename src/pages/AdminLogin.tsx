@@ -130,6 +130,7 @@ const AdminLogin = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
+  const [tokenExpired, setTokenExpired] = useState(false);
 
   const navigate = useNavigate();
 
@@ -148,6 +149,7 @@ const AdminLogin = () => {
     try {
       setLoading(true);
       setError('');
+      setTokenExpired(false);
       console.log('Verificando token:', token.substring(0, 10) + '...');
 
       // Limpiar el token de la URL inmediatamente para evitar reutilización
@@ -178,6 +180,10 @@ const AdminLogin = () => {
         setSuccess('Verificación exitosa. Redirigiendo al panel de administración...');
         console.log('✅ Verificación exitosa, datos guardados en localStorage');
 
+        // Limpiar credenciales temporales
+        localStorage.removeItem('temp_admin_username');
+        localStorage.removeItem('temp_admin_password');
+
         // Forzar una recarga completa para asegurar la correcta aplicación de la sesión
         setTimeout(() => {
           window.location.href = '/admin';
@@ -194,13 +200,73 @@ const AdminLogin = () => {
         console.error('Estado HTTP:', error.response.status);
       }
 
-      setError(
-        error.response?.data?.error ||
-        'Error en la verificación. El enlace puede haber expirado o ya ha sido utilizado.'
-      );
+      // Verificar si el error es por token expirado
+      const errorMessage = error.response?.data?.error || error.message;
+      if (errorMessage.includes('expirado') || errorMessage.includes('expired')) {
+        setTokenExpired(true);
+        setError('El enlace de verificación ha expirado. Los enlaces de verificación son válidos por solo 10 minutos por razones de seguridad.');
+
+        // Si tenemos credenciales guardadas, ofrecer regenerar automáticamente
+        const savedUsername = localStorage.getItem('temp_admin_username');
+        const savedPassword = localStorage.getItem('temp_admin_password');
+
+        if (savedUsername && savedPassword) {
+          console.log('🔄 Credenciales encontradas, ofreciendo regeneración automática');
+          setUsername(savedUsername);
+          setPassword(savedPassword);
+        }
+      } else if (errorMessage.includes('utilizado') || errorMessage.includes('used')) {
+        setError('Este enlace de verificación ya fue utilizado. Por favor, solicita un nuevo enlace.');
+        setTokenExpired(true);
+      } else {
+        setError(
+          error.response?.data?.error ||
+          'Error en la verificación. El enlace puede haber expirado o ya ha sido utilizado.'
+        );
+      }
 
       // Si el token es inválido, limpiar estados de verificación
       setVerificationSent(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función para solicitar un nuevo token de verificación
+  const requestNewToken = async () => {
+    if (!username || !password) {
+      setError('Por favor, ingresa tu usuario y contraseña primero');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setTokenExpired(false);
+
+    try {
+      const response = await axios.post<{
+        success: boolean;
+        message?: string;
+        requiresTwoFactor?: boolean;
+        error?: string;
+      }>(`${API_URL}/auth/admin/request-verification`, {
+        username,
+        password
+      });
+
+      if (response.data.success && response.data.requiresTwoFactor) {
+        setVerificationSent(true);
+        setSuccess(response.data.message || 'Se ha enviado un nuevo enlace de verificación a tu correo electrónico');
+
+        // Actualizar credenciales temporales
+        localStorage.setItem('temp_admin_username', username);
+        localStorage.setItem('temp_admin_password', password);
+      } else {
+        throw new Error(response.data.error || 'Error al solicitar nuevo token');
+      }
+    } catch (error: any) {
+      console.error('Error al solicitar nuevo token:', error);
+      setError(error.response?.data?.error || 'Error al solicitar nuevo token de verificación');
     } finally {
       setLoading(false);
     }
@@ -217,6 +283,10 @@ const AdminLogin = () => {
     setLoading(true);
     setError('');
     setSuccess('');
+
+    // Guardar credenciales temporalmente para auto-retry
+    localStorage.setItem('temp_admin_username', username);
+    localStorage.setItem('temp_admin_password', password);
 
     try {
       console.log('Intentando inicio de sesión como administrador...');
@@ -264,6 +334,10 @@ const AdminLogin = () => {
             email: 'admin@example.com'
           }));
 
+          // Limpiar credenciales temporales
+          localStorage.removeItem('temp_admin_username');
+          localStorage.removeItem('temp_admin_password');
+
           console.log('Autenticación local exitosa. Datos guardados:', {
             role: 'admin',
             token: mockToken.substring(0, 15) + '...',
@@ -301,9 +375,33 @@ const AdminLogin = () => {
             <InfoText>
               Se ha enviado un enlace de verificación a tu correo electrónico. Por favor, revisa tu bandeja de entrada y haz clic en el enlace para completar el inicio de sesión.
             </InfoText>
+            <InfoText style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.5)' }}>
+              ⚠️ El enlace expirará en 10 minutos por razones de seguridad.
+            </InfoText>
             <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
               <SubmitButton onClick={() => setVerificationSent(false)}>
                 Volver
+              </SubmitButton>
+            </div>
+          </>
+        ) : tokenExpired ? (
+          <>
+            <ErrorMessage>{error}</ErrorMessage>
+            <InfoText>
+              Puedes solicitar un nuevo enlace de verificación usando tus credenciales.
+            </InfoText>
+            <div style={{ marginTop: '1.5rem', textAlign: 'center', display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+              <SubmitButton onClick={requestNewToken} disabled={loading}>
+                {loading ? 'Enviando...' : 'Solicitar Nuevo Enlace'}
+              </SubmitButton>
+              <SubmitButton
+                onClick={() => {
+                  setTokenExpired(false);
+                  setError('');
+                }}
+                style={{ background: 'rgba(100, 100, 100, 0.5)' }}
+              >
+                Volver al Login
               </SubmitButton>
             </div>
           </>
@@ -315,7 +413,7 @@ const AdminLogin = () => {
                 type="text"
                 id="username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                 placeholder="Ingresa tu usuario"
                 disabled={loading}
               />
@@ -327,13 +425,13 @@ const AdminLogin = () => {
                 type="password"
                 id="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                 placeholder="Ingresa tu contraseña"
                 disabled={loading}
               />
             </FormGroup>
 
-            {error && <ErrorMessage>{error}</ErrorMessage>}
+            {error && !tokenExpired && <ErrorMessage>{error}</ErrorMessage>}
             {success && !verificationSent && <SuccessMessage>{success}</SuccessMessage>}
 
             <SubmitButton type="submit" disabled={loading}>
