@@ -102,28 +102,39 @@ const corsOrigins = [
 
 console.log('📍 Configuración CORS - Orígenes permitidos:', corsOrigins);
 
-// Configuración CORS completa usando el middleware cors
-app.use(cors({
-  origin: function (origin, callback) {
-    // Permitir solicitudes sin origen (como aplicaciones móviles o curl)
-    if (!origin) return callback(null, true);
-
-    // En producción, permitir explícitamente el dominio principal
-    if (origin === 'https://circuitprompt.com.ar') {
-      return callback(null, true);
-    }
-
-    // Permitir todos los orígenes en desarrollo para facilitar pruebas
+// Opciones de CORS dinámicas y flexibles
+const corsOptions = {
+  origin: (origin, callback) => {
+    // En desarrollo, permitir cualquier origen para facilitar las pruebas
     if (process.env.NODE_ENV !== 'production') {
+      console.log(`CORS: Petición desde ${origin} permitida (entorno de desarrollo)`);
       return callback(null, true);
     }
 
-    // En producción, verificar contra la lista de orígenes permitidos
-    if (corsOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost')) {
+    // Permitir solicitudes sin origen (ej: curl, Postman)
+    if (!origin) {
+      console.log('CORS: Petición sin origen permitida');
+      return callback(null, true);
+    }
+
+    // Verificar si el origen está en la lista blanca
+    const isAllowed = corsOrigins.some(allowedOrigin => {
+      // Manejar wildcards como '*.mercadopago.com'
+      if (allowedOrigin.startsWith('*.')) {
+        const domain = allowedOrigin.substring(2);
+        return origin.endsWith(`.${domain}`) || origin === domain;
+      }
+      return origin === allowedOrigin;
+    });
+
+    if (isAllowed) {
+      // console.log(`CORS: Petición desde ${origin} permitida`); // Opcional: demasiado verboso para producción
       callback(null, true);
     } else {
-      console.warn(`⚠️ Origen bloqueado por CORS: ${origin}`);
-      callback(new Error('No permitido por CORS'));
+      // Log detallado para depuración en producción
+      console.error(`CORS: Petición desde origen "${origin}" RECHAZADA.`);
+      console.error(`CORS: Orígenes permitidos en producción: [${corsOrigins.join(', ')}]`);
+      callback(new Error('Este origen no está permitido por la política de CORS.'));
     }
   },
   credentials: true,
@@ -134,20 +145,25 @@ app.use(cors({
     'x-flow-id', 'x-product-id', 'x-tracking-id', 'Cookie', 'Set-Cookie'
   ],
   exposedHeaders: ['Content-Disposition', 'Set-Cookie']
-}));
+};
 
-// Middleware adicional para asegurar que siempre se respondan preflight requests OPTIONS
-app.options('*', cors());
+// Aplicar middleware de CORS
+app.use(cors(corsOptions));
+
+// Middleware para manejar las solicitudes OPTIONS (pre-flight)
+app.options('*', cors(corsOptions));
 
 // Middleware para forzar encabezados CORS en cada respuesta
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin) {
+  if (origin && corsOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (process.env.NODE_ENV !== 'production' && origin) {
+    // En desarrollo, reflejar cualquier origen
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
+
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   next();
 });
 

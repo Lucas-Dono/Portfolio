@@ -319,9 +319,18 @@ const AdminVerify = () => {
             setError(data.error || 'Token de verificación inválido o expirado');
           }
         }
-      } catch (error) {
-        console.error('❌ Error al verificar token:', error);
-        setError('Error de conexión. Por favor, intenta de nuevo.');
+      } catch (error: any) {
+        console.error('❌ Error completo al verificar token:', error);
+
+        let detailedError = 'Error de conexión. Por favor, verifica tu conexión a internet e intenta de nuevo.';
+
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+          detailedError = 'Error de red o CORS. El servidor no es accesible desde tu navegador. Contacta al soporte técnico.';
+        } else if (error.response) {
+          detailedError = `Error del servidor: ${error.response.status} - ${error.response.data?.error || 'Respuesta inesperada'}`;
+        }
+
+        setError(detailedError);
       } finally {
         setVerifying(false);
       }

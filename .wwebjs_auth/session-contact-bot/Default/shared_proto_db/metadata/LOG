@@ -1,0 +1,4 @@
+2025/06/05-17:24:50.868 1aa6e Creating DB /home/Lucas/Documentos/Portfolio/portfolio/.wwebjs_auth/session-contact-bot/Default/shared_proto_db/metadata since it was missing.
+2025/06/05-17:24:50.913 1aa6e Reusing MANIFEST /home/Lucas/Documentos/Portfolio/portfolio/.wwebjs_auth/session-contact-bot/Default/shared_proto_db/metadata/MANIFEST-000001
+2025/06/05-17:24:50.915 1aa6e Recovering log #3
+2025/06/05-17:24:50.916 1aa6e Reusing old log /home/Lucas/Documentos/Portfolio/portfolio/.wwebjs_auth/session-contact-bot/Default/shared_proto_db/metadata/000003.log 

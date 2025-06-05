@@ -1,0 +1,4 @@
+2025/06/05-17:24:50.424 1aa63 Creating DB /home/Lucas/Documentos/Portfolio/portfolio/.wwebjs_auth/session-contact-bot/Default/Local Storage/leveldb since it was missing.
+2025/06/05-17:24:50.514 1aa63 Reusing MANIFEST /home/Lucas/Documentos/Portfolio/portfolio/.wwebjs_auth/session-contact-bot/Default/Local Storage/leveldb/MANIFEST-000001
+2025/06/05-17:24:50.516 1aa63 Recovering log #78
+2025/06/05-17:24:50.520 1aa63 Reusing old log /home/Lucas/Documentos/Portfolio/portfolio/.wwebjs_auth/session-contact-bot/Default/Local Storage/leveldb/000078.log 
