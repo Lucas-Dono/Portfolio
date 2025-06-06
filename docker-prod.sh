@@ -154,7 +154,7 @@ iniciar_produccion() {
     mostrar_espacio
     
     echo -e "${AZUL}🛑 Deteniendo contenedores existentes...${NC}"
-    $DOCKER_COMPOSE -f docker-compose-prod.yml down
+    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml down
     
     # Comprobar si se debe iniciar limpio (eliminar volúmenes)
     if [ "$1" = "clean" ]; then
@@ -179,15 +179,15 @@ iniciar_produccion() {
     echo -e "${AZUL}🏗️ Construyendo imágenes con optimizaciones...${NC}"
     if [ "$1" = "clean" ]; then
         # Solo usar --no-cache en modo clean
-        $DOCKER_COMPOSE -f docker-compose-prod.yml build --no-cache --parallel
+        $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml build --no-cache --parallel
     else
         # Usar caché para construcción más rápida
-        $DOCKER_COMPOSE -f docker-compose-prod.yml build --parallel
+        $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml build --parallel
     fi
     
     # Iniciar contenedores
     echo -e "${AZUL}🚀 Iniciando contenedores...${NC}"
-    $DOCKER_COMPOSE -f docker-compose-prod.yml up -d
+    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml up -d
     
     # Verificar estado con timeout más largo
     echo -e "${AZUL}⏳ Esperando que los servicios estén listos...${NC}"
@@ -199,8 +199,8 @@ iniciar_produccion() {
         if $DOCKER_COMPOSE -f docker-compose-prod.yml ps | grep -q "healthy\|running"; then
         echo -e "${VERDE}✅ Entorno de producción iniciado correctamente${NC}"
         
-        # Obtener el puerto del archivo .env.prod
-        APP_PORT=$(grep "PORT=" .env.prod 2>/dev/null | cut -d '=' -f2)
+        # Obtener el puerto del archivo .env.production
+        APP_PORT=$(grep "PORT=" .env.production 2>/dev/null | cut -d '=' -f2)
         [ -z "$APP_PORT" ] && APP_PORT=5001
         
         echo -e "${VERDE}🌐 Aplicación: http://localhost:${APP_PORT}${NC}"
@@ -228,7 +228,7 @@ iniciar_produccion() {
 # Función para detener los contenedores
 detener_produccion() {
     echo -e "${AZUL}Deteniendo contenedores de producción...${NC}"
-    $DOCKER_COMPOSE -f docker-compose-prod.yml down
+    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml down
     echo -e "${VERDE}✅ Contenedores detenidos correctamente${NC}"
 }
 
@@ -236,7 +236,7 @@ detener_produccion() {
 mostrar_logs() {
     echo -e "${AZUL}📋 Mostrando logs de los contenedores...${NC}"
     echo -e "${AMARILLO}Presiona Ctrl+C para salir${NC}"
-    $DOCKER_COMPOSE -f docker-compose-prod.yml logs -f
+    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml logs -f
 }
 
 # Función para actualizar el docker-compose-prod.yml para corregir permisos
