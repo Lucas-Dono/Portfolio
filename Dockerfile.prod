@@ -23,6 +23,16 @@ COPY index.html ./
 COPY public/ ./public/
 COPY src/ ./src/
 
+# Declarar los argumentos de construcción para el frontend
+ARG VITE_API_URL
+ARG VITE_GOOGLE_CLIENT_ID
+ARG VITE_GITHUB_CLIENT_ID
+
+# Establecer las variables de entorno para el proceso de build
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+ENV VITE_GITHUB_CLIENT_ID=${VITE_GITHUB_CLIENT_ID}
+
 # Construir el frontend
 RUN npm run build
 
