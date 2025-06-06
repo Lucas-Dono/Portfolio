@@ -9,6 +9,7 @@ services:
         - VITE_API_URL=${VITE_API_URL}
         - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
         - VITE_GITHUB_CLIENT_ID=${VITE_GITHUB_CLIENT_ID}
+        - VITE_MP_PUBLIC_KEY=${VITE_MP_PUBLIC_KEY}
     restart: unless-stopped
     ports:
       - "5001:5001"

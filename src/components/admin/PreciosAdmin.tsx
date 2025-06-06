@@ -158,6 +158,16 @@ const PreciosAdmin: React.FC = () => {
     originalPrice: null
   });
 
+  // Función helper para limpiar el caché de precios en el frontend
+  const limpiarCachePrecios = () => {
+    localStorage.removeItem('cachedPrecios');
+    localStorage.removeItem('lastPricesUpdate');
+    localStorage.removeItem('cachedPricesTimestamp');
+    localStorage.removeItem('cachedAdminServicios');
+    localStorage.removeItem('lastAdminUpdate');
+    console.log('✅ Caché de precios limpiado - los cambios se verán inmediatamente en el frontend');
+  };
+
   // Cargar servicios desde la API
   useEffect(() => {
     let isMounted = true;
@@ -335,6 +345,9 @@ const PreciosAdmin: React.FC = () => {
       setEditando(null);
       setPrecioOriginalEditado(null);
 
+      // Limpiar caché para que los cambios se vean inmediatamente
+      limpiarCachePrecios();
+
       // Limpiar el mensaje después de 3 segundos
       setTimeout(() => {
         setMensaje(null);
@@ -378,6 +391,9 @@ const PreciosAdmin: React.FC = () => {
       });
 
       setEditandoAddon(null);
+
+      // Limpiar caché para que los cambios se vean inmediatamente
+      limpiarCachePrecios();
 
       // Limpiar el mensaje después de 3 segundos
       setTimeout(() => {
@@ -486,6 +502,9 @@ const PreciosAdmin: React.FC = () => {
       setEditandoCompleto(null);
       setServicioEnEdicion({});
 
+      // Limpiar caché para que los cambios se vean inmediatamente
+      limpiarCachePrecios();
+
       // Limpiar el mensaje después de 3 segundos
       setTimeout(() => {
         setMensaje(null);
@@ -580,6 +599,9 @@ const PreciosAdmin: React.FC = () => {
       });
 
       setMostrarFormNuevoServicio(false);
+
+      // Limpiar caché para que los cambios se vean inmediatamente
+      limpiarCachePrecios();
 
       // Limpiar el mensaje después de 3 segundos
       setTimeout(() => {

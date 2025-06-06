@@ -102,6 +102,13 @@ export default defineConfig({
           'emotion': ['@emotion/react', '@emotion/styled', '@emotion/cache']
         }
       }
-    }
+    },
+    terserOptions: {
+      compress: {
+        // En producción, elimina todos los console.log, pero no los console.error
+        drop_console: true,
+        pure_funcs: ['console.info', 'console.debug'],
+      },
+    },
   },
 })

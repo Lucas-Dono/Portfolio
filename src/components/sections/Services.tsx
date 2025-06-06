@@ -9,6 +9,7 @@ import * as promocionesAPI from '../../api/promocionesAPI';
 import * as preciosAPI from '../../api/preciosAPI';
 import { Servicio, AddonServicio } from '../../services/preciosService';
 import axios from 'axios';
+import { getApiUrl } from '../../config/apiConfig';
 
 // Estilos
 const ServicesSection = styled.section`
@@ -198,7 +199,6 @@ const OriginalPrice = styled.span`
   color: rgba(255, 255, 255, 0.5);
   font-size: 1.1rem;
   display: block;
-  margin-bottom: 0.5rem;
 `;
 
 const Price = styled.span`
@@ -1116,7 +1116,6 @@ const Services: React.FC = () => {
   const closeEnterpriseChat = () => {
     setShowEnterpriseChatModal(false);
     setEnterpriseChatMessages([]);
-    setCurrentQuestion(0);
   };
 
   // Ejemplo de función para enviar datos de la conversación al backend (no implementada)
@@ -1151,17 +1150,24 @@ const Services: React.FC = () => {
     let isMounted = true;
     const CACHE_KEY = 'cachedPrecios';
     const CACHE_TIME_KEY = 'lastPricesUpdate';
-    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
+    const CACHE_DURATION = 30 * 1000; // 30 segundos en lugar de 5 minutos
 
     const cargarPrecios = async () => {
       try {
+        // Primero, verificar el timestamp de última actualización desde el servidor
+        const timestampResponse = await fetch(getApiUrl('/servicios/last-updated'));
+        const { lastUpdated } = await timestampResponse.json();
+
         // Verificar si ya tenemos datos en caché y si son recientes
         const cachedData = localStorage.getItem(CACHE_KEY);
         const lastUpdate = localStorage.getItem(CACHE_TIME_KEY);
+        const cachedTimestamp = localStorage.getItem('cachedPricesTimestamp');
         const now = Date.now();
 
-        // Si tenemos datos en caché y son recientes, usarlos
-        if (cachedData && lastUpdate && (now - parseInt(lastUpdate)) < CACHE_DURATION) {
+        // Si tenemos datos en caché, son recientes Y el timestamp del servidor coincide, usarlos
+        if (cachedData && lastUpdate && cachedTimestamp &&
+          (now - parseInt(lastUpdate)) < CACHE_DURATION &&
+          cachedTimestamp === lastUpdated) {
           if (isMounted) {
             const { planes, paquetes, addons } = JSON.parse(cachedData);
             setPlanesPrecios(planes);
@@ -1199,6 +1205,7 @@ const Services: React.FC = () => {
             addons
           }));
           localStorage.setItem(CACHE_TIME_KEY, now.toString());
+          localStorage.setItem('cachedPricesTimestamp', lastUpdated);
         }
       } catch (error) {
         console.error('Error al cargar precios:', error);

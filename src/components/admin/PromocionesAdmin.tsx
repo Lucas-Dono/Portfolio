@@ -255,6 +255,16 @@ const PromocionesAdmin: React.FC = () => {
     activa: true
   });
 
+  // Función helper para limpiar el caché de precios en el frontend
+  const limpiarCachePrecios = () => {
+    localStorage.removeItem('cachedPrecios');
+    localStorage.removeItem('lastPricesUpdate');
+    localStorage.removeItem('cachedPricesTimestamp');
+    localStorage.removeItem('cachedAdminServicios');
+    localStorage.removeItem('lastAdminUpdate');
+    console.log('✅ Caché de precios limpiado - los cambios se verán inmediatamente en el frontend');
+  };
+
   // Cargar promociones desde la API
   useEffect(() => {
     cargarPromociones();
@@ -343,6 +353,9 @@ const PromocionesAdmin: React.FC = () => {
       // Recargar promociones
       await cargarPromociones();
 
+      // Limpiar caché para que los cambios se vean inmediatamente
+      limpiarCachePrecios();
+
       // Reiniciar el formulario y cambiar a la pestaña de listado
       resetForm();
       setActiveTab('listado');
@@ -363,6 +376,9 @@ const PromocionesAdmin: React.FC = () => {
         await promocionesAPI.eliminarPromocion(id);
         setSuccess('Promoción eliminada exitosamente');
         await cargarPromociones();
+
+        // Limpiar caché para que los cambios se vean inmediatamente
+        limpiarCachePrecios();
       } catch (error) {
         console.error('Error al eliminar promoción:', error);
         setError('Error al eliminar la promoción');
