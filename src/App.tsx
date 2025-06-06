@@ -281,55 +281,66 @@ const AdminVerify = () => {
           },
         });
 
-        const data = await response.json();
+        const responseText = await response.text(); // Leer la respuesta como texto primero
 
-        if (data.success && data.token) {
-          console.log('✅ Verificación exitosa, autenticando administrador');
-
-          // Guardar el token JWT en todas las formas de almacenamiento
-          localStorage.setItem('auth_token', data.token);
-          sessionStorage.setItem('auth_token', data.token);
-          document.cookie = `auth_token=${data.token}; path=/; max-age=2592000; SameSite=Lax`;
-          localStorage.setItem('isAuthenticated', 'true');
-          sessionStorage.setItem('isAuthenticated', 'true');
-          document.cookie = `isAuthenticated=true; path=/; max-age=2592000; SameSite=Lax`;
-
-          // Guardar rol de administrador
-          localStorage.setItem('user_role', 'admin');
-          sessionStorage.setItem('user_role', 'admin');
-
-          // Guardar información del usuario administrador
-          if (data.user) {
-            localStorage.setItem('user_info', JSON.stringify(data.user));
-            sessionStorage.setItem('user_info', JSON.stringify(data.user));
+        // Si la respuesta no fue exitosa (ej: 404, 500, 502)
+        if (!response.ok) {
+          console.error(`❌ El servidor respondió con un error de estado: ${response.status} ${response.statusText}`);
+          console.error('📝 Contenido de la respuesta del servidor (texto):', responseText);
+          // Intentar parsear como JSON para obtener un mensaje de error si existe
+          try {
+            const errorData = JSON.parse(responseText);
+            setError(errorData.error || `Error del servidor: ${response.status}`);
+          } catch (e) {
+            // Si el parseo falla, es probablemente una página de error HTML de Nginx/proxy
+            setError(`Error del servidor (${response.status}). La respuesta no es JSON. Revisa los logs del servidor y la consola del navegador.`);
           }
+          return; // Detener ejecución
+        }
 
-          // Redirigir al panel de administración
-          console.log('🚀 Redirigiendo al panel de administración');
-          navigate('/admin', { replace: true });
-        } else {
-          console.error('❌ Error en verificación:', data.error);
+        // Si la respuesta fue exitosa (2xx), intentar parsearla como JSON
+        try {
+          const data = JSON.parse(responseText);
 
-          // Verificar si el error es por token expirado
-          const errorMessage = data.error || '';
-          if (errorMessage.includes('expirado') || errorMessage.includes('expired')) {
-            setIsTokenExpired(true);
-            setError('El enlace de verificación ha expirado. Los enlaces de verificación son válidos por solo 10 minutos por razones de seguridad.');
+          if (data.success && data.token) {
+            console.log('✅ Verificación exitosa, autenticando administrador');
+            // ... (resto de la lógica de éxito) ...
+            localStorage.setItem('auth_token', data.token);
+            sessionStorage.setItem('auth_token', data.token);
+            document.cookie = `auth_token=${data.token}; path=/; max-age=2592000; SameSite=Lax`;
+            localStorage.setItem('isAuthenticated', 'true');
+            sessionStorage.setItem('isAuthenticated', 'true');
+            document.cookie = `isAuthenticated=true; path=/; max-age=2592000; SameSite=Lax`;
+            localStorage.setItem('user_role', 'admin');
+            sessionStorage.setItem('user_role', 'admin');
+            if (data.user) {
+              localStorage.setItem('user_info', JSON.stringify(data.user));
+              sessionStorage.setItem('user_info', JSON.stringify(data.user));
+            }
+            navigate('/admin', { replace: true });
           } else {
-            setError(data.error || 'Token de verificación inválido o expirado');
+            console.error('❌ Error en verificación (lógica de negocio):', data.error);
+            const errorMessage = data.error || '';
+            if (errorMessage.includes('expirado')) {
+              setIsTokenExpired(true);
+              setError('El enlace de verificación ha expirado.');
+            } else {
+              setError(data.error || 'Token de verificación inválido.');
+            }
           }
+        } catch (jsonError) {
+          console.error('❌ Error: La respuesta del servidor fue exitosa (2xx) pero no era JSON válido.');
+          console.error('📝 Contenido de la respuesta (texto):', responseText);
+          console.error('Error de parseo:', jsonError);
+          setError('El servidor envió una respuesta inesperada. Revisa la consola.');
         }
-      } catch (error: any) {
-        console.error('❌ Error completo al verificar token:', error);
 
+      } catch (networkError: any) {
+        console.error('❌ Error de red o CORS al verificar token:', networkError);
         let detailedError = 'Error de conexión. Por favor, verifica tu conexión a internet e intenta de nuevo.';
-
-        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        if (networkError.name === 'TypeError' && networkError.message.includes('Failed to fetch')) {
           detailedError = 'Error de red o CORS. El servidor no es accesible desde tu navegador. Contacta al soporte técnico.';
-        } else if (error.response) {
-          detailedError = `Error del servidor: ${error.response.status} - ${error.response.data?.error || 'Respuesta inesperada'}`;
         }
-
         setError(detailedError);
       } finally {
         setVerifying(false);
