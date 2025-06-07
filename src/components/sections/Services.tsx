@@ -789,7 +789,7 @@ const GlobalStyle = styled.div`
 // Actualizar los datos de los servicios
 const services = [
   {
-    id: 'landing-page',
+    id: 'basic',  // Cambiado de 'landing-page' a 'basic'
     title: 'Plan Básico',
     description: 'Landing page profesional con SEO básico y diseño UX/UI atractivo para tu marca.',
     features: [
@@ -812,7 +812,7 @@ const services = [
     popularBadge: false
   },
   {
-    id: 'basic-website',
+    id: 'standard',  // Cambiado de 'basic-website' a 'standard'
     title: 'Plan Estándar',
     description: 'Sitio web completo con SEO avanzado y estrategia UX/UI para captar más clientes.',
     features: [
@@ -834,7 +834,7 @@ const services = [
     popularText: 'MÁS POPULAR'
   },
   {
-    id: 'premium-website',
+    id: 'premium',  // Cambiado de 'premium-website' a 'premium'
     title: 'Plan Premium',
     description: 'Solución profesional con estrategia de marketing digital y conversión optimizada.',
     features: [
