@@ -425,12 +425,12 @@ const Payment: React.FC = () => {
 
           // Consultar el servicio en el array de servicios disponibles
           const servicios = [
-            { id: 'landing-page', title: 'Plan Básico', price: 29997 },
-            { id: 'basic-website', title: 'Plan Estándar', price: 69997 },
-            { id: 'premium-website', title: 'Plan Premium', price: 149997 },
+            { id: 'basic', title: 'Plan Básico', price: 39997 },
+            { id: 'standard', title: 'Plan Estándar', price: 89997 },
+            { id: 'premium', title: 'Plan Premium', price: 149997 },
             { id: 'enterprise', title: 'Plan Empresarial', price: 249997 },
-            { id: 'paquete-emprendedor', title: 'Paquete Emprendedor', price: 67997 },
-            { id: 'paquete-profesional', title: 'Paquete Profesional', price: 109997 }
+            { id: 'starter-pack', title: 'Paquete Inicial', price: 52999 },
+            { id: 'business-pack', title: 'Paquete Empresarial', price: 119997 }
           ];
 
           const servicio = servicios.find(s => s.id === serviceId);
@@ -464,12 +464,12 @@ const Payment: React.FC = () => {
 
     // 3. Fallback a datos predefinidos si no se encuentran en localStorage
     const servicios = [
-      { id: 'landing-page', title: 'Plan Básico', price: 29997 },
-      { id: 'basic-website', title: 'Plan Estándar', price: 69997 },
-      { id: 'premium-website', title: 'Plan Premium', price: 149997 },
+      { id: 'basic', title: 'Plan Básico', price: 39997 },
+      { id: 'standard', title: 'Plan Estándar', price: 89997 },
+      { id: 'premium', title: 'Plan Premium', price: 149997 },
       { id: 'enterprise', title: 'Plan Empresarial', price: 249997 },
-      { id: 'paquete-emprendedor', title: 'Paquete Emprendedor', price: 67997 },
-      { id: 'paquete-profesional', title: 'Paquete Profesional', price: 109997 }
+      { id: 'starter-pack', title: 'Paquete Inicial', price: 52999 },
+      { id: 'business-pack', title: 'Paquete Empresarial', price: 119997 }
     ];
 
     const servicio = servicios.find(s => s.id === serviceId);
