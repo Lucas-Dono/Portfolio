@@ -279,25 +279,6 @@ app.use('/api/users', userRoutes);
 // Rutas de precios
 app.use('/api', preciosRoutes);
 
-// Variable global para almacenar el timestamp de la última actualización de precios
-let lastPricesUpdateTimestamp = Date.now().toString();
-
-// Endpoint para notificar actualizaciones de precios
-app.post('/api/servicios/notificar-actualizacion', (req, res) => {
-  // Actualizar el timestamp global
-  lastPricesUpdateTimestamp = Date.now().toString();
-  console.log(`✅ Timestamp de precios actualizado: ${lastPricesUpdateTimestamp}`);
-  res.json({ success: true, timestamp: lastPricesUpdateTimestamp });
-});
-
-// Actualizar el endpoint de last-updated para usar la variable global
-app.get('/api/servicios/last-updated', (req, res) => {
-  res.json({
-    lastUpdated: lastPricesUpdateTimestamp,
-    message: 'Timestamp de última actualización de precios'
-  });
-});
-
 // Rutas de administración
 app.use('/api/admin', (req, res, next) => {
   // Verificación simplificada para desarrollo

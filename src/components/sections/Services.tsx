@@ -1160,9 +1160,14 @@ const Services: React.FC = () => {
         // Primero, verificar el timestamp de última actualización desde el servidor
         try {
           const timestampResponse = await fetch(getApiUrl('/servicios/last-updated'));
-          const data = await timestampResponse.json();
-          if (data && data.lastUpdated) {
-            lastUpdated = data.lastUpdated;
+          if (timestampResponse.ok) { // Verificar que la respuesta sea exitosa
+            const data = await timestampResponse.json();
+            if (data && data.lastUpdated) {
+              lastUpdated = data.lastUpdated;
+              console.log('✅ Timestamp de última actualización obtenido:', lastUpdated);
+            }
+          } else {
+            console.error('Error al obtener timestamp, código:', timestampResponse.status);
           }
         } catch (timestampError) {
           console.error('Error al obtener timestamp de actualización:', timestampError);
@@ -1180,6 +1185,7 @@ const Services: React.FC = () => {
           (now - parseInt(lastUpdate)) < CACHE_DURATION &&
           cachedTimestamp === lastUpdated) {
           if (isMounted) {
+            console.log('✅ Usando precios en caché con timestamp:', cachedTimestamp);
             const { planes, paquetes, addons } = JSON.parse(cachedData);
             setPlanesPrecios(planes);
             setPaquetesPrecios(paquetes);
@@ -1217,6 +1223,7 @@ const Services: React.FC = () => {
           }));
           localStorage.setItem(CACHE_TIME_KEY, now.toString());
           localStorage.setItem('cachedPricesTimestamp', lastUpdated);
+          console.log('✅ Precios actualizados guardados en caché con timestamp:', lastUpdated);
         }
       } catch (error) {
         console.error('Error al cargar precios:', error);
