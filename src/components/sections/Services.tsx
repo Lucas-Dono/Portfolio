@@ -1116,6 +1116,7 @@ const Services: React.FC = () => {
   const closeEnterpriseChat = () => {
     setShowEnterpriseChatModal(false);
     setEnterpriseChatMessages([]);
+    setCurrentQuestion(0);
   };
 
   // Ejemplo de función para enviar datos de la conversación al backend (no implementada)
@@ -1153,10 +1154,20 @@ const Services: React.FC = () => {
     const CACHE_DURATION = 30 * 1000; // 30 segundos en lugar de 5 minutos
 
     const cargarPrecios = async () => {
+      let lastUpdated = Date.now().toString(); // Valor predeterminado
+
       try {
         // Primero, verificar el timestamp de última actualización desde el servidor
-        const timestampResponse = await fetch(getApiUrl('/servicios/last-updated'));
-        const { lastUpdated } = await timestampResponse.json();
+        try {
+          const timestampResponse = await fetch(getApiUrl('/servicios/last-updated'));
+          const data = await timestampResponse.json();
+          if (data && data.lastUpdated) {
+            lastUpdated = data.lastUpdated;
+          }
+        } catch (timestampError) {
+          console.error('Error al obtener timestamp de actualización:', timestampError);
+          // Continuamos con el proceso aunque falle el timestamp
+        }
 
         // Verificar si ya tenemos datos en caché y si son recientes
         const cachedData = localStorage.getItem(CACHE_KEY);
@@ -1209,8 +1220,29 @@ const Services: React.FC = () => {
         }
       } catch (error) {
         console.error('Error al cargar precios:', error);
-        if (isMounted) {
-          setCargandoPrecios(false);
+        // Intentar cargar nuevamente sin considerar el caché
+        try {
+          if (isMounted) {
+            setCargandoPrecios(true);
+
+            // Cargar directamente sin verificar caché
+            const planes = await preciosAPI.obtenerServicios();
+            const planesFiltrados = planes.filter(p => !p.isPaquete);
+            const paquetes = planes.filter(p => p.isPaquete);
+            const addons = await preciosAPI.obtenerAddons();
+
+            if (isMounted) {
+              setPlanesPrecios(planesFiltrados);
+              setPaquetesPrecios(paquetes);
+              setAddonsPrecios(addons);
+              setCargandoPrecios(false);
+            }
+          }
+        } catch (retryError) {
+          console.error('Error en segundo intento de carga:', retryError);
+          if (isMounted) {
+            setCargandoPrecios(false);
+          }
         }
       }
     };

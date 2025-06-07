@@ -165,6 +165,19 @@ const PreciosAdmin: React.FC = () => {
     localStorage.removeItem('cachedPricesTimestamp');
     localStorage.removeItem('cachedAdminServicios');
     localStorage.removeItem('lastAdminUpdate');
+
+    // Intentar notificar al servidor que se actualizaron los precios
+    try {
+      fetch(getApiUrl('/servicios/notificar-actualizacion'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }).catch(err => console.log('Advertencia: No se pudo notificar la actualización al servidor'));
+    } catch (error) {
+      console.error('Error al notificar actualización de precios:', error);
+    }
+
     console.log('✅ Caché de precios limpiado - los cambios se verán inmediatamente en el frontend');
   };
 
