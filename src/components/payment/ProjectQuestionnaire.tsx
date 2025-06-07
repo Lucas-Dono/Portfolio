@@ -24,6 +24,12 @@ const OverlayContainer = styled(motion.div)`
   z-index: 1000;
   padding: 1rem;
   backdrop-filter: blur(5px);
+  
+  @media (max-width: 768px) {
+    padding: 0.5rem;
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
 `;
 
 const QuestionnaireCard = styled(motion.div)`
@@ -34,6 +40,14 @@ const QuestionnaireCard = styled(motion.div)`
   max-width: 600px;
   overflow: hidden;
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+  max-height: 90vh;
+  overflow-y: auto;
+  
+  @media (max-width: 768px) {
+    border-radius: 12px;
+    max-height: 85vh;
+    margin-bottom: 2rem;
+  }
 `;
 
 const Header = styled.div`
@@ -42,6 +56,13 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  
+  @media (max-width: 768px) {
+    padding: 1rem 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
 `;
 
 const Title = styled.h2`
@@ -52,6 +73,10 @@ const Title = styled.h2`
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  
+  @media (max-width: 768px) {
+    font-size: 1.4rem;
+  }
 `;
 
 const StepIndicator = styled.div`
@@ -74,6 +99,10 @@ const StepDot = styled.div<{ active: boolean, completed: boolean }>`
 
 const Body = styled.div`
   padding: 2rem;
+  
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+  }
 `;
 
 const Question = styled.h3`
@@ -158,6 +187,12 @@ const ButtonsContainer = styled.div`
   display: flex;
   justify-content: space-between;
   margin-top: 2rem;
+  gap: 1rem;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
 `;
 
 const Button = styled.button<{ primary?: boolean }>`
@@ -198,17 +233,29 @@ const Button = styled.button<{ primary?: boolean }>`
 
 const CheckboxGroup = styled.div`
   margin-bottom: 1rem;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 0.8rem;
+  }
 `;
 
 const CheckboxLabel = styled.label`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 0.5rem;
   cursor: pointer;
+  line-height: 1.4;
   
   input {
     margin-right: 0.5rem;
+    margin-top: 0.2rem;
     accent-color: #00FFFF;
+    flex-shrink: 0;
+  }
+  
+  @media (max-width: 768px) {
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
   }
 `;
 
@@ -218,13 +265,21 @@ const RadioGroup = styled.div`
 
 const RadioLabel = styled.label`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 0.8rem;
   cursor: pointer;
+  line-height: 1.4;
   
   input {
     margin-right: 0.5rem;
+    margin-top: 0.2rem;
     accent-color: #00FFFF;
+    flex-shrink: 0;
+  }
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
   }
 `;
 

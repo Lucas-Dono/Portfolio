@@ -23,6 +23,12 @@ const ContentContainer = styled.div`
   align-items: center;
   padding: 3rem 1.5rem;
   z-index: 2;
+  
+  @media (max-width: 768px) {
+    padding: 2rem 1rem;
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
 `;
 
 const Card = styled(motion.div)`
@@ -34,6 +40,14 @@ const Card = styled(motion.div)`
   overflow: hidden;
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(5px);
+  max-height: 90vh;
+  overflow-y: auto;
+  
+  @media (max-width: 768px) {
+    border-radius: 12px;
+    max-height: 85vh;
+    margin-bottom: 2rem;
+  }
 `;
 
 const MercadoPagoLogo = styled.div`
@@ -53,6 +67,13 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  
+  @media (max-width: 768px) {
+    padding: 1rem 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
 `;
 
 const Title = styled.h2`
@@ -89,6 +110,16 @@ const OrderSummary = styled.div`
   padding: 1.5rem;
   margin: 1.5rem 2rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  
+  @media (max-width: 768px) {
+    margin: 1rem 1.5rem;
+    padding: 1.2rem;
+  }
+  
+  @media (max-width: 480px) {
+    margin: 1rem;
+    padding: 1rem;
+  }
 `;
 
 const OrderItem = styled.div`
@@ -129,6 +160,14 @@ const ErrorMessage = styled.p`
 
 const PaymentContainer = styled.div`
   padding: 0 2rem 2rem 2rem;
+  
+  @media (max-width: 768px) {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0 1rem 1rem 1rem;
+  }
 `;
 
 const PaymentTitle = styled.h3`
@@ -378,35 +417,51 @@ const Payment: React.FC = () => {
   const mpRef = useRef<any>(null);
   const brickRef = useRef<any>(null);
 
-  // Obtener datos de los add-ons seleccionados
-  const getAddOnsData = () => {
+  // Obtener datos de los add-ons seleccionados desde la API
+  const getAddOnsData = async () => {
     console.log('Buscando datos para los add-ons:', selectedAddOns);
 
     if (!selectedAddOns.length) {
       return [];
     }
 
-    // Array de add-ons disponibles (idealmente esto vendría de una API)
-    const availableAddOns = [
-      { id: 'domain', name: 'Dominio personalizado', price: 14997 },
-      { id: 'deployment', name: 'Despliegue profesional', price: 9997 },
-      { id: 'revisions', name: 'Paquete de revisiones', price: 19997 },
-      { id: 'speedOptimization', name: 'Optimización de velocidad', price: 12997 },
-      { id: 'analytics', name: 'Analítica avanzada', price: 16997 },
-      { id: 'training', name: 'Capacitación de uso', price: 8997 }
-    ];
+    try {
+      // Obtener todos los add-ons desde la API
+      const response = await fetch(`${API_BASE_URL}/addons`);
 
-    // Filtrar sólo los add-ons seleccionados
-    const selectedAddOnsData = availableAddOns.filter(addon =>
-      selectedAddOns.includes(addon.id)
-    );
+      if (response.ok) {
+        const availableAddOns = await response.json();
+        console.log('Add-ons obtenidos desde la API:', availableAddOns);
 
-    console.log('Datos de add-ons recuperados:', selectedAddOnsData);
-    return selectedAddOnsData;
+        // Filtrar sólo los add-ons seleccionados
+        const selectedAddOnsData = availableAddOns.filter((addon: any) =>
+          selectedAddOns.includes(addon.id)
+        ).map((addon: any) => ({
+          id: addon.id,
+          name: addon.name || addon.title,
+          price: addon.price || addon.precio || 0
+        }));
+
+        console.log('Datos de add-ons recuperados desde API:', selectedAddOnsData);
+        return selectedAddOnsData;
+      } else {
+        console.error('Error al obtener add-ons desde la API:', response.status);
+      }
+    } catch (error) {
+      console.error('Error de red al obtener add-ons desde la API:', error);
+    }
+
+    // ❌ SEGURIDAD CRÍTICA: NO usar fallbacks con precios hardcodeados
+    // En una agencia real, esto podría causar pérdidas económicas
+    console.error('🚨 CRÍTICO: No se pudieron obtener precios de add-ons desde la API');
+    console.error('🚨 Por seguridad financiera, NO se permitirá la compra');
+
+    // Retornar array vacío para indicar fallo crítico
+    return [];
   };
 
-  // Obtener datos del servicio seleccionado
-  const getServiceData = () => {
+  // Obtener datos del servicio seleccionado desde la API
+  const getServiceData = async () => {
     console.log('Buscando datos para el servicio:', serviceId);
 
     if (!serviceId) {
@@ -414,34 +469,42 @@ const Payment: React.FC = () => {
       return { title: 'No se ha seleccionado un servicio válido', price: 0 };
     }
 
-    // Intentar obtener datos del servicio desde localStorage
     try {
-      // 1. Primero verificar si hay una compra pendiente en localStorage
+      // 1. Intentar obtener el servicio desde la API
+      const response = await fetch(`${API_BASE_URL}/servicios/${serviceId}`);
+
+      if (response.ok) {
+        const servicio = await response.json();
+        console.log('Servicio obtenido desde la API:', servicio);
+        return {
+          title: servicio.title || servicio.name,
+          price: servicio.price || servicio.precio || 0
+        };
+      } else if (response.status === 404) {
+        console.warn('Servicio no encontrado en la API, intentando con localStorage');
+      } else {
+        console.error('Error al obtener servicio desde la API:', response.status);
+      }
+    } catch (error) {
+      console.error('Error de red al obtener servicio desde la API:', error);
+    }
+
+    // 2. Fallback: Intentar obtener datos del servicio desde localStorage
+    try {
+      // Verificar si hay una compra pendiente en localStorage
       const pendingPurchase = localStorage.getItem('pending_purchase');
       if (pendingPurchase) {
         const purchaseData = JSON.parse(pendingPurchase);
-        if (purchaseData.serviceId === serviceId) {
+        if (purchaseData.serviceId === serviceId && purchaseData.price) {
           console.log('Datos de servicio encontrados en pending_purchase:', purchaseData);
-
-          // Consultar el servicio en el array de servicios disponibles
-          const servicios = [
-            { id: 'basic', title: 'Plan Básico', price: 39997 },
-            { id: 'standard', title: 'Plan Estándar', price: 89997 },
-            { id: 'premium', title: 'Plan Premium', price: 149997 },
-            { id: 'enterprise', title: 'Plan Empresarial', price: 249997 },
-            { id: 'starter-pack', title: 'Paquete Inicial', price: 52999 },
-            { id: 'business-pack', title: 'Paquete Empresarial', price: 119997 }
-          ];
-
-          const servicio = servicios.find(s => s.id === serviceId);
-          if (servicio) {
-            console.log('Servicio encontrado en array de servicios:', servicio);
-            return { title: servicio.title, price: servicio.price };
-          }
+          return {
+            title: purchaseData.title || purchaseData.serviceTitle || 'Servicio',
+            price: purchaseData.price
+          };
         }
       }
 
-      // 2. Verificar en localStorage si hay datos del último servicio
+      // Verificar en localStorage si hay datos del último servicio
       const lastService = localStorage.getItem('last_payment_service');
       const lastAmount = localStorage.getItem('last_payment_amount');
       const lastTitle = localStorage.getItem('last_payment_service_title');
@@ -462,35 +525,83 @@ const Payment: React.FC = () => {
       console.error('Error al recuperar datos del servicio desde localStorage:', error);
     }
 
-    // 3. Fallback a datos predefinidos si no se encuentran en localStorage
-    const servicios = [
-      { id: 'basic', title: 'Plan Básico', price: 39997 },
-      { id: 'standard', title: 'Plan Estándar', price: 89997 },
-      { id: 'premium', title: 'Plan Premium', price: 149997 },
-      { id: 'enterprise', title: 'Plan Empresarial', price: 249997 },
-      { id: 'starter-pack', title: 'Paquete Inicial', price: 52999 },
-      { id: 'business-pack', title: 'Paquete Empresarial', price: 119997 }
-    ];
-
-    const servicio = servicios.find(s => s.id === serviceId);
-    if (servicio) {
-      console.log('Servicio encontrado en fallback de servicios:', servicio);
-      return { title: servicio.title, price: servicio.price };
+    // 3. Último fallback: intentar obtener todos los servicios y buscar el correcto
+    try {
+      const response = await fetch(`${API_BASE_URL}/servicios`);
+      if (response.ok) {
+        const servicios = await response.json();
+        const servicio = servicios.find((s: any) => s.id === serviceId);
+        if (servicio) {
+          console.log('Servicio encontrado en lista completa:', servicio);
+          return {
+            title: servicio.title || servicio.name,
+            price: servicio.price || servicio.precio || 0
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Error al obtener lista completa de servicios:', error);
     }
 
-    // Si no se encuentra nada, retornar datos por defecto
-    console.warn('No se encontró el servicio en ninguna fuente de datos');
-    return { title: 'Servicio no reconocido', price: 0 };
+    // ❌ SEGURIDAD CRÍTICA: NO retornar precios por defecto
+    // En una agencia real, esto podría causar pérdidas económicas
+    console.error('🚨 CRÍTICO: No se pudo obtener precio del servicio desde la API');
+    console.error('🚨 Por seguridad financiera, NO se permitirá la compra');
+    return { title: 'Error: Precio no disponible', price: -1 }; // -1 indica error crítico
   };
 
   // Efecto para cargar los datos del servicio y add-ons al montar el componente
   useEffect(() => {
-    const serviceData = getServiceData();
-    setServiceInfo(serviceData);
+    const loadServiceAndAddOnsData = async () => {
+      try {
+        setLoading(true);
 
-    // Cargar los datos de los add-ons
-    const addOnsData = getAddOnsData();
-    setAddOnsInfo(addOnsData);
+        // Cargar datos del servicio
+        const serviceData = await getServiceData();
+        setServiceInfo(serviceData);
+
+        // 🚨 VALIDACIÓN CRÍTICA: Verificar que se obtuvo un precio válido
+        if (serviceData.price <= 0) {
+          console.error('🚨 CRÍTICO: Precio de servicio inválido o no disponible');
+          console.error('🚨 SEGURIDAD: Compra bloqueada para serviceId:', serviceId, 'precio recibido:', serviceData.price);
+
+          // Log de seguridad para auditoría
+          const securityLog = {
+            timestamp: new Date().toISOString(),
+            event: 'PURCHASE_BLOCKED_INVALID_PRICE',
+            serviceId: serviceId,
+            receivedPrice: serviceData.price,
+            userEmail: userEmail,
+            reason: 'API_PRICE_INVALID_OR_UNAVAILABLE'
+          };
+          console.error('🚨 SECURITY_LOG:', JSON.stringify(securityLog));
+
+          setError('Error crítico: No se pudo obtener el precio del servicio. Por seguridad, la compra está bloqueada. Contacta soporte.');
+          setLoading(false);
+          return;
+        }
+
+        // Cargar los datos de los add-ons
+        const addOnsData = await getAddOnsData();
+        setAddOnsInfo(addOnsData);
+
+        // 🚨 VALIDACIÓN CRÍTICA: Si hay add-ons seleccionados pero no se pudieron cargar
+        if (selectedAddOns.length > 0 && addOnsData.length === 0) {
+          console.error('🚨 CRÍTICO: Add-ons seleccionados pero no se pudieron obtener precios');
+          setError('Error crítico: No se pudieron obtener los precios de los complementos. Por seguridad, la compra está bloqueada. Contacta soporte.');
+          setLoading(false);
+          return;
+        }
+
+      } catch (error) {
+        console.error('Error al cargar datos del servicio y add-ons:', error);
+        setError('Error al cargar información del servicio');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadServiceAndAddOnsData();
 
     // Si llegamos a esta página por redirección de MP con un estado en la URL
     const params = new URLSearchParams(location.search);
@@ -598,7 +709,29 @@ const Payment: React.FC = () => {
 
   // Crear preferencia y cargar el SDK de Mercado Pago
   useEffect(() => {
-    if (!serviceId || serviceInfo.price <= 0) return;
+    // 🚨 VALIDACIONES CRÍTICAS DE SEGURIDAD
+    if (!serviceId) {
+      console.error('🚨 CRÍTICO: No hay serviceId válido');
+      return;
+    }
+
+    if (serviceInfo.price <= 0) {
+      console.error('🚨 CRÍTICO: Precio de servicio inválido:', serviceInfo.price);
+      setError('Error crítico: Precio no válido. Por seguridad, la compra está bloqueada.');
+      setLoading(false);
+      return;
+    }
+
+    // 🚨 VALIDACIÓN: Verificar que no hay add-ons seleccionados sin precios
+    if (selectedAddOns.length > 0) {
+      const addOnsWithoutPrice = addOnsInfo.filter(addon => addon.price <= 0);
+      if (addOnsWithoutPrice.length > 0) {
+        console.error('🚨 CRÍTICO: Add-ons con precios inválidos:', addOnsWithoutPrice);
+        setError('Error crítico: Algunos complementos no tienen precios válidos. Por seguridad, la compra está bloqueada.');
+        setLoading(false);
+        return;
+      }
+    }
 
     // 1. Crear preferencia en el backend
     const createPreference = async () => {
@@ -606,9 +739,25 @@ const Payment: React.FC = () => {
         setLoading(true);
         setError(null); // Limpiar errores previos
 
+        // 🚨 VALIDACIÓN CRÍTICA: Verificar precios antes de calcular total
+        if (serviceInfo.price <= 0) {
+          throw new Error('🚨 CRÍTICO: Precio de servicio inválido al crear preferencia');
+        }
+
+        // Verificar que todos los add-ons tienen precios válidos
+        const invalidAddOns = addOnsInfo.filter(addon => addon.price <= 0);
+        if (invalidAddOns.length > 0) {
+          throw new Error(`🚨 CRÍTICO: Add-ons con precios inválidos: ${invalidAddOns.map(a => a.name).join(', ')}`);
+        }
+
         // Calcular el precio total incluyendo add-ons
         const addOnsTotal = addOnsInfo.reduce((sum, addon) => sum + addon.price, 0);
         const totalPrice = serviceInfo.price + addOnsTotal;
+
+        // 🚨 VALIDACIÓN CRÍTICA: Verificar que el total es válido
+        if (totalPrice <= 0) {
+          throw new Error('🚨 CRÍTICO: Precio total inválido calculado');
+        }
 
         console.log('Creando preferencia para:', {
           serviceId: serviceId,
@@ -939,7 +1088,14 @@ const Payment: React.FC = () => {
     console.log('📧 Email que se usará en payer:', userEmail);
 
     let sdkCheckAttempts = 0;
-    const maxSDKCheckAttempts = 20; // Máximo de intentos (4 segundos)
+    const maxSDKCheckAttempts = 30; // Máximo de intentos (6 segundos)
+
+    // Timeout general para evitar carga infinita
+    const generalTimeout = setTimeout(() => {
+      console.error('❌ Timeout general: La carga del sistema de pagos tardó demasiado');
+      setError('El sistema de pagos está tardando en cargar. Intenta recargar la página o verifica tu conexión a internet.');
+      setLoading(false);
+    }, 30000); // 30 segundos timeout general
 
     // Función para verificar si el SDK de MercadoPago está cargado
     const checkMercadoPagoSDK = () => {
@@ -950,12 +1106,16 @@ const Payment: React.FC = () => {
           console.log(`⏳ Esperando a que cargue el SDK de MercadoPago... (intento ${sdkCheckAttempts})`);
           setTimeout(checkMercadoPagoSDK, 200); // Verificar cada 200ms
         } else {
+          clearTimeout(generalTimeout);
           console.error('❌ Error: No se pudo cargar el SDK de MercadoPago después de varios intentos');
-          setError('No se pudo cargar el procesador de pagos. Por favor, recarga la página');
+          setError('No se pudo cargar el procesador de pagos. Verifica tu conexión a internet y recarga la página.');
           setLoading(false);
         }
         return;
       }
+
+      // SDK cargado exitosamente, limpiar timeout
+      clearTimeout(generalTimeout);
 
       // El SDK está cargado, proceder con la inicialización
       console.log('✅ SDK de MercadoPago detectado, inicializando...');
@@ -1045,11 +1205,17 @@ const Payment: React.FC = () => {
                 onError: (error: any) => {
                   console.error('❌ Error en Payment Brick:', error);
 
-                  // Mensajes de error simplificados
+                  // Mensajes de error más específicos
                   let errorMessage = 'Error al procesar el pago';
                   if (error.message) {
                     if (error.message.includes('bin')) {
                       errorMessage = 'Número de tarjeta no reconocido';
+                    } else if (error.message.includes('cancelled') || error.message.includes('canceled')) {
+                      errorMessage = 'Pago cancelado por el usuario';
+                    } else if (error.message.includes('timeout')) {
+                      errorMessage = 'El pago tardó demasiado tiempo. Intenta nuevamente';
+                    } else if (error.message.includes('network') || error.message.includes('connection')) {
+                      errorMessage = 'Error de conexión. Verifica tu internet e intenta nuevamente';
                     } else {
                       errorMessage = `Error: ${error.message}`;
                     }
@@ -1062,7 +1228,41 @@ const Payment: React.FC = () => {
                 onSubmit: () => {
                   console.log('📝 Formulario de pago enviado');
                   setPaymentStatus('processing');
-                  return new Promise<void>((resolve) => setTimeout(resolve, 1500));
+
+                  // Agregar timeout para evitar que se quede cargando indefinidamente
+                  const paymentTimeout = setTimeout(() => {
+                    console.warn('⏰ Timeout del pago - tomó demasiado tiempo');
+                    setError('El pago está tardando más de lo esperado. Si el problema persiste, intenta nuevamente o contacta soporte.');
+                    setPaymentStatus('error');
+                    setLoading(false);
+                  }, 60000); // 60 segundos timeout
+
+                  return new Promise<void>((resolve, reject) => {
+                    // Simular procesamiento con posibilidad de cancelación
+                    const processingTimer = setTimeout(() => {
+                      clearTimeout(paymentTimeout);
+                      resolve();
+                    }, 1500);
+
+                    // Permitir cancelación manual
+                    const cancelHandler = () => {
+                      clearTimeout(processingTimer);
+                      clearTimeout(paymentTimeout);
+                      console.log('🚫 Pago cancelado por el usuario');
+                      setError('Pago cancelado');
+                      setPaymentStatus('error');
+                      setLoading(false);
+                      reject(new Error('Pago cancelado por el usuario'));
+                    };
+
+                    // Agregar listener para cancelación (opcional)
+                    window.addEventListener('beforeunload', cancelHandler, { once: true });
+
+                    // Limpiar listener después del procesamiento
+                    setTimeout(() => {
+                      window.removeEventListener('beforeunload', cancelHandler);
+                    }, 2000);
+                  });
                 }
               }
             };
@@ -1262,6 +1462,36 @@ const Payment: React.FC = () => {
           <LoadingContainer>
             <div className="loader"></div>
             <p>Procesando tu pago...</p>
+            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginTop: '1rem' }}>
+              Esto puede tomar unos momentos...
+            </p>
+            <button
+              onClick={() => {
+                console.log('🚫 Usuario canceló el pago manualmente');
+                setError('Pago cancelado por el usuario');
+                setPaymentStatus('error');
+                setLoading(false);
+              }}
+              style={{
+                marginTop: '1.5rem',
+                padding: '0.5rem 1rem',
+                background: 'rgba(255, 77, 77, 0.2)',
+                border: '1px solid #ff4d4d',
+                borderRadius: '4px',
+                color: '#ff4d4d',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 77, 77, 0.3)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 77, 77, 0.2)';
+              }}
+            >
+              Cancelar pago
+            </button>
           </LoadingContainer>
         );
       case 'success':
@@ -1374,6 +1604,31 @@ const Payment: React.FC = () => {
             <LoadingContainer>
               <div className="loader" style={{ borderTopColor: '#009ee3' }}></div>
               <p>Cargando opciones de pago...</p>
+              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginTop: '1rem' }}>
+                Si esto tarda mucho, intenta recargar la página
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  marginTop: '1.5rem',
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(0, 158, 227, 0.2)',
+                  border: '1px solid #009ee3',
+                  borderRadius: '4px',
+                  color: '#009ee3',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 158, 227, 0.3)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 158, 227, 0.2)';
+                }}
+              >
+                Recargar página
+              </button>
             </LoadingContainer>
           );
         }
@@ -1490,11 +1745,71 @@ const Payment: React.FC = () => {
           </SecurePaymentBadge>
         </Header>
 
-        {/* Si no hay servicio seleccionado, mostrar mensaje */}
-        {!serviceId || serviceInfo.price === 0 ? (
+        {/* 🚨 VALIDACIONES CRÍTICAS DE SEGURIDAD ANTES DE MOSTRAR COMPRA */}
+        {!serviceId || serviceInfo.price <= 0 ? (
           <div style={{ padding: '2rem', textAlign: 'center' }}>
-            <p>No se ha seleccionado un servicio válido.</p>
-            <Link to="/">Volver al inicio</Link>
+            {serviceInfo.price === -1 ? (
+              // Error crítico: no se pudo obtener precio de la API
+              <>
+                <div style={{
+                  background: 'rgba(255, 77, 77, 0.1)',
+                  border: '1px solid #ff4d4d',
+                  borderRadius: '8px',
+                  padding: '1.5rem',
+                  marginBottom: '1rem'
+                }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="#ff4d4d" viewBox="0 0 16 16" style={{ marginBottom: '1rem' }}>
+                    <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+                  </svg>
+                  <h3 style={{ color: '#ff4d4d', marginBottom: '1rem' }}>⚠️ Compra Bloqueada por Seguridad</h3>
+                  <p style={{ color: '#ff4d4d', marginBottom: '1rem' }}>
+                    No se pudieron obtener los precios actuales desde nuestro sistema.
+                    Por seguridad financiera, la compra está temporalmente bloqueada.
+                  </p>
+                  <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                    Esto protege tanto a ti como a nuestra empresa de transacciones con precios incorrectos.
+                  </p>
+                </div>
+                <div style={{ marginTop: '1.5rem' }}>
+                  <button
+                    onClick={() => window.location.reload()}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: 'rgba(0, 158, 227, 0.2)',
+                      border: '1px solid #009ee3',
+                      borderRadius: '8px',
+                      color: '#009ee3',
+                      cursor: 'pointer',
+                      marginRight: '1rem',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    🔄 Reintentar
+                  </button>
+                  <Link
+                    to="/#servicios"
+                    style={{
+                      display: 'inline-block',
+                      padding: '0.75rem 1.5rem',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      color: 'white',
+                      textDecoration: 'none',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    ← Volver a servicios
+                  </Link>
+                </div>
+              </>
+            ) : (
+              // Servicio no seleccionado
+              <>
+                <p>No se ha seleccionado un servicio válido.</p>
+                <Link to="/">Volver al inicio</Link>
+              </>
+            )}
           </div>
         ) : (
           <>

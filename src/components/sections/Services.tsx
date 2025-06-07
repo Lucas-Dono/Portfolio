@@ -597,6 +597,16 @@ const PopupTitle = styled.h3`
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 1.5rem;
+  
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+    margin-bottom: 1.2rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+  }
 `;
 
 const PopupAddOnOption = styled.div`
@@ -617,6 +627,17 @@ const PopupAddOnOption = styled.div`
     transform: translateY(-3px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   }
+  
+  @media (max-width: 768px) {
+    padding: 0.8rem;
+    align-items: flex-start;
+    gap: 0.8rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.6rem;
+    gap: 0.6rem;
+  }
 `;
 
 const PopupAddOnCheckbox = styled.div<{ checked: boolean }>`
@@ -631,11 +652,19 @@ const PopupAddOnCheckbox = styled.div<{ checked: boolean }>`
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: ${props => props.checked ? '0 0 8px rgba(0, 255, 255, 0.4)' : 'none'};
+  flex-shrink: 0;
+  margin-top: 0.2rem;
   
   svg {
     opacity: ${props => props.checked ? 1 : 0};
     transform: ${props => props.checked ? 'scale(1)' : 'scale(0.5)'};
     transition: all 0.2s ease;
+  }
+  
+  @media (max-width: 768px) {
+    width: 20px;
+    height: 20px;
+    margin-top: 0;
   }
 `;
 
@@ -643,17 +672,36 @@ const PopupAddOnInfo = styled.div`
   flex: 1;
   padding: 0 1rem;
   cursor: pointer;
+  
+  @media (max-width: 768px) {
+    padding: 0 0.8rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0 0.6rem;
+  }
 `;
 
 const PopupAddOnName = styled.div`
   font-weight: 500;
   color: white;
   margin-bottom: 0.3rem;
+  
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+  }
 `;
 
 const PopupAddOnDescription = styled.div`
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+  
+  @media (max-width: 768px) {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
 `;
 
 const PopupAddOnPrice = styled.div`
@@ -661,12 +709,28 @@ const PopupAddOnPrice = styled.div`
   color: #FF00FF;
   min-width: 80px;
   text-align: right;
+  flex-shrink: 0;
+  
+  @media (max-width: 768px) {
+    min-width: 70px;
+    font-size: 0.9rem;
+  }
+  
+  @media (max-width: 480px) {
+    min-width: 60px;
+    font-size: 0.85rem;
+  }
 `;
 
 const SummarySection = styled.div`
   margin-top: 2rem;
   padding-top: 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  
+  @media (max-width: 768px) {
+    margin-top: 1.5rem;
+    padding-top: 1.2rem;
+  }
 `;
 
 const SummaryRow = styled.div`
@@ -676,6 +740,37 @@ const SummaryRow = styled.div`
   font-weight: 700;
   font-size: 1.2rem;
   color: #00FFFF;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+`;
+
+const PopupAddOnsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 0.6rem;
+    grid-template-columns: 1fr;
+  }
+  
+  @media (max-width: 360px) {
+    gap: 0.5rem;
+  }
 `;
 
 const ComparisonTable = styled.div`
@@ -2330,7 +2425,7 @@ const Services: React.FC = () => {
                   Selecciona los complementos que deseas agregar:
                 </p>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1rem' }}>
+                <PopupAddOnsGrid>
                   {addonsActualizados.map(addon => (
                     <PopupAddOnOption key={addon.id} onClick={() => toggleAddOn(addon.id)}>
                       <PopupAddOnCheckbox checked={selectedAddOns.includes(addon.id)}>
@@ -2348,7 +2443,7 @@ const Services: React.FC = () => {
                       </PopupAddOnPrice>
                     </PopupAddOnOption>
                   ))}
-                </div>
+                </PopupAddOnsGrid>
 
                 <SummarySection>
                   <SummaryRow>
