@@ -12,8 +12,16 @@ COPY tsconfig*.json ./
 # Instalar dependencias con --legacy-peer-deps para resolver conflictos
 RUN npm install --legacy-peer-deps
 
-# Copiar el código fuente
-COPY . .
+# Crear estructura de directorios
+RUN mkdir -p backend/middleware backend/routes backend/controllers backend/models
+
+# Copiar el código fuente manteniendo la estructura
+COPY backend/middleware ./backend/middleware
+COPY backend/routes ./backend/routes
+COPY backend/controllers ./backend/controllers
+COPY backend/models ./backend/models
+COPY backend/server.js ./backend/
+COPY backend/.env ./backend/
 
 # Exponer puertos (frontend y backend)
 EXPOSE 3000

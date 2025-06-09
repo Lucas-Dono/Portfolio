@@ -1,6 +1,6 @@
 import express from 'express';
 import { createTransport } from 'nodemailer';
-import { authenticateToken, isAdmin } from '../middleware/auth.js';
+import { authenticateToken, isAdmin } from '/app/middleware/auth.js';
 
 const router = express.Router();
 
