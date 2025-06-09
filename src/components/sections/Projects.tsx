@@ -189,18 +189,19 @@ const ProjectsGrid = styled(motion.div)`
       display: none; 
     }
     
-    /* Añadir el degradado indicador */
+    /* Degradado indicador fijo en la pared derecha */
     &::after {
       content: '';
-      position: absolute;
+      position: fixed;
       right: 0;
-      top: 0;
-      bottom: 1.5rem; /* Coincidir con padding-bottom */
+      top: 50%;
+      transform: translateY(-50%);
       width: 40px;
-      background: linear-gradient(to right, rgba(5, 5, 5, 0), rgba(5, 5, 5, 1) 80%); /* Ajustar color base */
+      height: 200px;
+      background: linear-gradient(to right, rgba(5, 5, 5, 0), rgba(5, 5, 5, 0.9) 80%);
       pointer-events: none;
-      /* Necesita estar en el padding-right del contenedor virtual */
-      right: 1rem; /* Posicionar sobre el padding-right */
+      z-index: 10;
+      border-radius: 8px 0 0 8px;
     }
   }
 `;

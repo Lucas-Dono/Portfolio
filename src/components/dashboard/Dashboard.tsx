@@ -1615,6 +1615,13 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   // Estado para los servicios comprados
   const [purchasedServices, setPurchasedServices] = useState<any[]>([]);
 
+  // Estados para el modal de valoración
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
+
   // ===== TODOS LOS EFECTOS DESPUÉS =====
 
   // Tiempo de inactividad para minimizar el chat automáticamente
@@ -2938,35 +2945,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         overflow: 'auto',
         gap: '1rem'
       }}>
-        {/* Botón de configuración destacado para móvil */}
-        <div style={{
-          margin: '0.5rem 0 1rem',
-          display: 'flex',
-          justifyContent: 'center'
-        }}>
-          <button
-            onClick={() => setShowSettingsModal(true)}
-            style={{
-              padding: '0.8rem 1.5rem',
-              background: 'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              boxShadow: '0 4px 10px rgba(255, 0, 255, 0.3)',
-              fontSize: '1rem'
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-            Configuración y Reembolsos
-          </button>
-        </div>
+
         {/* Estado del Proyecto */}
         <div style={{
           flex: hasActiveProjects ? 'none' : 1,
@@ -3328,6 +3307,323 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
     }, 300);
   };
 
+  // Nuevo botón para acciones (igual a NavButton pero con styled.button)
+  const NavButtonButton = styled.button`
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background-color: rgba(30, 30, 30, 0.6);
+    color: #f5f5f5;
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    &:hover {
+      background-color: rgba(58, 123, 213, 0.2);
+      border-color: rgba(58, 123, 213, 0.5);
+      transform: translateY(-2px);
+    }
+    @media (max-width: 640px) {
+      padding: 0.4rem 0.7rem;
+      font-size: 0.8rem;
+    }
+  `;
+
+  // Efecto para mostrar el modal de valoración cuando el proyecto esté completo
+  useEffect(() => {
+    if (progress.percentage === 100 && hasActiveProjects && !hasRated && !showRatingModal) {
+      // Verificar si ya valoró este proyecto
+      const projectRated = localStorage.getItem(`rated_${selectedSiteId || 'default'}`);
+      if (!projectRated) {
+        setShowRatingModal(true);
+      } else {
+        setHasRated(true);
+      }
+    }
+  }, [progress.percentage, hasActiveProjects, hasRated, showRatingModal, selectedSiteId]);
+
+  // Función para enviar la valoración
+  const handleSubmitRating = async () => {
+    if (rating === 0) {
+      alert('Por favor, selecciona una calificación');
+      return;
+    }
+
+    setIsSubmittingRating(true);
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No se encontró el token de autenticación');
+      }
+
+      const ratingData = {
+        serviceId: selectedSiteId || activeSites[0]?.id,
+        rating: rating,
+        comment: ratingComment.trim(),
+        projectName: projectInfo.name,
+        userEmail: user?.email,
+        userName: user?.name || userFullName
+      };
+
+      console.log('Enviando valoración:', ratingData);
+
+      const response = await fetch(`${API_BASE_URL}/ratings/submit`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(ratingData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error al enviar valoración: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Valoración enviada exitosamente:', result);
+
+      // Marcar como valorado en localStorage
+      localStorage.setItem(`rated_${selectedSiteId || 'default'}`, 'true');
+      setHasRated(true);
+      setShowRatingModal(false);
+
+      // Mostrar mensaje de éxito
+      alert('¡Gracias por tu valoración! Tu opinión es muy importante para nosotros.');
+
+    } catch (error) {
+      console.error('Error al enviar valoración:', error);
+      alert('Hubo un error al enviar tu valoración. Por favor, inténtalo de nuevo.');
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
+  // Componente del modal de valoración
+  const RatingModal = () => (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.85)',
+      backdropFilter: 'blur(5px)',
+      zIndex: 9999,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem'
+    }}>
+      <div style={{
+        backgroundColor: '#1a1a1a',
+        borderRadius: '12px',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
+        width: '90%',
+        maxWidth: '500px',
+        padding: '2rem',
+        position: 'relative'
+      }}>
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '2rem'
+        }}>
+          <div style={{
+            fontSize: '3rem',
+            marginBottom: '1rem'
+          }}>🎉</div>
+          <h2 style={{
+            color: '#f5f5f5',
+            fontSize: '1.5rem',
+            marginBottom: '0.5rem'
+          }}>¡Tu proyecto está completo!</h2>
+          <p style={{
+            color: 'rgba(255, 255, 255, 0.7)',
+            fontSize: '1rem',
+            lineHeight: '1.6'
+          }}>
+            "{projectInfo.name}" ha sido finalizado exitosamente.
+            Nos encantaría conocer tu opinión sobre nuestro servicio.
+          </p>
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={{
+            display: 'block',
+            color: '#f5f5f5',
+            fontSize: '1rem',
+            fontWeight: '600',
+            marginBottom: '1rem'
+          }}>
+            ¿Cómo calificarías nuestro servicio?
+          </label>
+
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            marginBottom: '1rem'
+          }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => setRating(star)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '2rem',
+                  cursor: 'pointer',
+                  color: star <= rating ? '#FFD700' : 'rgba(255, 255, 255, 0.3)',
+                  transition: 'all 0.2s ease',
+                  padding: '0.25rem'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSubmittingRating) {
+                    (e.target as HTMLElement).style.transform = 'scale(1.1)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLElement).style.transform = 'scale(1)';
+                }}
+              >
+                ⭐
+              </button>
+            ))}
+          </div>
+
+          <div style={{
+            textAlign: 'center',
+            color: 'rgba(255, 255, 255, 0.6)',
+            fontSize: '0.9rem',
+            marginBottom: '1.5rem'
+          }}>
+            {rating === 0 && 'Selecciona una calificación'}
+            {rating === 1 && 'Muy insatisfecho'}
+            {rating === 2 && 'Insatisfecho'}
+            {rating === 3 && 'Neutral'}
+            {rating === 4 && 'Satisfecho'}
+            {rating === 5 && 'Muy satisfecho'}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '2rem' }}>
+          <label style={{
+            display: 'block',
+            color: '#f5f5f5',
+            fontSize: '1rem',
+            fontWeight: '600',
+            marginBottom: '0.5rem'
+          }}>
+            Cuéntanos tu experiencia (opcional)
+          </label>
+          <textarea
+            value={ratingComment}
+            onChange={(e) => setRatingComment(e.target.value)}
+            placeholder="¿Qué te pareció nuestro servicio? ¿Hay algo que podríamos mejorar?"
+            style={{
+              width: '100%',
+              minHeight: '100px',
+              padding: '0.75rem',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              color: '#f5f5f5',
+              fontSize: '0.9rem',
+              resize: 'vertical',
+              fontFamily: 'inherit'
+            }}
+            maxLength={500}
+          />
+          <div style={{
+            textAlign: 'right',
+            color: 'rgba(255, 255, 255, 0.5)',
+            fontSize: '0.8rem',
+            marginTop: '0.25rem'
+          }}>
+            {ratingComment.length}/500
+          </div>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          gap: '1rem',
+          justifyContent: 'flex-end'
+        }}>
+          <button
+            onClick={() => {
+              setShowRatingModal(false);
+              // Marcar como "saltado" para no volver a mostrar
+              localStorage.setItem(`rated_${selectedSiteId || 'default'}`, 'skipped');
+            }}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: 'transparent',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '8px',
+              color: 'rgba(255, 255, 255, 0.7)',
+              cursor: 'pointer',
+              fontSize: '0.9rem'
+            }}
+            disabled={isSubmittingRating}
+          >
+            Ahora no
+          </button>
+          <button
+            onClick={handleSubmitRating}
+            disabled={rating === 0 || isSubmittingRating}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: rating > 0 ? 'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)' : 'rgba(255, 255, 255, 0.1)',
+              border: 'none',
+              borderRadius: '8px',
+              color: rating > 0 ? 'white' : 'rgba(255, 255, 255, 0.5)',
+              cursor: rating > 0 && !isSubmittingRating ? 'pointer' : 'not-allowed',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            {isSubmittingRating ? (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ animation: 'spin 1s linear infinite' }}
+                >
+                  <line x1="12" y1="2" x2="12" y2="6"></line>
+                  <line x1="12" y1="18" x2="12" y2="22"></line>
+                  <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                  <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                  <line x1="2" y1="12" x2="6" y2="12"></line>
+                  <line x1="18" y1="12" x2="22" y2="12"></line>
+                  <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                  <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                </svg>
+                Enviando...
+              </>
+            ) : (
+              'Enviar valoración'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <DashboardContainer style={{ overflow: windowSize.width <= 1024 ? 'hidden' : 'auto' }}>
       <Header>
@@ -3338,32 +3634,68 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
                 <MenuIcon />
               </HamburgerMenuButton>
             )}
-            <Title>Panel de Proyecto</Title>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Title>Panel de Proyecto</Title>
+            </div>
           </div>
           <UserInfo>
             <Avatar>{userFullName.charAt(0)}</Avatar>
             <div>
               <div>{userFullName}</div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <NavButton to="/">
-                  <HomeIcon /> Inicio
-                </NavButton>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '0.5rem',
+                  width: windowSize.width <= 1024 ? '100%' : 'auto',
+                }}
+              >
                 <NavButton
-                  as="button"
+                  to="/"
                   style={{
-                    background: 'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)',
-                    color: 'white',
-                    fontWeight: 'bold'
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '2px',
+                    height: '60px',
+                    ...(windowSize.width <= 1024 ? { flex: 1, minWidth: 0 } : {})
+                  }}
+                >
+                  <HomeIcon />
+                  <span>Inicio</span>
+                </NavButton>
+                <NavButtonButton
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '2px',
+                    height: '60px',
+                    ...(windowSize.width <= 1024 ? { flex: 1, minWidth: 0 } : {})
                   }}
                   onClick={() => setShowSettingsModal(true)}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="3"></circle>
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                   </svg>
-                  Configuración
-                </NavButton>
-                <NavButton as="button" onClick={handleLogout}>Cerrar sesión</NavButton>
+                  <span>Configuración</span>
+                </NavButtonButton>
+                <NavButtonButton
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '2px',
+                    height: '60px',
+                    ...(windowSize.width <= 1024 ? { flex: 1, minWidth: 0 } : {})
+                  }}
+                  onClick={handleLogout}
+                >
+                  <span>Cerrar sesión</span>
+                </NavButtonButton>
               </div>
             </div>
           </UserInfo>
@@ -3566,6 +3898,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           </div>
         </div>
       )}
+
+      {/* Modal de valoración */}
+      {showRatingModal && <RatingModal />}
     </DashboardContainer>
   );
 };

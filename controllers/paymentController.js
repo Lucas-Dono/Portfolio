@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
 import * as refundController from './refundController.js';
 import crypto from 'crypto';
+import { StockManager } from '../models/StockManagement.js';
 
 dotenv.config();
 
@@ -535,6 +536,41 @@ export const notifyPaymentAttempt = async (req, res) => {
   }
 };
 
+// Función para mapear serviceId a planType para el sistema de stock
+function mapServiceToPlanType(serviceId) {
+  const servicePlanMap = {
+    'landing-basico': 'basico',
+    'landing-estandar': 'estandar',
+    'landing-premium': 'premium',
+    'landing-empresarial': 'empresarial',
+    'ecommerce-basico': 'basico',
+    'ecommerce-estandar': 'estandar',
+    'ecommerce-premium': 'premium',
+    'ecommerce-empresarial': 'empresarial',
+    'blog-basico': 'basico',
+    'blog-estandar': 'estandar',
+    'blog-premium': 'premium',
+    'blog-empresarial': 'empresarial',
+    'portfolio-basico': 'basico',
+    'portfolio-estandar': 'estandar',
+    'portfolio-premium': 'premium',
+    'portfolio-empresarial': 'empresarial'
+  };
+
+  // Si no encuentra mapeo específico, intentar extraer el plan del serviceId
+  if (servicePlanMap[serviceId]) {
+    return servicePlanMap[serviceId];
+  }
+
+  // Fallback: buscar palabras clave en el serviceId
+  if (serviceId.includes('empresarial')) return 'empresarial';
+  if (serviceId.includes('premium')) return 'premium';
+  if (serviceId.includes('estandar')) return 'estandar';
+
+  // Por defecto, asignar plan básico
+  return 'basico';
+}
+
 // Función para registrar el servicio adquirido después de un pago
 async function registerUserService(paymentData, req) {
   try {
@@ -596,6 +632,60 @@ async function registerUserService(paymentData, req) {
     };
 
     console.log('🔄 Registrando servicio de usuario con datos:', JSON.stringify(serviceData, null, 2));
+
+    // **INTEGRACIÓN CON SISTEMA DE STOCK**
+    // Determinar el tipo de plan y reservar stock antes de registrar el servicio
+    const planType = mapServiceToPlanType(serviceId);
+    console.log(`📦 Reservando stock para plan: ${planType} (servicio: ${serviceId})`);
+
+    try {
+      // Verificar disponibilidad del stock
+      const availability = await StockManager.checkAvailability(planType);
+
+      if (!availability.available) {
+        console.error(`❌ Stock no disponible para plan ${planType}:`, availability.reason);
+
+        // Si no hay stock disponible, agregar a cola de espera
+        if (userEmail && fullName) {
+          try {
+            await StockManager.addToWaitingQueue(
+              userId || `temp_${Date.now()}`,
+              userEmail,
+              fullName || contactName || 'Usuario',
+              planType
+            );
+            console.log(`📋 Usuario agregado a cola de espera para plan ${planType}`);
+          } catch (queueError) {
+            console.error('Error al agregar a cola de espera:', queueError);
+          }
+        }
+
+        throw new Error(`Stock no disponible para el plan ${planType}. ${availability.reason}`);
+      }
+
+      // Reservar stock para este pedido
+      const stockReservation = await StockManager.reserveStock(
+        planType,
+        paymentId || `payment_${Date.now()}`,
+        userId || `user_${Date.now()}`
+      );
+
+      console.log(`✅ Stock reservado exitosamente:`, stockReservation);
+
+      // Agregar información del stock al serviceData
+      serviceData.stockInfo = {
+        planType,
+        reservedWeight: stockReservation.reservedWeight,
+        estimatedDelivery: stockReservation.estimatedDelivery,
+        stockReservedAt: new Date().toISOString()
+      };
+
+    } catch (stockError) {
+      console.error('❌ Error en gestión de stock:', stockError.message);
+
+      // En caso de error de stock, no proceder con el registro del servicio
+      throw new Error(`Error de stock: ${stockError.message}`);
+    }
 
     // Configurar los headers de autorización
     let headers = {};

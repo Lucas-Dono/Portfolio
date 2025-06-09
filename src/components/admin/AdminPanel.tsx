@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import PromocionesAdmin from './PromocionesAdmin';
 import PreciosAdmin from './PreciosAdmin';
 import AdminRefunds from './AdminRefunds';
+import AdminRatings from './AdminRatings';
+import StockAdmin from './StockAdmin';
 
 // Interfaces para los datos
 interface Project {
@@ -392,7 +394,7 @@ const Tab = styled.button<{ active: boolean }>`
 
 // Componente principal
 const AdminPanel = () => {
-  const [activeTab, setActiveTab] = useState<'proyectos' | 'promociones' | 'precios' | 'reembolsos'>('proyectos');
+  const [activeTab, setActiveTab] = useState<'proyectos' | 'promociones' | 'precios' | 'reembolsos' | 'valoraciones' | 'stock'>('proyectos');
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -698,6 +700,10 @@ const AdminPanel = () => {
         return <PreciosAdmin />;
       case 'reembolsos':
         return <AdminRefunds />;
+      case 'valoraciones':
+        return <AdminRatings />;
+      case 'stock':
+        return <StockAdmin />;
       default:
         return (
           <>
@@ -823,6 +829,18 @@ const AdminPanel = () => {
             onClick={() => setActiveTab('reembolsos')}
           >
             Reembolsos
+          </Tab>
+          <Tab
+            active={activeTab === 'valoraciones'}
+            onClick={() => setActiveTab('valoraciones')}
+          >
+            Valoraciones
+          </Tab>
+          <Tab
+            active={activeTab === 'stock'}
+            onClick={() => setActiveTab('stock')}
+          >
+            Gestión de Stock
           </Tab>
         </TabsContainer>
       </div>

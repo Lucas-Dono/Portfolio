@@ -1149,6 +1149,10 @@ const Services: React.FC = () => {
   // Agregar esta declaración de estado que falta
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: string, content: string }>>([]);
 
+  // Estados para el sistema de stock
+  const [stockStatus, setStockStatus] = useState<Record<string, any>>({});
+  const [stockLoading, setStockLoading] = useState(false);
+
   // Guión de preguntas para la IA
   const enterpriseQuestions = [
     "¿Cómo se llama tu empresa?",
@@ -1238,6 +1242,57 @@ const Services: React.FC = () => {
       console.log('Función de envío simulada, implementa tu lógica real aquí');
     } catch (error) {
       console.error('Error al enviar datos de la conversación:', error);
+    }
+  };
+
+  // Función para verificar stock de servicios
+  const verificarStock = async () => {
+    try {
+      setStockLoading(true);
+
+      // Mapear serviceIds a planTypes
+      const servicePlanMap: Record<string, string> = {
+        'landing-basico': 'basico',
+        'landing-estandar': 'estandar',
+        'landing-premium': 'premium',
+        'landing-empresarial': 'empresarial',
+        'ecommerce-basico': 'basico',
+        'ecommerce-estandar': 'estandar',
+        'ecommerce-premium': 'premium',
+        'ecommerce-empresarial': 'empresarial',
+        'blog-basico': 'basico',
+        'blog-estandar': 'estandar',
+        'blog-premium': 'premium',
+        'blog-empresarial': 'empresarial',
+        'portfolio-basico': 'basico',
+        'portfolio-estandar': 'estandar',
+        'portfolio-premium': 'premium',
+        'portfolio-empresarial': 'empresarial'
+      };
+
+      const stockPromises = Object.entries(servicePlanMap).map(async ([serviceId, planType]) => {
+        try {
+          const response = await axios.get(`${getApiUrl('')}/stock/availability/${planType}`);
+          return { serviceId, ...(response.data as Record<string, any>) };
+        } catch (error) {
+          console.error(`Error al verificar stock para ${serviceId}:`, error);
+          return { serviceId, available: true, warning: null }; // Fallback: asumir disponible
+        }
+      });
+
+      const stockResults = await Promise.all(stockPromises);
+
+      const stockMap = stockResults.reduce((acc: Record<string, any>, result: any) => {
+        acc[result.serviceId] = result;
+        return acc;
+      }, {} as Record<string, any>);
+
+      setStockStatus(stockMap);
+
+    } catch (error) {
+      console.error('Error al verificar stock general:', error);
+    } finally {
+      setStockLoading(false);
     }
   };
 

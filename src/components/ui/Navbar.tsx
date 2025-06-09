@@ -515,7 +515,7 @@ const Navbar: React.FC<NavbarProps> = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <DashboardIcon />
+              <img src="/logo/LoginLogo.png" alt="Dashboard" style={{ height: '28px', width: '28px' }} />
             </DashboardButton>
           </DashboardLink>
         </Controls>
@@ -577,13 +577,7 @@ const Navbar: React.FC<NavbarProps> = ({
               )}
 
               <DashboardLink to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                <DashboardButton
-                  aria-label="Ir al dashboard"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <DashboardIcon />
-                </DashboardButton>
+                <img src="/logo/LoginLogo.png" alt="Dashboard" style={{ height: '28px', width: '28px', borderRadius: '6px', }} />
               </DashboardLink>
             </MobileControls>
           </MobileMenuContainer>

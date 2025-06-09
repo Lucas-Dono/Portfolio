@@ -34,6 +34,10 @@ import userRoutes from './routes/userRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 // Importar rutas de precios
 import preciosRoutes from './routes/preciosRoutes.js';
+// Importar rutas de valoraciones
+import ratingsRoutes from './routes/ratingsRoutes.js';
+// Importar rutas de stock
+import stockRoutes from './routes/stockRoutes.js';
 
 // Importar controladores de pago
 import { processPayment, createPreference, handleWebhook, processApiPayment } from './controllers/paymentController.js';
@@ -278,6 +282,12 @@ app.use('/api/users', userRoutes);
 
 // Rutas de precios
 app.use('/api', preciosRoutes);
+
+// Usar las rutas de valoraciones
+app.use('/api/ratings', ratingsRoutes);
+
+// Usar las rutas de stock
+app.use('/api/stock', stockRoutes);
 
 // Rutas de administración
 app.use('/api/admin', (req, res, next) => {
