@@ -115,10 +115,10 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // Permitir solicitudes sin origen (ej: curl, Postman)
+    // NO permitir solicitudes sin origen en producción
     if (!origin) {
-      console.log('CORS: Petición sin origen permitida');
-      return callback(null, true);
+      console.error('CORS: Petición sin origen rechazada en producción');
+      return callback(new Error('Se requiere un origen válido en producción'));
     }
 
     // Verificar si el origen está en la lista blanca
@@ -132,10 +132,8 @@ const corsOptions = {
     });
 
     if (isAllowed) {
-      // console.log(`CORS: Petición desde ${origin} permitida`); // Opcional: demasiado verboso para producción
       callback(null, true);
     } else {
-      // Log detallado para depuración en producción
       console.error(`CORS: Petición desde origen "${origin}" RECHAZADA.`);
       console.error(`CORS: Orígenes permitidos en producción: [${corsOrigins.join(', ')}]`);
       callback(new Error('Este origen no está permitido por la política de CORS.'));

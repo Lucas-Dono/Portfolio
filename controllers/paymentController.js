@@ -153,19 +153,30 @@ export const createPreference = async (req, res) => {
 
     // Configurar cabeceras para permitir cookies de terceros
     const origin = req.headers.origin;
-    res.header('Access-Control-Allow-Origin', origin || '*');
+    if (!origin) {
+      return res.status(400).json({
+        error: 'Origen no permitido',
+        message: 'Se requiere un origen válido para procesar el pago'
+      });
+    }
+
+    res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Headers',
       'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-HTTP-Method-Override, ' +
       'x-meli-session-id, device-id, x-idempotency-key, x-flow-id, x-product-id, x-tracking-id, Cookie, Set-Cookie');
     res.header('Access-Control-Expose-Headers', 'Set-Cookie, Content-Disposition');
 
-    // Establecer cookies de prueba con diferentes combinaciones de opciones
-    res.cookie('mp-preference-id', 'test-cookie', {
+    // Generar un ID único para la preferencia
+    const preferenceId = `pref_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+
+    // Establecer cookie de preferencia
+    res.cookie('mp-preference-id', preferenceId, {
       sameSite: 'none',
       secure: true,
-      httpOnly: false,
-      path: '/'
+      httpOnly: true,
+      path: '/',
+      maxAge: 3600000 // 1 hora
     });
 
     // Asegurar que tengamos la clave pública y de acceso
@@ -190,7 +201,7 @@ export const createPreference = async (req, res) => {
       pending: pendingUrl
     });
 
-    // Datos para Checkout API - Configuración MUY simplificada solo con lo mínimo esencial
+    // Datos para Checkout API - Configuración simplificada
     const preferenceData = {
       items: [
         {
@@ -199,11 +210,11 @@ export const createPreference = async (req, res) => {
           description: `Servicio de ${serviceTitle}`,
           quantity: 1,
           unit_price: Number(servicePrice),
-          currency_id: 'ARS'
+          currency_id: "ARS"
         }
       ],
       payer: {
-        name: userName || 'Cliente',
+        name: userName,
         email: req.body.email || 'cliente@example.com'
       },
       back_urls: {
@@ -212,77 +223,48 @@ export const createPreference = async (req, res) => {
         pending: pendingUrl
       },
       external_reference: `service_${serviceId}_${Date.now()}`,
-      site_id: 'MLA'
+      site_id: "MLA",
+      auto_return: "approved",
+      notification_url: `${baseUrl}/api/payments/webhook`,
+      statement_descriptor: "CIRCUITPROMPT",
+      expires: true,
+      expiration_date_from: new Date().toISOString(),
+      expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 horas
     };
 
     console.log('📋 Creando preferencia con datos simplificados:', JSON.stringify(preferenceData, null, 2));
 
-    try {
-      // Crear preferencia con opciones mínimas
-      const preference = new Preference(client);
-      const result = await preference.create({
-        body: preferenceData,
-        requestOptions: {
-          idempotencyKey: `payment-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`
-        }
-      });
+    // Crear la preferencia
+    const preference = new Preference(client);
+    const result = await preference.create({ body: preferenceData });
 
-      console.log('✅ Preferencia creada con ID:', result.id);
-      console.log('🔄 Iniciando redirección a:', result.init_point);
+    console.log('✅ Preferencia creada con ID:', result.id);
 
-      // También guardar el ID de preferencia como una cookie para referencia
-      res.cookie('mp-created-preference-id', result.id, {
-        sameSite: 'none',
-        secure: true,
-        httpOnly: false
-      });
+    // Establecer cookie con el ID de la preferencia creada
+    res.cookie('mp-created-preference-id', result.id, {
+      sameSite: 'none',
+      secure: true,
+      httpOnly: true,
+      path: '/',
+      maxAge: 3600000 // 1 hora
+    });
 
-      // Siempre enviamos la public_key junto con el ID de la preferencia
-      return res.json({
-        id: result.id,
-        init_point: result.init_point,
-        public_key: publicKey,
-        serviceInfo: {
-          id: serviceId,
-          title: serviceTitle,
-          price: Number(servicePrice)
-        }
-      });
-    } catch (error) {
-      console.error('❌ Error al crear preferencia:', error);
+    // Redirigir al checkout
+    const checkoutUrl = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${result.id}`;
+    console.log('🔄 Iniciando redirección a:', checkoutUrl);
 
-      // Si el error es específico de Mercado Pago, extraer el detalle
-      let errorDetails = 'Error al crear preferencia';
-      if (error.cause) {
-        try {
-          const apiError = typeof error.cause === 'string'
-            ? JSON.parse(error.cause)
-            : error.cause;
+    return res.status(200).json({
+      id: result.id,
+      init_point: result.init_point,
+      sandbox_init_point: result.sandbox_init_point,
+      public_key: publicKey
+    });
 
-          if (apiError.error) {
-            errorDetails = apiError.error;
-          } else if (apiError.message) {
-            errorDetails = apiError.message;
-          }
-
-          console.error('Detalles del error de MP:', apiError);
-        } catch (e) {
-          console.error('Error al parsear causa del error:', e);
-        }
-      }
-
-      return res.status(500).json({
-        error: error.message || 'Error al crear preferencia',
-        details: errorDetails,
-        public_key: publicKey
-      });
-    }
   } catch (error) {
-    console.error('❌ Error general al crear preferencia:', error);
+    console.error('❌ Error al crear preferencia:', error);
     return res.status(500).json({
-      error: error.message || 'Error al crear preferencia',
-      details: error.cause,
-      public_key: process.env.VITE_MP_PUBLIC_KEY || 'TEST-064a6d85-da9f-4dea-9587-d0e7da336abc'
+      error: 'Error al crear la preferencia de pago',
+      message: error.message
     });
   }
 };
