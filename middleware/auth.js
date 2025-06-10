@@ -36,7 +36,6 @@ export const isAdmin = (req, res, next) => {
     }
 
     // Verificar si el usuario tiene permisos de administrador
-    // Esto puede variar según tu implementación de roles
     if (req.user.role !== 'admin' && req.user.isAdmin !== true) {
         return res.status(403).json({
             success: false,

@@ -2,6 +2,17 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Instalar dependencias del sistema
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    docker-cli
+
 # Instalar dependencias globales
 RUN npm install -g concurrently
 
@@ -25,8 +36,12 @@ RUN chown -R node:node /app
 USER node
 
 # Exponer puertos (frontend y backend)
-EXPOSE 3000
+EXPOSE 3001
 EXPOSE 5001
+
+# Configurar variables de entorno para Puppeteer
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Comando para iniciar la aplicación
 CMD ["npm", "run", "dev"] 

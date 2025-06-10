@@ -1637,8 +1637,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
   // Verificar autenticación y cargar datos del usuario
   useEffect(() => {
+    let isMounted = true;
+
     const loadUserData = async () => {
-      setLoading(true);
+      if (!isMounted) return;
 
       try {
         // Si no hay usuario autenticado, redirigir al login
@@ -1649,11 +1651,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         }
 
         // Si el usuario está autenticado, actualizar estados con datos del usuario
-        if (user) {
+        if (user && isMounted) {
           setUserFullName(user.name);
 
           // Comprobar si el usuario tiene proyectos activos
-          // En un entorno real esto se cargaría de la API
           const hasProjects = true; // Simulación, en producción esto vendría de la API
           setHasActiveProjects(hasProjects);
 
@@ -1661,12 +1662,16 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           const firstLogin = localStorage.getItem('firstLogin') !== 'false';
           setIsFirstLogin(firstLogin);
 
-          if (hasProjects) {
+          if (hasProjects && isMounted) {
             await loadProjectData();
           }
         }
+      } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -1674,11 +1679,19 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
     if (!authLoading) {
       loadUserData();
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [user, isAuthenticated, authLoading]);
 
   // Efecto para verificar si se registró un nuevo servicio
   useEffect(() => {
+    let isMounted = true;
+
     const checkNewService = () => {
+      if (!isMounted) return;
+
       const newServiceRegistered = localStorage.getItem('new_service_registered');
       if (newServiceRegistered === 'true') {
         console.log('🔄 Se detectó un nuevo servicio registrado, recargando datos...');
@@ -1687,7 +1700,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         localStorage.removeItem('new_service_registered');
 
         // Recargar datos del proyecto
-        if (isAuthenticated && user) {
+        if (isAuthenticated && user && isMounted) {
           loadProjectData();
         }
       }
@@ -1699,8 +1712,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
     // Configurar un intervalo para verificar periódicamente (cada 10 segundos)
     const interval = setInterval(checkNewService, 10000);
 
-    // Limpiar intervalo al desmontar
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [isAuthenticated, user]);
 
   // Función para redirigir al login

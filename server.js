@@ -42,8 +42,11 @@ import stockRoutes from './routes/stockRoutes.js';
 // Importar controladores de pago
 import { processPayment, createPreference, handleWebhook, processApiPayment } from './controllers/paymentController.js';
 
-// Rutas explícitas para servicios de usuario (backup para solucionar problemas de rutas)
-import * as userServicesController from './controllers/userServicesController.js';
+// Importar controladores de servicios de usuario
+import { registerUserService, getUserServices, updateServiceProgress, updateServiceDetails } from './controllers/userServicesController.js';
+
+// Importar middleware de autenticación
+import { authenticateToken } from './middleware/auth.js';
 
 dotenv.config(); // Cargar variables de entorno
 
@@ -343,17 +346,11 @@ app.use('/api/admin', (req, res, next) => {
   }
 }, adminRoutes);
 
-// Rutas explícitas para servicios de usuario (backup para solucionar problemas de rutas)
-// Ruta GET para obtener servicios
-app.get('/api/users/services', userServicesController.getUserServices);
-// Ruta POST para registrar servicios
-app.post('/api/users/services', userServicesController.registerUserService);
-// Rutas para actualizar progreso
-app.patch('/api/users/services/:serviceId/progress', userServicesController.updateServiceProgress);
-// Rutas explícitas para detalles - soportar todos los métodos comunes
-app.put('/api/users/services/:serviceId/details', userServicesController.updateServiceDetails);
-app.patch('/api/users/services/:serviceId/details', userServicesController.updateServiceDetails);
-app.post('/api/users/services/:serviceId/details', userServicesController.updateServiceDetails);
+// Rutas de servicios de usuario
+app.post('/api/user-services', authenticateToken, registerUserService);
+app.get('/api/user-services', authenticateToken, getUserServices);
+app.put('/api/user-services/:serviceId/progress', authenticateToken, updateServiceProgress);
+app.put('/api/user-services/:serviceId/details', authenticateToken, updateServiceDetails);
 
 // Ruta de debug para mostrar servicios
 app.get('/api/users/services/debug', async (req, res) => {
@@ -904,7 +901,7 @@ app.all('/api/users/services/:serviceId/:action', (req, res) => {
   // Obtener el controlador correcto para el caso de servicios/detalles
   if (req.params.serviceId && req.params.action === 'details') {
     console.log(`🔄 Redirigiendo manualmente a la función updateServiceDetails`);
-    return userServicesController.updateServiceDetails(req, res);
+    return updateServiceDetails(req, res);
   }
 
   res.status(200).json({
