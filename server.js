@@ -104,21 +104,28 @@ const corsOrigins = [
   'https://*.mlstatic.com'
 ].filter(Boolean);
 
+// Lista de endpoints que pueden recibir solicitudes sin origen
+const allowedNoOriginPaths = [
+  '/api/payments/webhook',
+  '/api/ratings/submit',
+  '/health'
+];
+
 console.log('📍 Configuración CORS - Orígenes permitidos:', corsOrigins);
 
 // Opciones de CORS dinámicas y flexibles
 const corsOptions = {
   origin: (origin, callback) => {
-    // En desarrollo, permitir cualquier origen para facilitar las pruebas
+    // En desarrollo, permitir cualquier origen
     if (process.env.NODE_ENV !== 'production') {
       console.log(`CORS: Petición desde ${origin} permitida (entorno de desarrollo)`);
       return callback(null, true);
     }
 
-    // NO permitir solicitudes sin origen en producción
+    // En producción, verificar origen
     if (!origin) {
-      console.error('CORS: Petición sin origen rechazada en producción');
-      return callback(new Error('Se requiere un origen válido en producción'));
+      console.log('CORS: Petición sin origen detectada');
+      return callback(null, true); // Permitir todas las solicitudes sin origen en producción
     }
 
     // Verificar si el origen está en la lista blanca
@@ -158,11 +165,23 @@ app.options('*', cors(corsOptions));
 // Middleware para forzar encabezados CORS en cada respuesta
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && corsOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (process.env.NODE_ENV !== 'production' && origin) {
-    // En desarrollo, reflejar cualquier origen
-    res.setHeader('Access-Control-Allow-Origin', origin);
+
+  // En desarrollo, reflejar cualquier origen
+  if (process.env.NODE_ENV !== 'production') {
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+  } else {
+    // En producción, verificar origen
+    if (origin && corsOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else if (!origin) {
+      // Para solicitudes sin origen, verificar si es un endpoint permitido
+      const isAllowedPath = allowedNoOriginPaths.some(p => req.path.startsWith(p));
+      if (isAllowedPath) {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
+    }
   }
 
   res.setHeader('Access-Control-Allow-Credentials', 'true');
