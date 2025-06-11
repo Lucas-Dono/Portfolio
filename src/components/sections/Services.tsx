@@ -1605,6 +1605,12 @@ const Services: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
       // TODO: Reemplazar por llamada real, por ejemplo:
       // await fetch(`/api/user-services/assign-free`, { method: 'POST', body: JSON.stringify({ serviceId }) })
+
+      // Marcar que el servicio fue asignado gratuitamente
+      localStorage.setItem('free_service_assigned', 'true');
+      localStorage.setItem('assigned_service_id', serviceId);
+
+      // Mostrar mensaje de éxito y redirigir al dashboard
       alert('¡Servicio gratuito asignado correctamente!');
       navigate('/dashboard');
     } catch (error) {
@@ -1775,11 +1781,20 @@ const Services: React.FC = () => {
           });
         }
       } else {
-        // Redirigir directamente a la página de pago con los add-ons incluidos
+        // Para servicios de pago, redirigir a la página de pago con los add-ons incluidos
+        console.log('🔄 Redirigiendo a página de pago para servicio:', serviceId, 'Precio:', precioFinal);
+
+        // Guardar información del servicio en localStorage para la página de pago
+        localStorage.setItem('last_payment_service', serviceId);
+        localStorage.setItem('last_payment_amount', precioFinal.toString());
+        localStorage.setItem('last_payment_service_title', service.title);
+
         let redirectUrl = `/payment?service=${serviceId}`;
         if (addOns && addOns.length > 0) {
           redirectUrl += `&addons=${addOns.join(',')}`;
         }
+
+        console.log('🔗 URL de redirección:', redirectUrl);
         navigate(redirectUrl);
       }
 

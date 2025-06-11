@@ -1489,53 +1489,52 @@ const CloseFullScreenButton = styled.button`
 // Componente principal
 
 
+// El layout sigue este patrón en una cuadrícula de 6x6:
+// [sites (1x6)] [projectStatus (4x3)] [assistant (1x6)]
+// [sites (cont)] [preview (4x3)]      [assistant (cont)]
+const defaultLayout: Layout[] = [
+  { i: 'projectStatus', x: 1, y: 0, w: 4, h: 3, minW: 2, minH: 1 },
+  { i: 'preview', x: 1, y: 3, w: 4, h: 4, minW: 2, minH: 1 },
+  { i: 'assistant', x: 5, y: 0, w: 1, h: 7, minW: 1, minH: 2 },
+  { i: 'sites', x: 0, y: 0, w: 1, h: 7, minW: 1, minH: 2 }
+];
+
+// Layout para móvil - organiza los elementos en una sola columna
+// manteniendo un orden lógico y visual consistente
+const mobileLayout: Layout[] = [
+  { i: 'sites', x: 0, y: 0, w: 1, h: 4, minW: 1, minH: 2 },
+  { i: 'projectStatus', x: 0, y: 4, w: 1, h: 3, minW: 1, minH: 1 },
+  { i: 'preview', x: 0, y: 7, w: 1, h: 3, minW: 1, minH: 1 },
+  { i: 'assistant', x: 0, y: 10, w: 1, h: 4, minW: 1, minH: 2 }
+];
+
 const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
+  // ===== TODOS LOS HOOKS PRIMERO - ORDEN FIJO =====
   // Estado para el tema de la interfaz
   const [theme, setTheme] = useState('dark');
   // Estado para el modal de configuración
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  // El layout sigue este patrón en una cuadrícula de 6x6:
-  // [sites (1x6)] [projectStatus (4x3)] [assistant (1x6)]
-  // [sites (cont)] [preview (4x3)]      [assistant (cont)]
-  const defaultLayout: Layout[] = [
-    { i: 'projectStatus', x: 1, y: 0, w: 4, h: 3, minW: 2, minH: 1 },
-    { i: 'preview', x: 1, y: 3, w: 4, h: 4, minW: 2, minH: 1 },
-    { i: 'assistant', x: 5, y: 0, w: 1, h: 7, minW: 1, minH: 2 },
-    { i: 'sites', x: 0, y: 0, w: 1, h: 7, minW: 1, minH: 2 }
-  ];
-
-  // Layout para móvil - organiza los elementos en una sola columna
-  // manteniendo un orden lógico y visual consistente
-  const mobileLayout: Layout[] = [
-    { i: 'sites', x: 0, y: 0, w: 1, h: 4, minW: 1, minH: 2 },
-    { i: 'projectStatus', x: 0, y: 4, w: 1, h: 3, minW: 1, minH: 1 },
-    { i: 'preview', x: 0, y: 7, w: 1, h: 3, minW: 1, minH: 1 },
-    { i: 'assistant', x: 0, y: 10, w: 1, h: 4, minW: 1, minH: 2 }
-  ];
 
   // Obtener contexto de autenticación
   const { user, isAuthenticated, isLoading: authLoading, logout: authLogout } = useAuth();
   const navigate = useNavigate();
 
-  // ===== TODOS LOS HOOKS PRIMERO =====
   // Estado para el tamaño de la ventana y tipo de dispositivo
   const [windowSize, setWindowSize] = useState({
     width: typeof window !== 'undefined' ? window.innerWidth : 1200,
     height: typeof window !== 'undefined' ? window.innerHeight : 800
   });
 
-  // Función para determinar el tipo de dispositivo basado en el tamaño de pantalla
-  const getDeviceType = () => {
-    if (windowSize.width <= 1024) return 'mobile';
-    return 'desktop';
-  };
-
   // Estado para el tipo de dispositivo
-  const [deviceType, setDeviceType] = useState(getDeviceType());
+  const [deviceType, setDeviceType] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth <= 1024 ? 'mobile' : 'desktop';
+    }
+    return 'desktop';
+  });
+
   const [loading, setLoading] = useState(true);
   const [userFullName, setUserFullName] = useState(user?.name || userName);
-
-  // Estado para determinar si el usuario tiene proyectos activos
   const [hasActiveProjects, setHasActiveProjects] = useState(false);
 
   // Estado para el progreso del proyecto con hitos
@@ -1593,20 +1592,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   const [showMobileChat, setShowMobileChat] = useState(false);
 
   // Estado para el layout de la cuadrícula
-  const [layouts, setLayouts] = useState<Layout[]>(defaultLayout);
-
-  // Lista de respuestas rápidas
-  const quickReplies = hasActiveProjects ? [
-    '¿Cómo va mi proyecto?',
-    '¿Qué incluirá mi sitio?',
-    '¿Cuándo estará listo?',
-    'Quiero hacer un cambio'
-  ] : [
-    '¿Qué servicios ofrecen?',
-    '¿Cuánto cuesta?',
-    'Quiero ver ejemplos',
-    'Necesito ayuda'
-  ];
+  const [layouts, setLayouts] = useState<Layout[]>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth <= 768 ? mobileLayout : defaultLayout;
+    }
+    return defaultLayout;
+  });
 
   // Estados para el modal de imagen
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
@@ -1622,20 +1613,76 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [hasRated, setHasRated] = useState(false);
 
-  // ===== TODOS LOS EFECTOS DESPUÉS =====
+  // Estados para manejar el arrastre y redimensionamiento
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
 
-  // Tiempo de inactividad para minimizar el chat automáticamente
+  // ===== FUNCIONES AUXILIARES =====
+  // Función para determinar el tipo de dispositivo basado en el tamaño de pantalla
+  const getDeviceType = () => {
+    if (windowSize.width <= 1024) return 'mobile';
+    return 'desktop';
+  };
+
+  // Función para redirigir al login
+  const redirectToLogin = () => {
+    localStorage.setItem('redirect_after_login', 'dashboard');
+    navigate('/login');
+  };
+
+  // ===== TODOS LOS EFECTOS EN ORDEN FIJO =====
+  // 1. Efecto para manejar cambios en el tamaño de la ventana
   useEffect(() => {
-    if (messages.length > 0 && !isChatMinimized) {
-      const timer = setTimeout(() => {
-        setIsChatMinimized(true);
-      }, 60000); // 1 minuto de inactividad
+    const handleResize = () => {
+      const newSize = {
+        width: window.innerWidth,
+        height: window.innerHeight
+      };
+      setWindowSize(newSize);
 
-      return () => clearTimeout(timer);
+      const newDeviceType = newSize.width <= 1024 ? 'mobile' : 'desktop';
+      setDeviceType(newDeviceType);
+
+      console.log('Cambio de tamaño:', newSize.width, 'DeviceType:', newDeviceType);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // 2. Efecto para cargar layout guardado al inicio
+  useEffect(() => {
+    const savedLayout = localStorage.getItem('dashboard_layout');
+    if (savedLayout) {
+      try {
+        const parsedLayout = JSON.parse(savedLayout);
+        setLayouts(parsedLayout);
+      } catch (e) {
+        console.error('Error parsing saved layout', e);
+        const width = window.innerWidth;
+        setLayouts(width <= 768 ? mobileLayout : defaultLayout);
+      }
+    } else {
+      const width = window.innerWidth;
+      setLayouts(width <= 768 ? mobileLayout : defaultLayout);
     }
-  }, [messages, inputMessage, isChatMinimized]);
+  }, []);
 
-  // Verificar autenticación y cargar datos del usuario
+  // 3. Efecto para adaptar la distribución según el tamaño de pantalla
+  useEffect(() => {
+    const breakpoint = 1024;
+    const isMobile = windowSize.width <= breakpoint;
+
+    console.log('Efecto de adaptación:', windowSize.width, 'Es móvil:', isMobile, 'DeviceType:', deviceType);
+
+    if (!localStorage.getItem('dashboard_layout')) {
+      setLayouts(isMobile ? mobileLayout : defaultLayout);
+    }
+  }, [windowSize, deviceType]);
+
+  // 4. Efecto para verificar autenticación y cargar datos del usuario
   useEffect(() => {
     let isMounted = true;
 
@@ -1643,22 +1690,16 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       if (!isMounted) return;
 
       try {
-        // Si no hay usuario autenticado, redirigir al login
         if (!isAuthenticated && !authLoading) {
           console.warn('Usuario no autenticado, redirigiendo al login');
           redirectToLogin();
           return;
         }
 
-        // Si el usuario está autenticado, actualizar estados con datos del usuario
         if (user && isMounted) {
           setUserFullName(user.name);
-
-          // Comprobar si el usuario tiene proyectos activos
-          const hasProjects = true; // Simulación, en producción esto vendría de la API
+          const hasProjects = true;
           setHasActiveProjects(hasProjects);
-
-          // Comprobar si es la primera vez que el usuario inicia sesión
           const firstLogin = localStorage.getItem('firstLogin') !== 'false';
           setIsFirstLogin(firstLogin);
 
@@ -1675,7 +1716,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       }
     };
 
-    // Solo cargar datos si la autenticación ya terminó de cargarse
     if (!authLoading) {
       loadUserData();
     }
@@ -1685,7 +1725,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
     };
   }, [user, isAuthenticated, authLoading]);
 
-  // Efecto para verificar si se registró un nuevo servicio
+  // 5. Efecto para verificar si se registró un nuevo servicio
   useEffect(() => {
     let isMounted = true;
 
@@ -1695,21 +1735,15 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       const newServiceRegistered = localStorage.getItem('new_service_registered');
       if (newServiceRegistered === 'true') {
         console.log('🔄 Se detectó un nuevo servicio registrado, recargando datos...');
-
-        // Eliminar la marca para evitar recargas innecesarias
         localStorage.removeItem('new_service_registered');
 
-        // Recargar datos del proyecto
         if (isAuthenticated && user && isMounted) {
           loadProjectData();
         }
       }
     };
 
-    // Verificar al montar el componente
     checkNewService();
-
-    // Configurar un intervalo para verificar periódicamente (cada 10 segundos)
     const interval = setInterval(checkNewService, 10000);
 
     return () => {
@@ -1718,20 +1752,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
     };
   }, [isAuthenticated, user]);
 
-  // Función para redirigir al login
-  const redirectToLogin = () => {
-    // Establecer una bandera para indicar que fue redirigido desde el dashboard
-    localStorage.setItem('redirect_after_login', 'dashboard');
-
-    // Redirigir a la página de login
-    navigate('/login');
-  };
-
-  // Efecto para iniciar la conversación con Chloe
+  // 6. Efecto para iniciar la conversación con Chloe
   useEffect(() => {
     if (isAuthenticated && !loading) {
       if (hasActiveProjects && isFirstLogin) {
-        // Iniciar la conversación con información específica del proyecto
         setTimeout(() => {
           const projectType = projectInfo.businessType === 'ecommerce' ? 'tienda online' :
             projectInfo.businessType === 'blog' ? 'blog' :
@@ -1745,7 +1769,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           addMessage('assistant', `Tu proyecto está actualmente al ${progress.percentage}% de completarse y estamos en la fase de "${progress.stage}". ¿Te gustaría que te cuente más detalles sobre el progreso, las características que incluirá tu sitio, o tienes alguna pregunta específica?`);
         }, 2500);
       } else if (hasActiveProjects && !isFirstLogin) {
-        // Si no es la primera vez, mensaje de bienvenida personalizado
         const projectType = projectInfo.businessType === 'ecommerce' ? 'tienda online' :
           projectInfo.businessType === 'blog' ? 'blog' :
             projectInfo.businessType === 'portfolio' ? 'portfolio' :
@@ -1755,7 +1778,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           { role: 'assistant', content: `¡Hola de nuevo! 👋 Tu ${projectType} "${projectInfo.name}" está progresando muy bien. Actualmente está al ${progress.percentage}% de completarse. ¿En qué puedo ayudarte hoy?` }
         ]);
       } else {
-        // Usuario sin proyectos activos
         setMessages([
           { role: 'assistant', content: '¡Hola! 👋 Soy Chloe, tu asistente virtual especializada en desarrollo web. Veo que aún no tienes proyectos activos. ¿Te gustaría conocer nuestros servicios de desarrollo web? Puedo ayudarte a encontrar la solución perfecta para tu presencia online.' }
         ]);
@@ -1763,72 +1785,50 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
     }
   }, [isAuthenticated, isFirstLogin, hasActiveProjects, loading, projectInfo, progress]);
 
-  // Efecto para hacer scroll al último mensaje
+  // 7. Efecto para hacer scroll al último mensaje
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Cargar layout guardado al inicio
+  // 8. Efecto para tiempo de inactividad del chat
   useEffect(() => {
-    const savedLayout = localStorage.getItem('dashboard_layout');
-    if (savedLayout) {
-      try {
-        const parsedLayout = JSON.parse(savedLayout);
-        setLayouts(parsedLayout);
-      } catch (e) {
-        console.error('Error parsing saved layout', e);
-        // Si hay un error, usar el layout predeterminado según tamaño de pantalla
-        const width = window.innerWidth;
-        setLayouts(width <= 768 ? mobileLayout : defaultLayout);
+    if (messages.length > 0 && !isChatMinimized) {
+      const timer = setTimeout(() => {
+        setIsChatMinimized(true);
+      }, 60000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [messages, inputMessage, isChatMinimized]);
+
+  // 9. Efecto para mostrar el modal de valoración cuando el proyecto esté completo
+  useEffect(() => {
+    if (progress.percentage === 100 && hasActiveProjects && !hasRated && !showRatingModal) {
+      const projectRated = localStorage.getItem(`rated_${selectedSiteId || 'default'}`);
+      if (!projectRated) {
+        setShowRatingModal(true);
+      } else {
+        setHasRated(true);
       }
-    } else {
-      // Si no hay layout guardado, usar el predeterminado según tamaño de pantalla
-      const width = window.innerWidth;
-      setLayouts(width <= 768 ? mobileLayout : defaultLayout);
     }
-  }, []);
+  }, [progress.percentage, hasActiveProjects, hasRated, showRatingModal, selectedSiteId]);
 
-  // Efecto para manejar cambios en el tamaño de la ventana
-  useEffect(() => {
-    const handleResize = () => {
-      const newSize = {
-        width: window.innerWidth,
-        height: window.innerHeight
-      };
-      setWindowSize(newSize);
+  // ===== TODAS LAS FUNCIONES DESPUÉS =====
 
-      // Actualizar el tipo de dispositivo
-      const newDeviceType = newSize.width <= 1024 ? 'mobile' : 'desktop';
-      setDeviceType(newDeviceType);
+  // Lista de respuestas rápidas
+  const quickReplies = hasActiveProjects ? [
+    '¿Cómo va mi proyecto?',
+    '¿Qué incluirá mi sitio?',
+    '¿Cuándo estará listo?',
+    'Quiero hacer un cambio'
+  ] : [
+    '¿Qué servicios ofrecen?',
+    '¿Cuánto cuesta?',
+    'Quiero ver ejemplos',
+    'Necesito ayuda'
+  ];
 
-      console.log('Cambio de tamaño:', newSize.width, 'DeviceType:', newDeviceType);
-    };
-
-    window.addEventListener('resize', handleResize);
-    handleResize(); // Llamar una vez al inicio para asegurar que se establezca correctamente
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Efecto para adaptar la distribución según el tamaño de pantalla
-  useEffect(() => {
-    const breakpoint = 1024;
-    const isMobile = windowSize.width <= breakpoint;
-
-    console.log('Efecto de adaptación:', windowSize.width, 'Es móvil:', isMobile, 'DeviceType:', deviceType);
-
-    // Solo cambiar el layout si no hay un layout personalizado o si cambiamos entre móvil y escritorio
-    if (!localStorage.getItem('dashboard_layout')) {
-      // Usar el layout predeterminado según el tamaño de la pantalla
-      setLayouts(isMobile ? mobileLayout : defaultLayout);
-    }
-  }, [windowSize, deviceType]);
-
-  // Añadir estados para manejar el arrastre y redimensionamiento
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-
-  // Actualizar las funciones de manejo de eventos
+  // Funciones de manejo de eventos para el layout
   const handleDragStart = () => {
     setIsDragging(true);
   };
@@ -1850,8 +1850,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
     saveLayout(layout);
     setIsResizing(false);
   };
-
-  // ===== TODAS LAS FUNCIONES DESPUÉS =====
 
   // Función para guardar el layout en localStorage
   const saveLayout = (newLayout: Layout[]) => {
