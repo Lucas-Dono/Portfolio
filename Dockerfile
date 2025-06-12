@@ -11,7 +11,8 @@ RUN apk add --no-cache \
     harfbuzz \
     ca-certificates \
     ttf-freefont \
-    docker-cli
+    docker-cli \
+    xvfb
 
 # Instalar dependencias globales
 RUN npm install -g concurrently
@@ -42,6 +43,7 @@ EXPOSE 5001
 # Configurar variables de entorno para Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV DISPLAY=:99
 
 # Comando para iniciar la aplicación
 CMD ["npm", "run", "dev"] 

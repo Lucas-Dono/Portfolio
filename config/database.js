@@ -43,16 +43,26 @@ const sequelizeOptions = {
 };
 
 // Crear instancia de Sequelize global
-let sequelize = DISABLE_DB ? null : new Sequelize(
-  DB_NAME,
-  DB_USER,
-  DB_PASSWORD,
-  sequelizeOptions
-);
+let sequelize;
+
+if (DISABLE_DB) {
+  console.log('⚠️ Base de datos deshabilitada por configuración.');
+  sequelize = null;
+} else {
+  sequelize = new Sequelize(
+    DB_NAME,
+    DB_USER,
+    DB_PASSWORD,
+    sequelizeOptions
+  );
+}
 
 // Función para sincronizar modelos con la base de datos
 const syncModels = async () => {
-  if (!sequelize) return;
+  if (!sequelize) {
+    console.log('⚠️ Sequelize no disponible, saltando sincronización de modelos');
+    return;
+  }
 
   try {
     console.log('🔄 Sincronizando modelos con la base de datos...');
@@ -73,6 +83,7 @@ const syncModels = async () => {
 const initializeDatabase = async () => {
   if (DISABLE_DB) {
     console.log('⚠️ Base de datos deshabilitada por configuración. Usando modo sin base de datos.');
+    setupFileFallback();
     return null;
   }
 
@@ -114,6 +125,16 @@ const initializeDatabase = async () => {
 // Configurar sistema de fallback basado en archivos para modo desarrollo
 const setupFileFallback = () => {
   console.log('🔧 Configurando sistema de fallback basado en archivos JSON');
+  // Crear directorio de datos si no existe
+  const dataDir = path.join(process.cwd(), 'data');
+  try {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+      console.log(`✅ Directorio de datos creado en: ${dataDir}`);
+    }
+  } catch (err) {
+    console.warn(`⚠️ No se pudo crear el directorio de datos: ${err.message}`);
+  }
 };
 
 // Manejar cierre de conexión al finalizar la aplicación
