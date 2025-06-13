@@ -1,0 +1,139 @@
+# ===================================
+# ARCHIVOS DE DEPENDENCIAS
+# ===================================
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ===================================
+# ARCHIVOS DE DESARROLLO
+# ===================================
+.git
+.gitignore
+.env
+.env.*
+!.env.prod
+.vscode
+.idea
+*.md
+!README.md
+*.log
+
+# ===================================
+# ARCHIVOS DE CONSTRUCCIÓN Y CACHÉ
+# ===================================
+dist
+build
+coverage
+.next
+out
+.cache
+.parcel-cache
+.npm
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# ===================================
+# ARCHIVOS TEMPORALES Y SISTEMA
+# ===================================
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.bak
+*.tmp
+*.temp
+*~
+
+# ===================================
+# ARCHIVOS DE PRUEBA
+# ===================================
+__tests__
+*.test.*
+*.spec.*
+test
+tests
+coverage
+
+# ===================================
+# ARCHIVOS DE DOCUMENTACIÓN
+# ===================================
+docs
+LICENSE
+*.md
+!README.md
+
+# ===================================
+# ARCHIVOS DE CONFIGURACIÓN LOCAL
+# ===================================
+.editorconfig
+.prettierrc
+.stylelintrc
+
+# ===================================
+# ARCHIVOS DE DOCKER
+# ===================================
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# ===================================
+# ARCHIVOS DE PUPPETEER/WHATSAPP
+# ===================================
+.whatsapp
+.whatsapp-session
+.wwebjs_auth
+.wwebjs_cache
+.wwebjs_sessions
+.wwebjs_auth_backup
+.wwebjs_cache_backup
+
+# ===================================
+# ARCHIVOS DE NODE ESPECÍFICOS
+# ===================================
+.yarnrc
+package-lock.json
+yarn.lock
+
+# ===================================
+# ARCHIVOS DE IDE
+# ===================================
+.idea
+.vscode
+*.sublime-*
+*.code-workspace
+
+# ===================================
+# ARCHIVOS DE BASE DE DATOS
+# ===================================
+*.sqlite
+*.sqlite3
+*.db
+data/
+
+# ===================================
+# ARCHIVOS DE LOGS
+# ===================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===================================
+# ARCHIVOS DE BACKUP Y TEMPORALES
+# ===================================
+backup/
+temp/
+*.backup
+*.old
+
+# ===================================
+# ARCHIVOS DE CERTIFICADOS Y NGINX
+# ===================================
+nginx/
+postgres-config/
+secrets/ 

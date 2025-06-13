@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link rel="preload" href="/images/logo.png" as="image" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Lucas Dono - Portfolio personal y servicios de desarrollo web" />
+  <meta name="keywords" content="desarrollo web, frontend, backend, React, Node.js, servicios" />
+  <meta name="author" content="Lucas Dono" />
+  <meta name="theme-color" content="#090909" />
+
+  <!-- Precargar recursos críticos -->
+  <link rel="preload" href="/fonts/inter-variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-light.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-medium.woff2" as="font" type="font/woff2" crossorigin>
+
+  <!-- Fuentes de Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+
+  <!-- Meta para cookies de MercadoPago -->
+  <meta name="mercadopago-site-id" content="MLA">
+  <meta name="mercadopago-environment" content="test">
+  <meta name="mercadopago-session" content="allow-third-party-cookies">
+
+  <!-- Preconexión para recursos de terceros -->
+  <link rel="preconnect" href="https://sdk.mercadopago.com" crossorigin>
+  <link rel="preconnect" href="https://api.mercadopago.com" crossorigin>
+
+  <!-- DNS Prefetch -->
+  <link rel="dns-prefetch" href="*.mercadopago.com">
+
+  <!-- Cargar el SDK de MercadoPago directamente en el head -->
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
+
+  <title>Circuit Prompt</title>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <!-- Script principal de la aplicación -->
+  <script type="module" src="/src/main.tsx"></script>
+
+  <!-- Script para verificar que MercadoPago se cargó correctamente -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Verificar que MercadoPago se cargó correctamente
+      if (typeof window.MercadoPago === 'function') {
+        console.log('✅ MercadoPago SDK cargado correctamente');
+      } else {
+        console.error('❌ MercadoPago SDK no se cargó correctamente');
+        // Intentar cargar nuevamente si falló
+        const mercadoPagoScript = document.createElement('script');
+        mercadoPagoScript.src = "https://sdk.mercadopago.com/js/v2";
+        mercadoPagoScript.onload = function () {
+          console.log('✅ MercadoPago SDK cargado en segundo intento');
+        };
+        document.head.appendChild(mercadoPagoScript);
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,108 @@
+# ===================================
+# ETAPA 1: Construcción del Frontend
+# ===================================
+FROM node:20-alpine AS frontend-builder
+
+# Instalar solo las dependencias mínimas necesarias para el frontend
+RUN apk add --no-cache python3 make g++
+
+WORKDIR /app
+
+# Copiar archivos de configuración para aprovechar caché de Docker
+COPY package*.json ./
+COPY .npmrc ./
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
+COPY eslint.config.js ./
+
+# Instalar dependencias con optimizaciones (compatible con servidores)
+RUN npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline
+
+# Copiar archivos necesarios para el frontend
+COPY index.html ./
+COPY public/ ./public/
+COPY src/ ./src/
+
+# Declarar los argumentos de construcción para el frontend
+ARG VITE_API_URL
+ARG VITE_GOOGLE_CLIENT_ID
+ARG VITE_GITHUB_CLIENT_ID
+ARG VITE_MP_PUBLIC_KEY
+
+# Establecer las variables de entorno para el proceso de build
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+ENV VITE_GITHUB_CLIENT_ID=${VITE_GITHUB_CLIENT_ID}
+ENV VITE_MP_PUBLIC_KEY=${VITE_MP_PUBLIC_KEY}
+
+# Construir el frontend
+RUN npm run build
+
+# Limpiar node_modules y reinstalar solo dependencias de producción
+RUN rm -rf node_modules && \
+    npm install --legacy-peer-deps --production --no-audit --no-fund --prefer-offline
+
+# ===================================
+# ETAPA 2: Imagen Final de Producción
+# ===================================
+FROM node:20-alpine AS production
+
+# Instalar solo las herramientas mínimas necesarias
+RUN apk add --no-cache curl dumb-init
+
+# Crear usuario sin privilegios
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Crear directorios con permisos correctos
+RUN mkdir -p /app/logs /app/uploads /app/dist && \
+    chown -R appuser:appgroup /app
+
+WORKDIR /app
+
+# Copiar solo node_modules de producción desde el builder
+COPY --from=frontend-builder --chown=appuser:appgroup /app/node_modules ./node_modules
+
+# Copiar el frontend compilado
+COPY --from=frontend-builder --chown=appuser:appgroup /app/dist ./dist
+
+# Copiar archivos de configuración mínimos
+COPY --chown=appuser:appgroup package.json ./
+
+# Copiar archivos del backend (solo los necesarios)
+COPY --chown=appuser:appgroup server.js ./
+COPY --chown=appuser:appgroup init-db.sql ./
+
+# Copiar directorios del backend de forma selectiva
+COPY --chown=appuser:appgroup routes/ ./routes/
+COPY --chown=appuser:appgroup controllers/ ./controllers/
+COPY --chown=appuser:appgroup models/ ./models/
+COPY --chown=appuser:appgroup config/ ./config/
+COPY --chown=appuser:appgroup utils/ ./utils/
+COPY --chown=appuser:appgroup templates/ ./templates/
+COPY --chown=appuser:appgroup migrations/ ./migrations/
+COPY --chown=appuser:appgroup security/ ./security/
+COPY --chown=appuser:appgroup src/ia/ ./src/ia/
+COPY --chown=appuser:appgroup middleware/ ./middleware/
+
+# Variables de entorno optimizadas
+ENV NODE_ENV=production \
+    NODE_OPTIONS="--max-old-space-size=512" \
+    NPM_CONFIG_LOGLEVEL=warn \
+    NPM_CONFIG_AUDIT=false \
+    NPM_CONFIG_FUND=false
+
+# Exponer puerto
+EXPOSE 5001
+
+# Cambiar al usuario no privilegiado
+USER appuser
+
+# Health check optimizado
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:5001/health || exit 1
+
+# Usar dumb-init para manejo correcto de señales
+ENTRYPOINT ["dumb-init", "--"]
+
+# Comando optimizado para producción
+CMD ["node", "--max-old-space-size=512", "server.js"] 
