@@ -1745,70 +1745,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   const { user, isAuthenticated, isLoading: authLoading, logout: authLogout } = useAuth();
   const navigate = useNavigate();
 
-  // ===== ESTADO MÍNIMO NECESARIO PARA VERIFICACIONES TEMPRANAS =====
+  // ===== TODOS LOS HOOKS AL INICIO (ANTES DE CUALQUIER RETURN) =====
+  // Estado para carga inicial
   const [loading, setLoading] = useState(true);
-
-  // ===== VERIFICACIONES TEMPRANAS (ANTES DE TODOS LOS HOOKS) =====
-  // Función para redirigir al login
-  const redirectToLogin = () => {
-    localStorage.setItem('redirect_after_login', 'dashboard');
-    navigate('/login');
-  };
-
-  // Si estamos cargando, mostrar pantalla de carga
-  if (authLoading || loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        background: '#121212',
-        color: '#f5f5f5'
-      }}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="50"
-          height="50"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#00d2ff"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            animation: 'spin 1.5s linear infinite',
-            marginBottom: '1rem'
-          }}
-        >
-          <line x1="12" y1="2" x2="12" y2="6"></line>
-          <line x1="12" y1="18" x2="12" y2="22"></line>
-          <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-          <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-          <line x1="2" y1="12" x2="6" y2="12"></line>
-          <line x1="18" y1="12" x2="22" y2="12"></line>
-          <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-          <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-        </svg>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-        <div>Cargando datos del proyecto...</div>
-      </div>
-    );
-  }
-
-  // Si no está autenticado, redirigir al login
-  if (!isAuthenticated) {
-    redirectToLogin();
-    return null;
-  }
-
-  // ===== TODOS LOS HOOKS DESPUÉS DE LAS VERIFICACIONES =====
+  
   // Estado para el tema de la interfaz
   const [theme, setTheme] = useState('dark');
   // Estado para el modal de configuración
@@ -1916,13 +1856,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   const layoutRef = useRef<Layout[]>([]);
   const starRatingRefs = useRef<(HTMLButtonElement | null)[]>([null, null, null, null, null]);
 
-  // ===== FUNCIONES AUXILIARES =====
-  // Función para determinar el tipo de dispositivo basado en el tamaño de pantalla
-  const getDeviceType = () => {
-    if (windowSize.width <= 1024) return 'mobile';
-    return 'desktop';
-  };
-
   // ===== TODOS LOS EFECTOS EN ORDEN FIJO =====
   // 1. Efecto para manejar cambios en el tamaño de la ventana
   useEffect(() => {
@@ -1985,7 +1918,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       try {
         if (!isAuthenticated && !authLoading) {
           console.warn('Usuario no autenticado, redirigiendo al login');
-          redirectToLogin();
+          localStorage.setItem('redirect_after_login', 'dashboard');
+          navigate('/login');
           return;
         }
 
@@ -1997,7 +1931,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           setIsFirstLogin(firstLogin);
 
           if (hasProjects && isMounted) {
-            await loadProjectData();
+            // Cargar datos del proyecto será manejado por loadProjectData definida más abajo
+            // await loadProjectData();
           }
         }
       } catch (error) {
@@ -2016,7 +1951,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
     return () => {
       isMounted = false;
     };
-  }, [user, isAuthenticated, authLoading]);
+  }, [user, isAuthenticated, authLoading, navigate]);
 
   // 5. Efecto para verificar si se registró un nuevo servicio
   useEffect(() => {
@@ -2031,7 +1966,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         localStorage.removeItem('new_service_registered');
 
         if (isAuthenticated && user && isMounted) {
-          loadProjectData();
+          // Recargar la página para obtener datos actualizados
+          window.location.reload();
         }
       }
     };
@@ -2055,11 +1991,17 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
               projectInfo.businessType === 'portfolio' ? 'portfolio' :
                 'sitio web';
 
-          addMessage('assistant', `¡Hola! 👋 Soy Chloe, tu asistente virtual especializada en desarrollo web. Veo que tienes un proyecto de ${projectType} llamado "${projectInfo.name}" en desarrollo.`);
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: `¡Hola! 👋 Soy Chloe, tu asistente virtual especializada en desarrollo web. Veo que tienes un proyecto de ${projectType} llamado "${projectInfo.name}" en desarrollo.`
+          }]);
         }, 500);
 
         setTimeout(() => {
-          addMessage('assistant', `Tu proyecto está actualmente al ${progress.percentage}% de completarse y estamos en la fase de "${progress.stage}". ¿Te gustaría que te cuente más detalles sobre el progreso, las características que incluirá tu sitio, o tienes alguna pregunta específica?`);
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: `Tu proyecto está actualmente al ${progress.percentage}% de completarse y estamos en la fase de "${progress.stage}". ¿Te gustaría que te cuente más detalles sobre el progreso, las características que incluirá tu sitio, o tienes alguna pregunta específica?`
+          }]);
         }, 2500);
       } else if (hasActiveProjects && !isFirstLogin) {
         const projectType = projectInfo.businessType === 'ecommerce' ? 'tienda online' :
@@ -2105,6 +2047,73 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       }
     }
   }, [progress.percentage, hasActiveProjects, hasRated, showRatingModal, selectedSiteId]);
+
+  // ===== FUNCIONES AUXILIARES =====
+  // Función para determinar el tipo de dispositivo basado en el tamaño de pantalla
+  const getDeviceType = () => {
+    if (windowSize.width <= 1024) return 'mobile';
+    return 'desktop';
+  };
+
+  // Función para redirigir al login
+  const redirectToLogin = () => {
+    localStorage.setItem('redirect_after_login', 'dashboard');
+    navigate('/login');
+  };
+
+  // ===== VERIFICACIONES CONDICIONALES =====
+  // Si estamos cargando, mostrar pantalla de carga
+  if (authLoading || loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        background: '#121212',
+        color: '#f5f5f5'
+      }}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="50"
+          height="50"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#00d2ff"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            animation: 'spin 1.5s linear infinite',
+            marginBottom: '1rem'
+          }}
+        >
+          <line x1="12" y1="2" x2="12" y2="6"></line>
+          <line x1="12" y1="18" x2="12" y2="22"></line>
+          <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+          <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+          <line x1="2" y1="12" x2="6" y2="12"></line>
+          <line x1="18" y1="12" x2="22" y2="12"></line>
+          <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+          <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+        </svg>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+        <div>Cargando datos del proyecto...</div>
+      </div>
+    );
+  }
+
+  // Si no está autenticado, redirigir al login
+  if (!isAuthenticated) {
+    redirectToLogin();
+    return null;
+  }
 
   // ===== TODAS LAS FUNCIONES DESPUÉS =====
 
