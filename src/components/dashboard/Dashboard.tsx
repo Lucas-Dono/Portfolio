@@ -333,9 +333,8 @@ const ProgressBarContainer = styled.div`
   overflow: hidden;
 `;
 
-const ProgressBarFill = styled.div<{ percentage: number }>`
+const ProgressBarFill = styled.div`
   height: 100%;
-  width: ${props => props.percentage}%;
   background: linear-gradient(to right, #00d2ff, #3a7bd5);
   border-radius: 10px;
   transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
@@ -432,7 +431,7 @@ const MilestonesContainer = styled.div`
   }
 `;
 
-const Milestone = styled.div<{ completed: boolean }>`
+const Milestone = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -440,16 +439,14 @@ const Milestone = styled.div<{ completed: boolean }>`
   z-index: 1;
 `;
 
-const MilestoneIcon = styled.div<{ completed: boolean }>`
+const MilestoneIcon = styled.div`
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background-color: ${props => props.completed ? '#00FFFF' : 'rgba(255, 255, 255, 0.2)'};
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 0.5rem;
-  color: ${props => props.completed ? '#000' : '#fff'};
   transition: all 0.3s ease;
   
   svg {
@@ -458,11 +455,9 @@ const MilestoneIcon = styled.div<{ completed: boolean }>`
   }
 `;
 
-const MilestoneName = styled.div<{ completed: boolean }>`
+const MilestoneName = styled.div`
   font-size: 0.8rem;
-  color: ${props => props.completed ? '#fff' : 'rgba(255, 255, 255, 0.5)'};
   text-align: center;
-  font-weight: ${props => props.completed ? '500' : '400'};
 `;
 
 const ViewSiteButton = styled.a`
@@ -529,12 +524,9 @@ const PreviewDevices = styled.div`
   gap: 0.5rem;
 `;
 
-const DeviceButton = styled.button<{ active: boolean }>`
-  background: ${props => props.active ? 'rgba(0, 210, 255, 0.2)' : 'transparent'};
-  border: 1px solid ${props => props.active ? '#00d2ff' : 'rgba(255, 255, 255, 0.2)'};
+const DeviceButton = styled.button`
   padding: 0.3rem 0.6rem;
   border-radius: 6px;
-  color: ${props => props.active ? '#00d2ff' : 'rgba(255, 255, 255, 0.6)'};
   font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -876,11 +868,9 @@ const SitesContainer = styled.div`
 `;
 
 // Interfaces para los estilos
-interface SiteCardProps {
-  selected?: boolean;
-}
 
-const SiteCard = styled.div<SiteCardProps>`
+
+const SiteCard = styled.div`
   background-color: rgba(37, 37, 37, 0.7);
   border-radius: 12px;
   padding: 1rem;
@@ -895,13 +885,6 @@ const SiteCard = styled.div<SiteCardProps>`
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
     background-color: rgba(45, 45, 45, 0.8);
   }
-  
-  ${props => props.selected && `
-    background-color: rgba(45, 45, 45, 0.95);
-    border-left: 3px solid #FF00FF;
-    box-shadow: 0 8px 25px rgba(255, 0, 255, 0.2);
-    transform: translateY(-3px);
-  `}
 `;
 
 const SiteHeader = styled.div`
@@ -924,21 +907,11 @@ const SiteName = styled.h3`
   }
 `;
 
-const SiteStatus = styled.span<{ status: string }>`
+const SiteStatus = styled.span`
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 500;
-  background-color: ${props =>
-    props.status === 'online' ? 'rgba(72, 187, 120, 0.2)' :
-      props.status === 'maintenance' ? 'rgba(246, 173, 85, 0.2)' :
-        'rgba(99, 179, 237, 0.2)'
-  };
-  color: ${props =>
-    props.status === 'online' ? '#48BB78' :
-      props.status === 'maintenance' ? '#F6AD55' :
-        '#63B3ED'
-  };
   display: flex;
   align-items: center;
   gap: 0.3rem;
@@ -1030,7 +1003,7 @@ const SidebarToggle = styled.button`
 `;
 */
 
-const Overlay = styled.div<{ isVisible: boolean }>`
+const Overlay = styled.div`
   position: fixed;
   top: 0;
   left: 0;
@@ -1038,8 +1011,6 @@ const Overlay = styled.div<{ isVisible: boolean }>`
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.7);
   z-index: 950;
-  opacity: ${props => props.isVisible ? 1 : 0};
-  visibility: ${props => props.isVisible ? 'visible' : 'hidden'};
   transition: opacity 0.3s ease, visibility 0.3s ease;
   backdrop-filter: blur(3px);
 `;
@@ -2925,7 +2896,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           }}>
             <PreviewDevices>
               <DeviceButton
-                active={activeDevice === 'desktop'}
+                style={{
+                  background: activeDevice === 'desktop' ? 'rgba(0, 210, 255, 0.2)' : 'transparent',
+                  border: `1px solid ${activeDevice === 'desktop' ? '#00d2ff' : 'rgba(255, 255, 255, 0.2)'}`,
+                  color: activeDevice === 'desktop' ? '#00d2ff' : 'rgba(255, 255, 255, 0.6)'
+                }}
                 onClick={() => setActiveDevice('desktop')}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -2937,7 +2912,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
               </DeviceButton>
 
               <DeviceButton
-                active={activeDevice === 'mobile'}
+                style={{
+                  background: activeDevice === 'mobile' ? 'rgba(0, 210, 255, 0.2)' : 'transparent',
+                  border: `1px solid ${activeDevice === 'mobile' ? '#00d2ff' : 'rgba(255, 255, 255, 0.2)'}`,
+                  color: activeDevice === 'mobile' ? '#00d2ff' : 'rgba(255, 255, 255, 0.6)'
+                }}
                 onClick={() => setActiveDevice('mobile')}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -3073,7 +3052,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
             <SiteCard
               key={site.id}
               onClick={() => selectSite(site.id)}
-              selected={selectedSiteId === site.id}
+              style={selectedSiteId === site.id ? {
+                backgroundColor: 'rgba(45, 45, 45, 0.95)',
+                borderLeft: '3px solid #FF00FF',
+                boxShadow: '0 8px 25px rgba(255, 0, 255, 0.2)',
+                transform: 'translateY(-3px)'
+              } : {}}
             >
               <SiteHeader>
                 <SiteName>
@@ -3096,7 +3080,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
                   )}
                   {site.name}
                 </SiteName>
-                <SiteStatus status={site.status}>
+                <SiteStatus style={{
+                  backgroundColor: site.status === 'online' ? 'rgba(72, 187, 120, 0.2)' :
+                    site.status === 'maintenance' ? 'rgba(246, 173, 85, 0.2)' :
+                      'rgba(99, 179, 237, 0.2)',
+                  color: site.status === 'online' ? '#48BB78' :
+                    site.status === 'maintenance' ? '#F6AD55' :
+                      '#63B3ED'
+                }}>
                   {site.status === 'online' ? (
                     <>
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -3198,13 +3189,16 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         </ProgressInfo>
 
         <ProgressBarContainer>
-          <ProgressBarFill percentage={progress.percentage} />
+                      <ProgressBarFill style={{ width: `${progress.percentage}%` }} />
         </ProgressBarContainer>
 
         <MilestonesContainer>
           {progress.milestones.map(milestone => (
-            <Milestone key={milestone.id} completed={milestone.completed}>
-              <MilestoneIcon completed={milestone.completed}>
+            <Milestone key={milestone.id}>
+              <MilestoneIcon style={{
+                backgroundColor: milestone.completed ? '#00FFFF' : 'rgba(255, 255, 255, 0.2)',
+                color: milestone.completed ? '#000' : '#fff'
+              }}>
                 {milestone.completed ? (
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12"></polyline>
@@ -3215,7 +3209,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
                   </svg>
                 )}
               </MilestoneIcon>
-              <MilestoneName completed={milestone.completed}>
+              <MilestoneName style={{
+                color: milestone.completed ? '#fff' : 'rgba(255, 255, 255, 0.5)',
+                fontWeight: milestone.completed ? '500' : '400'
+              }}>
                 {milestone.name}
               </MilestoneName>
             </Milestone>
@@ -3442,7 +3439,13 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       </div>
 
       {/* Overlay para cerrar el menú lateral */}
-      <Overlay isVisible={isSidebarOpen} onClick={() => setIsSidebarOpen(false)} />
+      <Overlay 
+        style={{
+          opacity: isSidebarOpen ? 1 : 0,
+          visibility: isSidebarOpen ? 'visible' : 'hidden'
+        }}
+        onClick={() => setIsSidebarOpen(false)} 
+      />
 
       {/* Barra lateral para móvil - para sitios */}
       <MobileSidebar isOpen={isSidebarOpen}>
@@ -3933,7 +3936,13 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           </ContentGrid>
 
           {/* Overlay para cerrar el menú lateral */}
-          <Overlay isVisible={isSidebarOpen && windowSize.width <= 1024} onClick={() => setIsSidebarOpen(false)} />
+          <Overlay 
+        style={{
+          opacity: (isSidebarOpen && windowSize.width <= 1024) ? 1 : 0,
+          visibility: (isSidebarOpen && windowSize.width <= 1024) ? 'visible' : 'hidden'
+        }}
+        onClick={() => setIsSidebarOpen(false)} 
+      />
 
           {/* Barra lateral para móvil - para sitios */}
           <MobileSidebar isOpen={isSidebarOpen && windowSize.width <= 1024}>

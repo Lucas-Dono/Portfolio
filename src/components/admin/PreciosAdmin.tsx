@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import * as preciosAPI from '../../api/preciosAPI';
 import { Servicio, AddonServicio } from '../../services/preciosService';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 // Estilos
 const AdminContainer = styled.div`
@@ -168,7 +169,7 @@ const PreciosAdmin: React.FC = () => {
 
     // Intentar notificar al servidor que se actualizaron los precios
     try {
-      fetch(getApiUrl('/servicios/notificar-actualizacion'), {
+      fetch('/api/servicios/notificar-actualizacion', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
