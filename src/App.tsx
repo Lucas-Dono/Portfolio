@@ -73,6 +73,8 @@ const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
 const PaymentFailure = lazy(() => import('./pages/PaymentFailure'));
 // Importar la página de pago pendiente
 const PaymentPending = lazy(() => import('./pages/PaymentPending'));
+// Importar componente de debugging para error 310
+const Error310TestComponent = lazy(() => import('./components/debug/Error310TestComponent'));
 // Importar la página de depuración de MercadoPago
 const PaymentDebug = lazy(() => import('./pages/PaymentDebug'));
 // Importar página de 404
@@ -707,6 +709,13 @@ const AppRoutes = () => {
       <Route path="/payment/debug" element={
         <Suspense fallback={<div>Cargando...</div>}>
           <PaymentDebug />
+        </Suspense>
+      } />
+
+      {/* Ruta para debugging del error 310 */}
+      <Route path="/debug/error310" element={
+        <Suspense fallback={<div>Cargando...</div>}>
+          <Error310TestComponent testMode="normal" />
         </Suspense>
       } />
 

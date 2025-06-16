@@ -8,6 +8,7 @@ import ReactGridLayout, { Layout, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { useAuth } from '../../context/AuthContext';
+import { enableReactError310Debugging, reactErrorDebugger } from '../../utils/reactErrorDebugger';
 // Importar componentes de configuración
 import SecuritySettings from './SecuritySettings';
 import RefundRequest from './RefundRequest';
@@ -1057,7 +1058,7 @@ const MobileCard = styled.div`
 `;
 */
 
-const MobileSidebar = styled.div<{ isOpen: boolean }>`
+const MobileSidebar = styled.div<{ $isOpen: boolean }>`
   position: fixed;
   top: 0;
   left: 0;
@@ -1068,7 +1069,7 @@ const MobileSidebar = styled.div<{ isOpen: boolean }>`
   z-index: 999;
   padding: 1.5rem;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-  transform: ${props => props.isOpen ? 'translateX(0)' : 'translateX(-100%)'};
+  transform: ${props => props.$isOpen ? 'translateX(0)' : 'translateX(-100%)'};
   transition: transform 0.3s ease;
   overflow-y: auto;
 `;
@@ -1420,7 +1421,7 @@ const DragHandle = styled.div`
 // Configurar el WidthProvider de ReactGridLayout fuera del componente
 const ResponsiveGridLayout = WidthProvider(ReactGridLayout);
 
-const FullScreenChatOverlay = styled.div<{ isOpen: boolean }>`
+const FullScreenChatOverlay = styled.div<{ $isOpen: boolean }>`
   position: fixed;
   top: 0;
   left: 0;
@@ -1428,8 +1429,8 @@ const FullScreenChatOverlay = styled.div<{ isOpen: boolean }>`
   bottom: 0;
   background-color: rgba(18, 18, 18, 0.98);
   z-index: 1000;
-  opacity: ${props => props.isOpen ? 1 : 0};
-  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
+  opacity: ${props => props.$isOpen ? 1 : 0};
+  visibility: ${props => props.$isOpen ? 'visible' : 'hidden'};
   transition: opacity 0.3s ease, visibility 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -1454,6 +1455,31 @@ const CloseFullScreenButton = styled.button`
   &:hover {
     color: white;
     background: rgba(40, 40, 40, 0.9);
+  }
+`;
+
+// Botón para acciones (igual a NavButton pero con styled.button)
+const NavButtonButton = styled.button`
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: rgba(30, 30, 30, 0.6);
+  color: #f5f5f5;
+  text-decoration: none;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  &:hover {
+    background-color: rgba(58, 123, 213, 0.2);
+    border-color: rgba(58, 123, 213, 0.5);
+    transform: translateY(-2px);
+  }
+  @media (max-width: 640px) {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.8rem;
   }
 `;
 
@@ -1712,6 +1738,25 @@ const mobileLayout: Layout[] = [
 ];
 
 const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
+  // ===== ACTIVAR DEBUGGING PARA ERROR 310 =====
+  useEffect(() => {
+    // Activar debugging solo en desarrollo o si se especifica en la URL
+    const isDevelopment = import.meta.env?.MODE === 'development' || import.meta.env?.DEV === true;
+    const hasDebugParam = window.location.search.includes('debug=310');
+    
+    if (isDevelopment || hasDebugParam) {
+      try {
+        enableReactError310Debugging();
+        console.log('🔍 Debugging Error 310 activado para Dashboard');
+        
+        // Registrar este renderizado
+        reactErrorDebugger.logComponentRender('Dashboard', 0, { userName });
+      } catch (error) {
+        console.warn('⚠️ Error activando debugging 310:', error);
+      }
+    }
+  }, [userName]);
+
   // ===== OBTENER CONTEXTO PRIMERO =====
   const { user, isAuthenticated, isLoading: authLoading, logout: authLogout } = useAuth();
   const navigate = useNavigate();
@@ -3404,38 +3449,36 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         </div>
 
         {/* Previsualización */}
-        {hasActiveProjects && (
+        <div style={{
+          flex: 'none',
+          display: hasActiveProjects ? 'flex' : 'none',
+          flexDirection: 'column',
+          overflow: 'visible',
+          marginBottom: '1.5rem',
+          minHeight: '500px'
+        }}>
           <div style={{
-            flex: 'none',
+            padding: '0.5rem 0.75rem',
             display: 'flex',
-            flexDirection: 'column',
-            overflow: 'visible',
-            marginBottom: '1.5rem',
-            minHeight: '500px'
+            alignItems: 'center',
+            gap: '0.5rem'
           }}>
-            <div style={{
-              padding: '0.5rem 0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00d2ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-                <line x1="12" y1="17" x2="12" y2="21"></line>
-              </svg>
-              <span style={{
-                fontSize: '1.4rem',
-                fontWeight: 600,
-                color: '#f5f5f5',
-                fontFamily: "'Poppins', sans-serif"
-              }}>Previsualización</span>
-            </div>
-            <div style={{ height: 'auto', overflow: 'visible', padding: '0 0.75rem' }}>
-              {renderPreview()}
-            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00d2ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            <span style={{
+              fontSize: '1.4rem',
+              fontWeight: 600,
+              color: '#f5f5f5',
+              fontFamily: "'Poppins', sans-serif"
+            }}>Previsualización</span>
           </div>
-        )}
+          <div style={{ height: 'auto', overflow: 'visible', padding: '0 0.75rem' }}>
+            {renderPreview()}
+          </div>
+        </div>
       </div>
 
       {/* Overlay para cerrar el menú lateral */}
@@ -3448,7 +3491,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       />
 
       {/* Barra lateral para móvil - para sitios */}
-      <MobileSidebar isOpen={isSidebarOpen}>
+      <MobileSidebar $isOpen={isSidebarOpen}>
         <MobileSidebarClose onClick={() => setIsSidebarOpen(false)}>
           <CloseIcon />
         </MobileSidebarClose>
@@ -3474,7 +3517,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       </MobileSidebar>
 
       {/* Chat en pantalla completa */}
-      <FullScreenChatOverlay isOpen={showMobileChat}>
+      <FullScreenChatOverlay $isOpen={showMobileChat}>
         <CloseFullScreenButton onClick={() => setShowMobileChat(false)}>
           <CloseIcon />
         </CloseFullScreenButton>
@@ -3587,8 +3630,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         </SettingsForm>
       </SettingsSection>
 
-      {/* Añadir aquí el componente de Configuración de Seguridad */}
-      <SecuritySettings />
+      {/* Configuración de Seguridad se renderiza siempre arriba para evitar violación de hooks */}
 
       {/* Componente de solicitud de reembolso */}
       {renderRefundRequest()}
@@ -3669,30 +3711,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
     }, 300);
   };
 
-  // Nuevo botón para acciones (igual a NavButton pero con styled.button)
-  const NavButtonButton = styled.button`
-    display: inline-block;
-    padding: 0.5rem 1rem;
-    background-color: rgba(30, 30, 30, 0.6);
-    color: #f5f5f5;
-    text-decoration: none;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.2s ease;
-    font-size: 0.875rem;
-    cursor: pointer;
-    width: 100%;
-    height: 100%;
-    &:hover {
-      background-color: rgba(58, 123, 213, 0.2);
-      border-color: rgba(58, 123, 213, 0.5);
-      transform: translateY(-2px);
-    }
-    @media (max-width: 640px) {
-      padding: 0.4rem 0.7rem;
-      font-size: 0.8rem;
-    }
-  `;
+
 
   // Función para enviar la valoración
   const handleSubmitRating = async () => {
@@ -3887,7 +3906,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
                     <circle cx="15" cy="19" r="1" />
                   </svg>
                 </DragHandle>
-                {hasActiveProjects && renderPreview()}
+                <div style={{ display: hasActiveProjects ? 'block' : 'none' }}>
+                  {renderPreview()}
+                </div>
               </DraggableItem>
 
               <DraggableItem key="assistant">
@@ -3945,7 +3966,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       />
 
           {/* Barra lateral para móvil - para sitios */}
-          <MobileSidebar isOpen={isSidebarOpen && windowSize.width <= 1024}>
+          <MobileSidebar $isOpen={isSidebarOpen && windowSize.width <= 1024}>
             <MobileSidebarClose onClick={() => setIsSidebarOpen(false)}>
               <CloseIcon />
             </MobileSidebarClose>
@@ -3979,7 +4000,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
 
       {/* Chat en pantalla completa solo para móvil */}
-      <FullScreenChatOverlay isOpen={showMobileChat && windowSize.width <= 1024}>
+              <FullScreenChatOverlay $isOpen={showMobileChat && windowSize.width <= 1024}>
         <CloseFullScreenButton onClick={() => setShowMobileChat(false)}>
           <CloseIcon />
         </CloseFullScreenButton>
@@ -3987,6 +4008,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           {renderAssistantChat()}
         </div>
       </FullScreenChatOverlay>
+
+      {/* Renderizar SecuritySettings siempre para evitar violación de hooks */}
+      <div style={{ display: 'none' }}>
+        <SecuritySettings />
+      </div>
 
       {/* Modal de Configuración */}
       {showSettingsModal && (
@@ -4030,7 +4056,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
             >
               <CloseIcon />
             </button>
-
+        
             {renderSettings()}
           </div>
         </div>

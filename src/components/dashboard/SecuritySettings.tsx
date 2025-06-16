@@ -59,15 +59,15 @@ const Slider = styled.span`
   }
 `;
 
-const StatusBadge = styled.span<{ enabled: boolean }>`
+const StatusBadge = styled.span<{ $enabled: boolean }>`
   display: inline-block;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 500;
   margin-left: 1rem;
-  background-color: ${props => props.enabled ? 'rgba(4, 120, 87, 0.2)' : 'rgba(220, 38, 38, 0.2)'};
-  color: ${props => props.enabled ? '#10b981' : '#ef4444'};
+  background-color: ${props => props.$enabled ? 'rgba(4, 120, 87, 0.2)' : 'rgba(220, 38, 38, 0.2)'};
+  color: ${props => props.$enabled ? '#10b981' : '#ef4444'};
 `;
 
 const QRCodeContainer = styled.div`
@@ -288,7 +288,7 @@ const SecuritySettings: React.FC = () => {
         <SettingsRow>
           <SettingsLabel>
             Autenticación de Dos Factores
-            <StatusBadge enabled={twoFactorEnabled}>
+            <StatusBadge $enabled={twoFactorEnabled}>
               {twoFactorEnabled ? 'Activado' : 'Desactivado'}
             </StatusBadge>
           </SettingsLabel>

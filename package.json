@@ -17,7 +17,16 @@
     "docker:run": "docker run -p 3000:3000 portfolio",
     "docker:dev": "docker-compose up --build",
     "docker:down": "docker-compose down",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"No tests specified\" && exit 0",
+    "debug:310": "node debug-error-310.js",
+    "debug:310:start": "node debug-error-310.js start",
+    "debug:310:test": "node debug-error-310.js test",
+    "debug:310:dashboard": "node debug-error-310.js dashboard",
+    "debug:310:report": "node debug-error-310.js report",
+    "debug:310:clean": "node debug-error-310.js clean",
+    "build:debug": "vite build --config vite.config.debug.ts",
+    "preview:debug": "vite preview --config vite.config.debug.ts",
+    "debug:310:prod": "npm run build:debug && npm run preview:debug"
   },
   "dependencies": {
     "@emotion/cache": "11.10.5",
