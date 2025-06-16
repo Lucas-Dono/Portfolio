@@ -121,13 +121,6 @@ const InputGroup = styled.div`
   margin-bottom: 1.5rem;
 `;
 
-const Label = styled.label`
-  display: block;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-  color: rgba(255, 255, 255, 0.9);
-`;
-
 const TextInput = styled.input`
   width: 100%;
   padding: 0.8rem;
@@ -635,7 +628,7 @@ const getQuestionsForServiceType = (serviceType: string) => {
 const ProjectQuestionnaire: React.FC<ProjectQuestionnaireProps> = ({
   serviceType,
   onComplete,
-  onClose = () => { },
+  onClose = () => { }, // eslint-disable-line @typescript-eslint/no-unused-vars
   isVisible
 }) => {
   // Estado para las respuestas y paso actual

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import * as preciosAPI from '../../api/preciosAPI';
 import { Servicio, AddonServicio } from '../../services/preciosService';
-import { API_BASE_URL } from '../../config/apiConfig';
+
 
 // Estilos
 const AdminContainer = styled.div`
@@ -100,16 +100,7 @@ const ActionButton = styled.button`
   }
 `;
 
-const FormGroup = styled.div`
-  margin-bottom: 1.5rem;
-`;
 
-const InfoText = styled.p`
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-  font-style: italic;
-`;
 
 const Alert = styled.div<{ type: 'success' | 'error' | 'info' }>`
   padding: 1rem;
@@ -174,7 +165,7 @@ const PreciosAdmin: React.FC = () => {
         headers: {
           'Content-Type': 'application/json'
         }
-      }).catch(err => console.log('Advertencia: No se pudo notificar la actualización al servidor'));
+      }).catch(() => console.log('Advertencia: No se pudo notificar la actualización al servidor'));
     } catch (error) {
       console.error('Error al notificar actualización de precios:', error);
     }

@@ -2,14 +2,14 @@ import { oauthConfig } from '../config/oauth';
 import { API_BASE_URL, getApiUrl } from '../config/apiConfig';
 
 // URL base para la API
-const API_URL = API_BASE_URL;
+const API_URL = API_BASE_URL; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 // Token storage keys
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
 
 // Variable para rastrear si hay problemas con localStorage
-let hasStorageIssues = false;
+let hasStorageIssues = false; // eslint-disable-line @typescript-eslint/no-unused-vars
 let syncInterval: number | null = null;
 
 // Debug info - Usar oauthConfig para evitar warnings

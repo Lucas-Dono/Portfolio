@@ -247,7 +247,6 @@ const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
   userName
 }) => {
   const [paymentStatus, setPaymentStatus] = useState<PaymentResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth(); // Obtener información del usuario autenticado
   const [userEmail, setUserEmail] = useState<string>('');
 
@@ -334,8 +333,6 @@ const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
 
   // Función para manejar el pago
   const handlePaymentSubmit = async (formData: any) => {
-    setIsLoading(true);
-
     try {
       // Envío los datos de pago al backend
       const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/process`, {
@@ -354,12 +351,10 @@ const MercadoPagoModal: React.FC<MercadoPagoModalProps> = ({
 
       const result = await response.json();
 
-      setIsLoading(false);
       setPaymentStatus(result);
 
     } catch (error) {
       console.error('Error al procesar el pago:', error);
-      setIsLoading(false);
       setPaymentStatus({
         status: 'rejected',
         id: '',

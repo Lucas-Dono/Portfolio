@@ -438,31 +438,7 @@ interface LevelConfig {
   largeEnemyHealth: number;
 }
 
-// Header responsivo para score, nivel y vidas
-const HeaderInfoContainer = styled.div`
-  position: absolute;
-  top: 10px;
-  left: 0;
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 5;
-  pointer-events: none;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #fff;
-  text-shadow: 0 0 8px #000, 0 0 4px #00ffff;
 
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 2px;
-    font-size: 1rem;
-    align-items: flex-start;
-    left: 10px;
-    width: calc(100% - 20px);
-  }
-`;
 
 // Popup centrado para la tienda en mobile
 const UpgradeShopPopup = styled(UpgradeShopOverlay)`
@@ -491,16 +467,7 @@ const UpgradeShopPopup = styled(UpgradeShopOverlay)`
   }
 `;
 
-// Mejorar layout de Game Over en mobile
-const GameOverText = styled.div`
-  @media (max-width: 600px) {
-    padding: 18px 0 0 0;
-    font-size: 1.1rem;
-    text-align: center;
-    line-height: 1.5;
-    > * { margin-bottom: 8px; }
-  }
-`;
+
 
 const RetroGameModal: React.FC<RetroGameModalProps> = ({ isOpen, onClose }) => {
   // Referencias al canvas y contenedor

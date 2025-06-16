@@ -1484,7 +1484,8 @@ const NavButtonButton = styled.button`
 `;
 
 // Componente para mostrar cuando no hay proyectos activos (movido fuera de Dashboard)
-const NoProjectsContent = ({ onNavigateToServices }: { onNavigateToServices: () => void }) => (
+const NoProjectsContent = ({ onNavigateToServices }: { onNavigateToServices: () => void }) => { // eslint-disable-line @typescript-eslint/no-unused-vars
+  return (
   <Card style={{ textAlign: 'center', padding: '3rem 2rem' }}>
     <div style={{ marginBottom: '2rem' }}>
       <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto', color: '#00FFFF' }}>
@@ -1500,7 +1501,8 @@ const NoProjectsContent = ({ onNavigateToServices }: { onNavigateToServices: () 
       de desarrollo web y encuentra la solución perfecta para tu presencia online.
     </p>
   </Card>
-);
+  );
+};
 
 // Modal de calificación (movido fuera de Dashboard)
 const RatingModal = ({ 
@@ -1869,8 +1871,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   // Declarar TODOS los refs al inicio del componente
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const layoutRef = useRef<Layout[]>([]);
-  const starRatingRefs = useRef<(HTMLButtonElement | null)[]>([null, null, null, null, null]);
+  const layoutRef = useRef<Layout[]>([]); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const starRatingRefs = useRef<(HTMLButtonElement | null)[]>([null, null, null, null, null]); // eslint-disable-line @typescript-eslint/no-unused-vars
 
   // ===== TODOS LOS EFECTOS EN ORDEN FIJO =====
   // 1. Efecto para manejar cambios en el tamaño de la ventana
@@ -2066,7 +2068,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
   // ===== FUNCIONES AUXILIARES =====
   // Función para determinar el tipo de dispositivo basado en el tamaño de pantalla
-  const getDeviceType = () => {
+  const getDeviceType = () => { // eslint-disable-line @typescript-eslint/no-unused-vars
     if (windowSize.width <= 1024) return 'mobile';
     return 'desktop';
   };
@@ -2227,7 +2229,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   };
 
   // Cargar datos del proyecto
-  const loadProjectData = async () => {
+  const loadProjectData = async () => { // eslint-disable-line @typescript-eslint/no-unused-vars
     try {
       // Si estamos en modo desarrollo, podemos usar datos de prueba directamente
       const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';

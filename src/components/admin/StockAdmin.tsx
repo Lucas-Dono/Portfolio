@@ -420,7 +420,6 @@ const StockAdmin: React.FC = () => {
     const [stockConfigs, setStockConfigs] = useState<StockConfig[]>([]);
     const [stockMetrics, setStockMetrics] = useState<StockMetrics | null>(null);
     const [stockHistory, setStockHistory] = useState<StockHistory[]>([]);
-    const [stockHistoryTotal, setStockHistoryTotal] = useState<number>(0);
     const [waitingQueue, setWaitingQueue] = useState<WaitingQueueEntry[]>([]);
 
     // Estados para formularios
@@ -473,7 +472,6 @@ const StockAdmin: React.FC = () => {
 
             if (historyRes.data.success) {
                 setStockHistory(historyRes.data.history);
-                setStockHistoryTotal(historyRes.data.total);
             }
 
             if (queueRes.data.success) {

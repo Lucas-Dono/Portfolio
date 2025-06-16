@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../config/apiConfig';
+
 
 interface GoogleLoginButtonProps {
   onSuccess?: () => void;
@@ -129,7 +129,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   disabled = false,
   redirectUrl
 }) => {
-  const { loginWithGoogle, loginWithGoogleProvider } = useAuth();
+  const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   // Estados para el modal de términos

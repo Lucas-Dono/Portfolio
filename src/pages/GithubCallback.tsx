@@ -37,12 +37,10 @@ const GithubCallback: React.FC = () => {
   const navigate = useNavigate();
   const { loginWithGithubProvider } = useAuth();
   const [error, setError] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        setIsProcessing(true);
         
         // Obtener la URL de redirección guardada en localStorage (prioridad a payment_redirect_url)
         const paymentRedirectUrl = localStorage.getItem('payment_redirect_url');
@@ -96,7 +94,7 @@ const GithubCallback: React.FC = () => {
         setError('Error al procesar la autenticación. Por favor, intenta nuevamente.');
         setTimeout(() => navigate('/login'), 3000);
       } finally {
-        setIsProcessing(false);
+        // Processing completed
       }
     };
     

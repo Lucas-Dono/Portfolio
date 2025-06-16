@@ -27,9 +27,7 @@ interface LabelProps extends StyledProps {
   htmlFor?: string;
 }
 
-interface ButtonProps extends StyledProps {
-  type?: "button" | "submit" | "reset";
-}
+
 
 interface FormProps extends StyledProps {
   onSubmit?: (e: React.FormEvent) => void;

@@ -172,7 +172,6 @@ const MainContent = () => {
 // Componente ProtectedRoute para rutas que requieren autenticación
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const navigate = useNavigate();
 
   // Si estamos en modo desarrollo, podemos ser más permisivos
   const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
@@ -502,7 +501,6 @@ const AppRoutes = () => {
   const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
-  const [initialAuthChecked, setInitialAuthChecked] = useState(false);
 
   // Solo mostrar la intro en la primera carga y verificar autenticación
   useEffect(() => {
@@ -553,8 +551,6 @@ const AppRoutes = () => {
       localStorage.setItem('project_payment_completed', 'true');
       navigate('/dashboard');
     }
-
-    setInitialAuthChecked(true);
   }, [location, navigate]);
 
   useEffect(() => {

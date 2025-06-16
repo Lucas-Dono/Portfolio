@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { enableReactError310Debugging, reactErrorDebugger } from '../../utils/reactErrorDebugger';
+import { enableReactError310Debugging } from '../../utils/reactErrorDebugger';
 
 // Componente que INTENCIONALMENTE reproduce el error 310
 // para poder diagnosticarlo y entender exactamente qué lo causa
@@ -122,7 +122,7 @@ const ProblematicComponent3: React.FC<{ enableHooks: boolean }> = ({ enableHooks
 
   // ❌ PROBLEMA: Hooks condicionales
   if (enableHooks) {
-    const [conditionalState, setConditionalState] = useState(0); // ❌ Hook condicional
+    const [conditionalState] = useState(0); // ❌ Hook condicional (setter no usado intencionalmente)
     
     useEffect(() => {
       console.log('Efecto condicional');

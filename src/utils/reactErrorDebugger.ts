@@ -231,7 +231,7 @@ class ReactErrorDebugger {
   }
 
   // Método para registrar renderizados manualmente
-  logComponentRender(componentName: string, hookCount: number, additionalInfo?: any): void {
+  logComponentRender(componentName: string, hookCount: number, additionalInfo?: any): void { // eslint-disable-line @typescript-eslint/no-unused-vars
     if (!this.isDebugging) return;
     
     const render: ComponentRender = {

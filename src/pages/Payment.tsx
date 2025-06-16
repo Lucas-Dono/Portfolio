@@ -1440,9 +1440,7 @@ const Payment: React.FC = () => {
   useEffect(() => {
     console.log('🔍 Verificando estado del pago, usuario actual:', user);
 
-    // Verificar si venimos de una redirección después de un pago
-    const status = new URLSearchParams(location.search).get('status');
-    const paymentId = new URLSearchParams(location.search).get('payment_id');
+    // Verificar si venimos de una redirección después de un pago (parámetros no usados actualmente)
 
     // Cargar los servicios del usuario al iniciar
     if (user && user.id) {
@@ -1826,7 +1824,7 @@ const Payment: React.FC = () => {
                     <OrderValue></OrderValue>
                   </OrderItem>
 
-                  {addOnsInfo.map((addon, index) => (
+                  {addOnsInfo.map((addon) => (
                     <OrderItem key={addon.id} style={{ paddingLeft: '1rem' }}>
                       <OrderLabel>{addon.name}</OrderLabel>
                       <OrderValue>${addon.price.toLocaleString()}</OrderValue>

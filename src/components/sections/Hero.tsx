@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { media } from '../../styles/breakpoints';
-import Button from '../ui/Button';
+
 import React from 'react';
 
 // Interfaz para HeroContainer

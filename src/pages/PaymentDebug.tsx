@@ -129,7 +129,7 @@ const PaymentDebug: React.FC = () => {
         
         setMpConfig({
           publicKey: typeof publicKey === 'string' ? publicKey.substring(0, 10) + '...' : 'No disponible',
-          sdkVersion: window.MercadoPago.version || 'Desconocida',
+          sdkVersion: (window.MercadoPago as any).version || 'Desconocida',
           origin: window.location.origin,
           env: import.meta.env.MODE || 'development'
         });
@@ -147,7 +147,7 @@ const PaymentDebug: React.FC = () => {
     
     if (typeof window.MercadoPago === 'function') {
       setTestResult(`✅ SDK cargado correctamente.
-Versión: ${window.MercadoPago.version || 'Desconocida'}
+Versión: ${(window.MercadoPago as any).version || 'Desconocida'}
 Objeto: ${Object.keys(window.MercadoPago.prototype || {}).join(', ')}`);
     } else {
       setTestResult('❌ El SDK de MercadoPago no está disponible en window.MercadoPago');

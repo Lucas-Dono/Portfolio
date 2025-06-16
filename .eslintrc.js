@@ -1,0 +1,8 @@
+module.exports = {
+  extends: [
+    '@typescript-eslint/recommended'
+  ],
+  rules: {
+    '@typescript-eslint/no-unused-vars': 'off'
+  }
+}; 
