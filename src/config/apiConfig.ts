@@ -14,11 +14,9 @@ export const getApiBaseUrl = (): string => {
 
         // Si no hay variable de entorno, construir la URL desde la ubicación actual
         if (typeof window !== 'undefined') {
-            const { protocol, hostname, port } = window.location;
-            // En producción, no incluir puerto si es el puerto estándar (80 para HTTP, 443 para HTTPS)
-            const isStandardPort = (protocol === 'https:' && port === '443') || (protocol === 'http:' && port === '80');
-            const portPart = isStandardPort || !port ? '' : `:${port}`;
-            const apiBaseUrl = `${protocol}//${hostname}${portPart}/api`;
+            const { protocol, hostname } = window.location;
+            // En producción, usar el mismo dominio con el path /api
+            const apiBaseUrl = `${protocol}//${hostname}/api`;
             console.log('Construyendo URL de API desde window.location:', apiBaseUrl);
             return apiBaseUrl;
         }

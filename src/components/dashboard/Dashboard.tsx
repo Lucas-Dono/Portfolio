@@ -301,6 +301,7 @@ const Card = styled.div`
   padding: 1rem;
   overflow: auto;
   height: 100%;
+  width: 100%;
   
   &:hover {
     box-shadow: none;
@@ -311,6 +312,7 @@ const MainCard = styled(Card)`
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
   overflow: auto;
 `;
 
@@ -641,13 +643,21 @@ const AssistantInfo = styled.div`
   h3 {
     margin: 0;
     font-size: 1.1rem;
-  font-weight: 600;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
   }
   
   p {
     margin: 0;
     font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
   }
 `;
 
@@ -1791,12 +1801,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
   // Estado para el progreso del proyecto con hitos
   const [progress, setProgress] = useState<ProgressData>({
-    percentage: 30,
-    stage: 'Desarrollo en curso',
-    nextTask: 'Configuración del diseño responsivo',
+    percentage: 0,
+    stage: 'Sin proyecto activo',
+    nextTask: 'Selecciona un servicio para comenzar',
     milestones: [
-      { id: 'design', name: 'Diseño', completed: true },
-      { id: 'content', name: 'Contenido', completed: true },
+      { id: 'design', name: 'Diseño', completed: false },
+      { id: 'content', name: 'Contenido', completed: false },
       { id: 'responsive', name: 'Responsive', completed: false },
       { id: 'domain', name: 'Dominio', completed: false },
       { id: 'launch', name: 'Lanzamiento', completed: false }
@@ -1943,15 +1953,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
         if (user && isMounted) {
           setUserFullName(user.name);
-          const hasProjects = true;
-          setHasActiveProjects(hasProjects);
-          const firstLogin = localStorage.getItem('firstLogin') !== 'false';
-          setIsFirstLogin(firstLogin);
-
-          if (hasProjects && isMounted) {
-            // Cargar datos del proyecto será manejado por loadProjectData definida más abajo
-            // await loadProjectData();
-          }
+          // Intentar cargar los datos del proyecto desde la API
+          await loadProjectData();
         }
       } catch (error) {
         console.error('Error al cargar datos del usuario:', error);
@@ -2245,33 +2248,43 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
       // En modo desarrollo, usar siempre datos de prueba para evitar errores de API
       if (isDevelopment) {
-        console.log("🔧 Modo desarrollo: Usando datos de prueba para el dashboard");
+        console.log("🔧 Modo desarrollo: Verificando datos guardados o usando valores por defecto");
         
-        // Marcar como que tiene proyectos activos para propósitos de desarrollo
-        setHasActiveProjects(true);
-
-        // Datos de prueba para desarrollo
-        setPreviewImages([
-          {
-            id: 1,
-            url: 'https://placehold.co/600x400/00FFFF/1e1e1e?text=Home+Page',
-            title: 'Página de inicio',
-            description: 'Vista principal de la página de inicio'
-          },
-          {
-            id: 2,
-            url: 'https://placehold.co/600x400/FF00FF/1e1e1e?text=About+Page',
-            title: 'Página Sobre Nosotros',
-            description: 'Información sobre la empresa y servicios'
-          },
-          {
-            id: 3,
-            url: 'https://placehold.co/600x400/00A0FF/1e1e1e?text=Services+Page',
-            title: 'Página de Servicios',
-            description: 'Listado de servicios ofrecidos'
+        // Verificar si hay datos de usuario guardados en localStorage
+        const savedUserData = localStorage.getItem('user_dashboard_data');
+        
+        if (savedUserData) {
+          try {
+            // Intentar usar datos guardados previamente
+            const userData = JSON.parse(savedUserData);
+            console.log('🔄 Usando datos guardados del usuario:', userData);
+            
+            if (userData.hasActiveProjects) {
+              setHasActiveProjects(true);
+              
+              if (userData.previewImages && userData.previewImages.length > 0) {
+                setPreviewImages(userData.previewImages);
+              } else {
+                setPreviewImages([]);
+              }
+            } else {
+              // No hay proyectos activos
+              setHasActiveProjects(false);
+              setPreviewImages([]);
+            }
+          } catch (error) {
+            console.error('Error al parsear datos guardados:', error);
+            setHasActiveProjects(false);
+            setPreviewImages([]);
           }
-        ]);
+        } else {
+          // No hay datos guardados, usar valores por defecto
+          console.log('🔄 No hay datos guardados, mostrando sin proyectos activos');
+                    setHasActiveProjects(false);
+          setPreviewImages([]);
+        }
 
+        // Si no hay proyectos activos o no hay datos guardados, usar datos de prueba mínimos
         setActiveSites([
           {
             id: 'site-1',
@@ -2406,17 +2419,37 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
               businessType: mainService.businessType
             });
 
-            // Actualizar el progreso del proyecto
+            // Actualizar el progreso del proyecto con los datos reales del servicio
+            const serviceProgress = mainService.progress !== undefined ? mainService.progress : 0;
+            console.log(`📊 Progreso del servicio ${mainService.id}: ${serviceProgress}%`);
+            
+            // Determinar el estado de los hitos basado en el progreso
+            const designCompleted = serviceProgress >= 20;
+            const contentCompleted = serviceProgress >= 40;
+            const responsiveCompleted = serviceProgress >= 60;
+            const domainCompleted = serviceProgress >= 80;
+            const launchCompleted = serviceProgress >= 100;
+            
             setProgress({
-              percentage: mainService.progress !== undefined ? mainService.progress : 30,
-              stage: mainService.stage || 'Desarrollo en curso',
-              nextTask: mainService.nextTask || 'Configuración del diseño responsivo',
+              percentage: serviceProgress,
+              stage: mainService.stage || (
+                serviceProgress >= 80 ? 'Etapa final' :
+                serviceProgress >= 60 ? 'Desarrollo avanzado' :
+                serviceProgress >= 40 ? 'Desarrollo en curso' :
+                serviceProgress >= 20 ? 'Diseño completado' : 'Fase inicial'
+              ),
+              nextTask: mainService.nextTask || (
+                serviceProgress >= 80 ? 'Preparación para lanzamiento' :
+                serviceProgress >= 60 ? 'Configuración de dominio' :
+                serviceProgress >= 40 ? 'Adaptación responsive' :
+                serviceProgress >= 20 ? 'Integración de contenido' : 'Diseño de interfaz'
+              ),
               milestones: mainService.milestones || [
-                { id: 'design', name: 'Diseño', completed: true },
-                { id: 'content', name: 'Contenido', completed: true },
-                { id: 'responsive', name: 'Responsive', completed: false },
-                { id: 'domain', name: 'Dominio', completed: false },
-                { id: 'launch', name: 'Lanzamiento', completed: false }
+                { id: 'design', name: 'Diseño', completed: designCompleted },
+                { id: 'content', name: 'Contenido', completed: contentCompleted },
+                { id: 'responsive', name: 'Responsive', completed: responsiveCompleted },
+                { id: 'domain', name: 'Dominio', completed: domainCompleted },
+                { id: 'launch', name: 'Lanzamiento', completed: launchCompleted }
               ]
             });
 
@@ -3092,7 +3125,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
   // Componente para la sección de sitios activos
   const renderActiveSites = () => (
-    <Card>
+    <Card style={{ width: '100%', height: '100%', overflow: 'auto' }}>
       {activeSites.length > 0 ? (
         <SitesContainer>
           {activeSites.map(site => (
@@ -3197,13 +3230,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
   // Renderizar componente de estado del proyecto
   const renderProjectStatus = () => (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      padding: windowSize.width <= 1024 ? '0' : '1rem',
-      height: windowSize.width <= 1024 ? 'auto' : '100%',
-      minHeight: windowSize.width <= 1024 ? '400px' : 'auto'
-    }}>
+    <Card style={{ width: '100%', height: '100%', overflow: 'auto' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        padding: windowSize.width <= 1024 ? '0' : '0.5rem',
+        height: '100%',
+        width: '100%'
+      }}>
       <h3 style={{ margin: '0 0 1rem 0', color: '#f5f5f5', fontSize: '1.2rem', fontWeight: '600' }}>
         {projectInfo.name}
       </h3>
@@ -3275,131 +3309,83 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         )}
       </ProgressContainer>
     </div>
+    </Card>
   );
 
   // Renderizar asistente virtual
   const renderAssistantChat = () => {
-    // No crear referencias dentro del renderizado, usar las definidas al inicio del componente
-    // Definir chatContent fuera de cualquier condición
-    const chatContent = (
-      <>
-        <ChatHeader>
-          <AssistantAvatar>🤖</AssistantAvatar>
-          <AssistantInfo>
-            <h3>Chloe</h3>
-            <p>Asistente Virtual</p>
-          </AssistantInfo>
-          <MinimizeButton
-            onClick={() => {
-              setIsChatMinimized(true);
-              setIsFullscreenChat(false);
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </MinimizeButton>
-        </ChatHeader>
-
-        <MessagesContainer>
-          {messages.map((msg, index) => (
-            <MessageBubble
-              key={index}
-              $isUser={msg.role === 'user'}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {msg.content}
-              </ReactMarkdown>
-            </MessageBubble>
-          ))}
-          <div ref={messagesEndRef} />
-        </MessagesContainer>
-
-        <QuickReplies>
-          {quickReplies.map((reply, index) => (
-            <QuickReply
-              key={index}
-              onClick={() => handleQuickReply(reply)}
-            >
-              {reply}
-            </QuickReply>
-          ))}
-        </QuickReplies>
-
-        <InputContainer onSubmit={handleSubmit}>
-          <ChatInput
-            type="text"
-            placeholder="Escribe un mensaje..."
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onClick={() => setIsChatMinimized(false)}
-          />
-          <SendButton
-            type="submit"
-            disabled={!inputMessage.trim()}
-          >
-            <SendIcon />
-          </SendButton>
-        </InputContainer>
-      </>
-    );
-
-    // Definir el contenido de pantalla completa fuera de cualquier condición
-    const fullScreenContent = (
-      <FullScreenChatContainer
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ duration: 0.3 }}
-      >
-        {chatContent}
-      </FullScreenChatContainer>
-    );
-
-    // Definir el chat minimizado fuera de cualquier condición
-    const minimizedChat = (
-      <MinimizedChat
-        onClick={() => {
-          setIsChatMinimized(false);
-          if (window.innerWidth <= 768) {
-            setIsFullscreenChat(true);
-          }
-        }}
-        initial={{ y: '80%' }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <AssistantAvatar>🤖</AssistantAvatar>
-        <AssistantInfo>
-          <h3>Chloe</h3>
-          <p>Haz clic para continuar la conversación</p>
-        </AssistantInfo>
-      </MinimizedChat>
-    );
-
-    // Renderizar el contenido apropiado basado en el estado
-    const renderContent = () => {
-      if (isChatMinimized) {
-        return minimizedChat;
-      } else {
-        return (
-          <>
-            {chatContent}
-            {isFullscreenChat && fullScreenContent}
-          </>
-        );
-      }
-    };
-
     return (
-      <MainCard>
+      <Card>
         <ChatContainer ref={chatContainerRef}>
-          {renderContent()}
+          <ChatHeader>
+            <AssistantAvatar>
+              <span>C</span>
+            </AssistantAvatar>
+            <AssistantInfo>
+              <h3 style={{ minWidth: '200px' }}>Asistente Virtual</h3>
+              <p style={{ minWidth: '200px' }}>Siempre disponible para ayudarte</p>
+            </AssistantInfo>
+            <MinimizeButton onClick={() => setIsChatMinimized(true)}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="4 14 10 14 10 20"></polyline>
+                <polyline points="20 10 14 10 14 4"></polyline>
+                <line x1="14" y1="10" x2="21" y2="3"></line>
+                <line x1="3" y1="21" x2="10" y2="14"></line>
+              </svg>
+            </MinimizeButton>
+          </ChatHeader>
+          
+          <MessagesContainer>
+            {messages.map((msg, index) => (
+              <MessageBubble
+                key={index}
+                $isUser={msg.role === 'user'}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({ node, ...props }) => <p style={{ margin: 0 }} {...props} />,
+                    a: ({ node, ...props }) => (
+                      <a style={{ color: '#00d2ff', textDecoration: 'underline' }} {...props} />
+                    ),
+                  }}
+                >
+                  {msg.content}
+                </ReactMarkdown>
+              </MessageBubble>
+            ))}
+            <div ref={messagesEndRef} />
+          </MessagesContainer>
+          
+          <div>
+            <QuickReplies>
+              {quickReplies.map((reply, index) => (
+                <QuickReply
+                  key={index}
+                  onClick={() => handleQuickReply(reply)}
+                >
+                  {reply}
+                </QuickReply>
+              ))}
+            </QuickReplies>
+            
+            <InputContainer onSubmit={handleSubmit}>
+              <ChatInput
+                type="text"
+                placeholder="Escribe un mensaje..."
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+              />
+              <SendButton type="submit" disabled={!inputMessage.trim()}>
+                <SendIcon />
+              </SendButton>
+            </InputContainer>
+          </div>
         </ChatContainer>
-      </MainCard>
+      </Card>
     );
   };
 

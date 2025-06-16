@@ -15,13 +15,14 @@ import RevealGrid from './components/ui/RevealGrid';
 import { AnimatePresence } from 'framer-motion';
 import GithubCallback from './pages/GithubCallback';
 import { isAuthenticated as checkAuthentication, initializeAuthStorage } from '../src/services/auth';
+import { API_BASE_URL } from './config/apiConfig';
 
 // Importaciones perezosas para mejorar performance
 const Chat = lazy(() => import('./components/Chat'));
 // Importación perezosa del juego
 const RetroGameModal = lazy(() => import('./components/game/RetroGameModal'));
 // Importación perezosa del dashboard con manejo de errores
-const Dashboard = lazy(() => import('./components/dashboard/Dashboard')
+const DashboardComponent = lazy(() => import('./components/dashboard/Dashboard')
   .catch(error => {
     console.error('Error al cargar el componente Dashboard:', error);
     // Devolver un componente de fallback simple
@@ -58,28 +59,20 @@ const Dashboard = lazy(() => import('./components/dashboard/Dashboard')
     };
   })
 );
-// Importación perezosa del panel de administración
+
+// Alias para los componentes importados perezosamente
+const Dashboard = DashboardComponent;
 const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
-// Importación perezosa de la página de login de administradores
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
-// Importaciones perezosas de las nuevas páginas
 const Register = lazy(() => import('./pages/Register'));
 const Payment = lazy(() => import('./pages/Payment'));
-// Importar Login
 const Login = lazy(() => import('./pages/Login'));
-// Importar la página de éxito de pago
 const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
-// Importar la página de error de pago
 const PaymentFailure = lazy(() => import('./pages/PaymentFailure'));
-// Importar la página de pago pendiente
 const PaymentPending = lazy(() => import('./pages/PaymentPending'));
-// Importar componente de debugging para error 310
 const Error310TestComponent = lazy(() => import('./components/debug/Error310TestComponent'));
-// Importar la página de depuración de MercadoPago
 const PaymentDebug = lazy(() => import('./pages/PaymentDebug'));
-// Importar página de 404
-const NotFoundPage = lazy(() => import('./pages/NotFound'));
-// Importar página de términos y condiciones
+const NotFound = lazy(() => import('./pages/NotFound'));
 const Terms = lazy(() => import('./pages/Terms'));
 
 // Lista de secciones disponibles en el sitio (debe coincidir con los IDs en el DOM)
@@ -771,7 +764,7 @@ const AppRoutes = () => {
       {/* Ruta para página 404 */}
       <Route path="*" element={
         <Suspense fallback={<div>Cargando...</div>}>
-          <NotFoundPage />
+          <NotFound />
         </Suspense>
       } />
     </Routes>

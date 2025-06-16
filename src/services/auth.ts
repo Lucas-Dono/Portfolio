@@ -970,10 +970,16 @@ export const getCurrentUser = async (): Promise<AuthUser> => {
       throw new Error('Token inválido o expirado');
     }
 
+    // Determinar si debemos usar rutas relativas
+    const useRelativeApi = window.sessionStorage.getItem('use_relative_api') === 'true';
+    const apiUrl = useRelativeApi ? '/api/auth/me' : `${API_BASE_URL}/auth/me`;
+    
+    console.log('🔄 Obteniendo datos de usuario desde:', apiUrl);
+
     // Función para hacer la petición con reintentos
     const fetchWithRetry = async (retries = 2, delay = 1000): Promise<Response> => {
       try {
-        const response = await fetch(getApiUrl('/auth/me'), {
+        const response = await fetch(apiUrl, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
