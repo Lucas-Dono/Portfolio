@@ -119,10 +119,11 @@ loadTokensFromFile();
 setInterval(cleanExpiredTokens, 5 * 60 * 1000);
 
 // Función para generar un token JWT
-const generateToken = (userId, provider = 'email') => {
+const generateToken = (userId, provider = 'email', role = 'user') => {
   return jwt.sign({
     userId,
-    provider
+    provider,
+    role
   }, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN
   });
@@ -321,6 +322,21 @@ export const login = async (req, res) => {
 export const getMe = async (req, res) => {
   try {
     const userId = req.user.userId;
+
+    // Caso especial para el usuario admin virtual
+    if (userId === 'admin-user') {
+      return res.json({
+        success: true,
+        user: {
+          id: 'admin-user',
+          name: 'Administrador',
+          email: process.env.Email || 'admin@circuitprompt.com.ar',
+          provider: 'admin',
+          avatar: null,
+          role: 'admin'
+        }
+      });
+    }
 
     // Si base de datos está deshabilitada, buscar en memoria
     if (DISABLE_DB) {
