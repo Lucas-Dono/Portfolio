@@ -526,8 +526,8 @@ export const requestTwoFactorAuth = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Se ha enviado un código de verificación',
-      twoFactorToken
+      message: 'Se ha enviado un enlace de verificación a tu correo electrónico',
+      requiresTwoFactor: true
     });
   } catch (error) {
     console.error('Error al solicitar verificación de dos pasos:', error);
