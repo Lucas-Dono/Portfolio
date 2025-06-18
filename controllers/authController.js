@@ -521,8 +521,16 @@ export const requestTwoFactorAuth = async (req, res) => {
 
     console.log(`💾 Token guardado: expira en 10 minutos (${new Date(Date.now() + 10 * 60 * 1000).toLocaleString()})`);
 
-    // Enviar token por correo electrónico (en un entorno real)
-    // await sendTwoFactorEmail(username, twoFactorToken);
+    // Enviar token por correo electrónico al administrador
+    const adminEmail = process.env.Email || 'lucasdono391@gmail.com';
+    console.log(`📧 Enviando correo de verificación a: ${adminEmail}`);
+    
+    const emailSent = await sendTwoFactorEmail(adminEmail, twoFactorToken);
+    
+    if (!emailSent) {
+      console.error('❌ Error al enviar correo de verificación');
+      // En producción, podrías querer fallar aquí, pero por ahora continuamos
+    }
 
     return res.status(200).json({
       success: true,
