@@ -318,7 +318,10 @@ const AdminLogin = () => {
         console.warn('Error al solicitar verificación. Intentando método de autenticación de desarrollo:', apiError);
 
         // Autenticación directa para desarrollo (solo en entorno de desarrollo)
-        if (import.meta.env.DEV && username === 'admin' && password === 'admin123') {
+        const adminUser = import.meta.env.VITE_ADMIN_USER || 'admin';
+        const adminPass = import.meta.env.VITE_ADMIN_PASS || 'admin123';
+        
+        if (import.meta.env.DEV && username === adminUser && password === adminPass) {
           console.log('Usando autenticación local para el administrador en desarrollo');
 
           // Token JWT falso para desarrollo

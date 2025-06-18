@@ -473,8 +473,11 @@ export const requestTwoFactorAuth = async (req, res) => {
     let userId = null;
 
     // Verificación en modo desarrollo o test
-    if (username === 'admin' && password === 'admin123') {
-      console.log('✅ Credenciales de desarrollo válidas para admin');
+    const adminUser = process.env.ADMIN_USER || 'admin';
+    const adminPass = process.env.ADMIN_PASS || 'admin123';
+    
+    if (username === adminUser && password === adminPass) {
+      console.log('✅ Credenciales de administrador válidas');
       credentialesValidas = true;
       userId = 'admin-user';
     }
