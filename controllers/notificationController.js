@@ -1,13 +1,13 @@
-const nodemailer = require('nodemailer');
-const fs = require('fs').promises;
-const path = require('path');
+import nodemailer from 'nodemailer';
+import fs from 'fs/promises';
+import path from 'path';
 
 // Sistema de notificaciones en memoria (en producción usar Redis)
 let notifications = [];
 let notificationId = 1;
 
 // Configuración de email (usando la existente del proyecto)
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: process.env.SMTP_PORT || 587,
   secure: false,
@@ -391,7 +391,7 @@ const notify = async (type, data) => {
   return await createNotification(type, data);
 };
 
-module.exports = {
+export {
   getNotifications,
   markAsRead,
   markAllAsRead,

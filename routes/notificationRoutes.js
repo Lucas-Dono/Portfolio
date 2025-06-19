@@ -1,16 +1,18 @@
-const express = require('express');
-const router = express.Router();
-const {
+import express from 'express';
+import {
   getNotifications,
   markAsRead,
   markAllAsRead,
   deleteNotification,
   getStats
-} = require('../controllers/notificationController');
-const { verifyAdmin } = require('../middleware/auth');
+} from '../controllers/notificationController.js';
+import { authenticateToken, isAdmin } from '../middleware/auth.js';
+
+const router = express.Router();
 
 // Aplicar middleware de autenticación admin a todas las rutas
-router.use(verifyAdmin);
+router.use(authenticateToken);
+router.use(isAdmin);
 
 // GET /api/notifications - Obtener notificaciones con filtros y paginación
 router.get('/', getNotifications);
@@ -27,4 +29,4 @@ router.put('/read-all', markAllAsRead);
 // DELETE /api/notifications/:id - Eliminar notificación específica
 router.delete('/:id', deleteNotification);
 
-module.exports = router; 
+export default router; 

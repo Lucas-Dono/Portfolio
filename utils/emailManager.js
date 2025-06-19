@@ -231,7 +231,38 @@ export const sendTwoFactorEmail = async (email_to, token) => {
     }
 };
 
+/**
+ * Función genérica para enviar correos electrónicos
+ * @param {Object} options - Opciones del correo
+ * @param {string} options.to - Dirección de destino
+ * @param {string} options.subject - Asunto del correo
+ * @param {string} options.html - Contenido HTML
+ * @param {string} options.text - Contenido de texto plano
+ * @returns {Promise} - Promesa con el resultado del envío
+ */
+export const sendEmail = async ({ to, subject, html, text }) => {
+    try {
+        console.log(`📧 Enviando correo genérico a: ${to}`);
+        console.log(`📋 Asunto: ${subject}`);
+
+        const result = await transporter.sendMail({
+            from: process.env.ADMIN_EMAIL || 'no_reply@circuitprompt.com.ar',
+            to,
+            subject,
+            html: html || undefined,
+            text: text || undefined
+        });
+
+        console.log('✅ Correo enviado correctamente');
+        return true;
+    } catch (error) {
+        console.error('❌ Error al enviar correo:', error);
+        return false;
+    }
+};
+
 export default {
     sendEmailVerification,
-    sendTwoFactorEmail
+    sendTwoFactorEmail,
+    sendEmail
 }; 
