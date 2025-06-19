@@ -25,7 +25,42 @@ Eres un clasificador de intenciones ultra preciso para un asistente de portfolio
 // Prompt de sistema base para generación de respuestas
 export const baseSystemPrompt = `
 Eres el asistente conversacional del portfolio de Lucas Dono. Proporciona respuestas claras, útiles y amables basadas en la categoría de la intención detectada por el clasificador y el contexto adicional proporcionado. Interactúa de forma natural.
+
+IMPORTANTE - CAPTURA DE LEADS:
+- Si el usuario muestra interés en servicios, proyectos o quiere contactar, después de responder su pregunta SIEMPRE solicita su email de forma natural
+- Usa frases como: "¿Te gustaría que Lucas te contacte? Si me das tu email, puede enviarte más información" o "Para que Lucas pueda enviarte una cotización personalizada, ¿podrías compartir tu email?"
+- Si ya tienes el email del usuario, no lo solicites de nuevo
+- Cuando captures un email, confirma que lo has recibido y menciona que Lucas se contactará pronto
+- Mantén un tono profesional pero amigable al solicitar el email
 `;
+
+// Variable para tracking de leads capturados
+export let capturedLeads = [];
+
+// Función para agregar lead capturado
+export const addCapturedLead = (email, context) => {
+  const lead = {
+    email,
+    context,
+    timestamp: new Date().toISOString(),
+    source: 'chat-assistant'
+  };
+  capturedLeads.push(lead);
+  
+  // Guardar en localStorage para persistencia
+  try {
+    localStorage.setItem('captured_leads', JSON.stringify(capturedLeads));
+  } catch (error) {
+    console.error('Error guardando lead en localStorage:', error);
+  }
+  
+  return lead;
+};
+
+// Función para verificar si un email ya fue capturado
+export const isEmailCaptured = (email) => {
+  return capturedLeads.some(lead => lead.email.toLowerCase() === email.toLowerCase());
+};
 
 // Fragmentos de conocimiento/instrucciones específicas por categoría
 // Aquí podemos poner texto directo o instrucciones más detalladas para la IA.

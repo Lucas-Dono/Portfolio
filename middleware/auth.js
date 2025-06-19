@@ -12,7 +12,7 @@ export const authenticateToken = (req, res, next) => {
         });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key', (err, user) => {
+    jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key', (err, decoded) => {
         if (err) {
             console.error('Error al verificar token:', err);
             return res.status(403).json({
@@ -21,7 +21,14 @@ export const authenticateToken = (req, res, next) => {
             });
         }
 
-        req.user = user;
+        // Normalizar la estructura del usuario para compatibilidad
+        req.user = {
+            id: decoded.userId || decoded.id,
+            userId: decoded.userId || decoded.id,
+            role: decoded.role || 'user',
+            isAdmin: decoded.role === 'admin',
+            provider: decoded.provider || 'email'
+        };
         next();
     });
 };
@@ -58,7 +65,7 @@ export const isOwnerOrAdmin = (req, res, next) => {
     const resourceUserId = req.params.userId || req.body.userId;
 
     // Permitir si es admin o si es el propietario del recurso
-    if (req.user.role === 'admin' || req.user.isAdmin === true || req.user.id === resourceUserId) {
+    if (req.user.role === 'admin' || req.user.isAdmin === true || req.user.id === resourceUserId || req.user.userId === resourceUserId) {
         next();
     } else {
         return res.status(403).json({

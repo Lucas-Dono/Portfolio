@@ -11,7 +11,9 @@ import {
   verifyEmail,
   verifyLoginTwoFactor,
   updateUserTwoFactorSettings,
-  getTokensStatus
+  getTokensStatus,
+  guestCheckout,
+  captureLeadFromChat
 } from '../controllers/authController.js';
 
 const router = express.Router();
@@ -24,6 +26,12 @@ router.post('/github', githubAuth);
 router.get('/me', authMiddleware, getMe);
 router.get('/verify-email/:token', verifyEmail);
 router.get('/verify-login/:token', verifyLoginTwoFactor);
+
+// Ruta para checkout como invitado
+router.post('/guest-checkout', guestCheckout);
+
+// Ruta para captura de leads del chat
+router.post('/leads', captureLeadFromChat);
 
 // Rutas para verificación de dos pasos del admin
 router.post('/admin/request-verification', requestTwoFactorAuth);

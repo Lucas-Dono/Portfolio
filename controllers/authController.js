@@ -766,4 +766,369 @@ export const getTokensStatus = async (req, res) => {
     message: 'Sistema de tokens simplificado activo',
     tokensCount: twoFactorTokens.size
   });
+};
+
+// Controller para captura de leads del chat
+export const captureLeadFromChat = async (req, res) => {
+  try {
+    const { email, context, timestamp, source } = req.body;
+
+    // Validar datos requeridos
+    if (!email || !context) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email y contexto son requeridos'
+      });
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Formato de email inválido'
+      });
+    }
+
+    // Crear registro del lead
+    const leadData = {
+      email: email.toLowerCase(),
+      context: context.substring(0, 500), // Limitar contexto
+      timestamp: timestamp || new Date().toISOString(),
+      source: source || 'chat-assistant',
+      ip: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('user-agent') || 'unknown'
+    };
+
+    // Log para auditoría
+    console.log('📧 Lead capturado desde chat:', {
+      email: leadData.email,
+      source: leadData.source,
+      ip: leadData.ip,
+      timestamp: leadData.timestamp
+    });
+
+    // TODO: Aquí podrías guardar en base de datos
+    // Por ahora solo logueamos y confirmamos recepción
+    
+    // Crear notificación inteligente para el admin
+    try {
+      const { notify } = require('./notificationController');
+      await notify('NEW_LEAD', {
+        email: leadData.email,
+        name: null, // No tenemos nombre desde el chat
+        source: leadData.source,
+        page: 'Chat Assistant',
+        context: leadData.context,
+        ip: leadData.ip
+      });
+    } catch (notificationError) {
+      console.error('Error creando notificación de lead:', notificationError);
+    }
+
+    // Iniciar secuencia de nurturing automáticamente
+    try {
+      await fetch(`${process.env.API_BASE_URL || 'http://localhost:5000'}/api/email-sequences/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: leadData.email,
+          sequenceType: 'lead-nurturing',
+          userData: { source: 'chat', context: leadData.context }
+        })
+      });
+      console.log('📧 Secuencia de nurturing iniciada para:', leadData.email);
+    } catch (error) {
+      console.error('Error iniciando secuencia de nurturing:', error);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Lead capturado exitosamente',
+      leadId: leadData.timestamp // Usar timestamp como ID temporal
+    });
+
+  } catch (error) {
+    console.error('Error capturando lead:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+};
+
+// Controller para checkout como invitado
+export const guestCheckout = async (req, res) => {
+  try {
+    const { 
+      email, 
+      firstName, 
+      lastName, 
+      phone, 
+      serviceId,
+      userAgent,
+      deviceFingerprint 
+    } = req.body;
+
+    // Validar datos requeridos
+    if (!email || !firstName || !lastName || !phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'Todos los campos son requeridos'
+      });
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Formato de email inválido'
+      });
+    }
+
+    // Obtener IP del cliente
+    const clientIp = req.headers['x-forwarded-for'] || 
+                     req.headers['x-real-ip'] || 
+                     req.connection.remoteAddress || 
+                     req.socket.remoteAddress ||
+                     (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+                     '127.0.0.1';
+
+    // Generar ID único para el usuario invitado
+    const guestUserId = `guest-${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
+    
+    // Crear datos del usuario temporal
+    const guestUser = {
+      id: guestUserId,
+      email: email.toLowerCase().trim(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phone: phone.trim(),
+      provider: 'guest',
+      role: 'guest',
+      isGuest: true,
+      isTemporary: true,
+      createdAt: new Date(),
+      lastLogin: new Date(),
+      emailVerified: false,
+      metadata: {
+        serviceId,
+        userAgent,
+        deviceFingerprint,
+        ipAddress: clientIp,
+        source: 'guest-checkout'
+      }
+    };
+
+    // Si base de datos está deshabilitada, usar almacenamiento en memoria
+    if (DISABLE_DB) {
+      // Verificar si el email ya existe como usuario registrado
+      const existingUser = memoryUsers.find(u => u.email === email.toLowerCase().trim() && !u.isGuest);
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          error: 'Este email ya está registrado. Por favor, inicia sesión.',
+          shouldLogin: true
+        });
+      }
+
+      // Verificar si ya existe un usuario invitado con este email en la sesión actual
+      const existingGuest = memoryUsers.find(u => u.email === email.toLowerCase().trim() && u.isGuest);
+      if (existingGuest) {
+        // Actualizar datos del invitado existente
+        Object.assign(existingGuest, {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          phone: phone.trim(),
+          lastLogin: new Date(),
+          metadata: {
+            ...existingGuest.metadata,
+            serviceId,
+            userAgent,
+            deviceFingerprint,
+            ipAddress: clientIp,
+            updatedAt: new Date()
+          }
+        });
+
+        console.log('✅ Usuario invitado actualizado:', existingGuest.email);
+        
+        // Generar token JWT para el invitado
+        const token = generateToken(existingGuest.id, 'guest', 'guest');
+
+        return res.status(200).json({
+          success: true,
+          message: 'Usuario invitado actualizado correctamente',
+          user: {
+            id: existingGuest.id,
+            email: existingGuest.email,
+            name: `${existingGuest.firstName} ${existingGuest.lastName}`,
+            firstName: existingGuest.firstName,
+            lastName: existingGuest.lastName,
+            phone: existingGuest.phone,
+            provider: existingGuest.provider,
+            role: existingGuest.role,
+            isGuest: true
+          },
+          token,
+          isNewUser: false
+        });
+      }
+
+      // Crear nuevo usuario invitado
+      memoryUsers.push(guestUser);
+      console.log('✅ Nuevo usuario invitado creado:', guestUser.email);
+
+      // Iniciar secuencia de onboarding para nuevos clientes
+      try {
+        await fetch(`${process.env.API_BASE_URL || 'http://localhost:5000'}/api/email-sequences/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: guestUser.email,
+            sequenceType: 'onboarding',
+            userData: { 
+              name: `${guestUser.firstName} ${guestUser.lastName}`,
+              serviceId: guestUser.metadata.serviceId,
+              source: 'guest-checkout'
+            }
+          })
+        });
+        console.log('📧 Secuencia de onboarding iniciada para:', guestUser.email);
+      } catch (error) {
+        console.error('Error iniciando secuencia de onboarding:', error);
+      }
+    } else {
+      // Lógica para base de datos (implementar cuando sea necesario)
+      try {
+        // Verificar si el email ya existe como usuario registrado
+        const existingUser = await UserSql.findByEmail(email.toLowerCase().trim());
+        if (existingUser && !existingUser.isGuest) {
+          return res.status(409).json({
+            success: false,
+            error: 'Este email ya está registrado. Por favor, inicia sesión.',
+            shouldLogin: true
+          });
+        }
+
+        // Si existe un usuario invitado, actualizar sus datos
+        if (existingUser && existingUser.isGuest) {
+          await UserSql.update(existingUser.id, {
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            phone: phone.trim(),
+            lastLogin: new Date(),
+            metadata: JSON.stringify({
+              ...JSON.parse(existingUser.metadata || '{}'),
+              serviceId,
+              userAgent,
+              deviceFingerprint,
+              ipAddress: clientIp,
+              updatedAt: new Date()
+            })
+          });
+
+          console.log('✅ Usuario invitado actualizado en BD:', existingUser.email);
+          
+          // Generar token JWT para el invitado
+          const token = generateToken(existingUser.id, 'guest', 'guest');
+
+          return res.status(200).json({
+            success: true,
+            message: 'Usuario invitado actualizado correctamente',
+            user: {
+              id: existingUser.id,
+              email: existingUser.email,
+              name: `${firstName.trim()} ${lastName.trim()}`,
+              firstName: firstName.trim(),
+              lastName: lastName.trim(),
+              phone: phone.trim(),
+              provider: 'guest',
+              role: 'guest',
+              isGuest: true
+            },
+            token,
+            isNewUser: false
+          });
+        }
+
+        // Crear nuevo usuario invitado en la base de datos
+        const newGuestUser = await UserSql.create({
+          ...guestUser,
+          metadata: JSON.stringify(guestUser.metadata)
+        });
+
+        console.log('✅ Nuevo usuario invitado creado en BD:', newGuestUser.email);
+        guestUser.id = newGuestUser.id;
+
+        // Iniciar secuencia de onboarding para nuevos clientes
+        try {
+          await fetch(`${process.env.API_BASE_URL || 'http://localhost:5000'}/api/email-sequences/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: guestUser.email,
+              sequenceType: 'onboarding',
+              userData: { 
+                name: `${guestUser.firstName} ${guestUser.lastName}`,
+                serviceId: guestUser.metadata.serviceId,
+                source: 'guest-checkout'
+              }
+            })
+          });
+          console.log('📧 Secuencia de onboarding iniciada para:', guestUser.email);
+        } catch (error) {
+          console.error('Error iniciando secuencia de onboarding:', error);
+        }
+      } catch (dbError) {
+        console.error('Error en base de datos, usando modo memoria:', dbError);
+        // Fallback a memoria si hay error en BD
+        memoryUsers.push(guestUser);
+      }
+    }
+
+    // Generar token JWT para el invitado
+    const token = generateToken(guestUser.id, 'guest', 'guest');
+
+    // Log de seguridad
+    console.log(`🔐 Checkout como invitado iniciado:`, {
+      userId: guestUser.id,
+      email: guestUser.email,
+      ip: clientIp,
+      userAgent: userAgent?.substring(0, 100) + '...',
+      serviceId,
+      timestamp: new Date().toISOString()
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Usuario invitado creado correctamente',
+      user: {
+        id: guestUser.id,
+        email: guestUser.email,
+        name: `${guestUser.firstName} ${guestUser.lastName}`,
+        firstName: guestUser.firstName,
+        lastName: guestUser.lastName,
+        phone: guestUser.phone,
+        provider: guestUser.provider,
+        role: guestUser.role,
+        isGuest: true
+      },
+      token,
+      isNewUser: true,
+      securityInfo: {
+        deviceFingerprint: deviceFingerprint?.substring(0, 8) + '...',
+        ipAddress: clientIp.substring(0, clientIp.lastIndexOf('.')) + '.xxx',
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Error en guestCheckout:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
 }; 

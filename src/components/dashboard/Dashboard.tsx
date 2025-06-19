@@ -12,6 +12,7 @@ import { enableReactError310Debugging, reactErrorDebugger } from '../../utils/re
 // Importar componentes de configuración
 import SecuritySettings from './SecuritySettings';
 import RefundRequest from './RefundRequest';
+import QuotationForm from '../QuotationForm';
 import {
   SectionContainer,
   SectionHeader,
@@ -1494,7 +1495,10 @@ const NavButtonButton = styled.button`
 `;
 
 // Componente para mostrar cuando no hay proyectos activos (movido fuera de Dashboard)
-const NoProjectsContent = ({ onNavigateToServices }: { onNavigateToServices: () => void }) => { // eslint-disable-line @typescript-eslint/no-unused-vars
+const NoProjectsContent = ({ onNavigateToServices, onOpenQuotation }: { 
+  onNavigateToServices: () => void; 
+  onOpenQuotation: () => void; 
+}) => {
   return (
   <Card style={{ textAlign: 'center', padding: '3rem 2rem' }}>
     <div style={{ marginBottom: '2rem' }}>
@@ -1510,6 +1514,59 @@ const NoProjectsContent = ({ onNavigateToServices }: { onNavigateToServices: () 
       Todavía no has adquirido ninguno de nuestros servicios. Explora nuestras opciones
       de desarrollo web y encuentra la solución perfecta para tu presencia online.
     </p>
+    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+      <button
+        onClick={onOpenQuotation}
+        style={{
+          background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+          border: 'none',
+          borderRadius: '10px',
+          color: '#fff',
+          fontSize: '16px',
+          fontWeight: '600',
+          padding: '12px 24px',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}
+        onMouseEnter={(e) => {
+          (e.target as HTMLElement).style.transform = 'translateY(-2px)';
+          (e.target as HTMLElement).style.boxShadow = '0 10px 25px rgba(79, 172, 254, 0.3)';
+        }}
+        onMouseLeave={(e) => {
+          (e.target as HTMLElement).style.transform = 'translateY(0)';
+          (e.target as HTMLElement).style.boxShadow = 'none';
+        }}
+      >
+        💰 Cotización Inteligente
+      </button>
+      <button
+        onClick={onNavigateToServices}
+        style={{
+          background: 'rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '10px',
+          color: '#fff',
+          fontSize: '16px',
+          fontWeight: '600',
+          padding: '12px 24px',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease'
+        }}
+        onMouseEnter={(e) => {
+          (e.target as HTMLElement).style.background = 'rgba(255, 255, 255, 0.15)';
+          (e.target as HTMLElement).style.transform = 'translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          (e.target as HTMLElement).style.background = 'rgba(255, 255, 255, 0.1)';
+          (e.target as HTMLElement).style.transform = 'translateY(0)';
+        }}
+      >
+        Ver Servicios
+      </button>
+    </div>
   </Card>
   );
 };
@@ -1872,7 +1929,15 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   const [rating, setRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  
+  // Estado para formulario de cotizaciones
+  const [showQuotationForm, setShowQuotationForm] = useState(false);
+  const [userContextForQuotation, setUserContextForQuotation] = useState<any>(null);
   const [hasRated, setHasRated] = useState(false);
+  
+  // Estados para Chloe proactiva
+  const [proactiveMessageCount, setProactiveMessageCount] = useState(0);
+  const [lastUserActivity, setLastUserActivity] = useState(Date.now());
 
   // Estados para manejar el arrastre y redimensionamiento
   const [isDragging, setIsDragging] = useState(false);
@@ -2068,6 +2133,59 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       }
     }
   }, [progress.percentage, hasActiveProjects, hasRated, showRatingModal, selectedSiteId]);
+
+  // 10. Efecto para Chloe proactiva con usuarios sin proyectos
+  useEffect(() => {
+    if (!hasActiveProjects && !isChatMinimized && proactiveMessageCount < 3) {
+      const proactiveMessages = [
+        {
+          delay: 30000, // 30 segundos
+          message: "👋 ¿Necesitas ayuda para comenzar tu proyecto? Puedo contarte sobre nuestros servicios de desarrollo web más populares."
+        },
+        {
+          delay: 90000, // 1.5 minutos
+          message: "💡 ¿Te gustaría ver algunos ejemplos de sitios web que hemos creado? Tengo casos de éxito que podrían inspirarte."
+        },
+        {
+          delay: 180000, // 3 minutos
+          message: "🚀 ¿Qué tipo de presencia online necesitas? Landing page, tienda online, portfolio... Puedo ayudarte a elegir la mejor opción para tu negocio."
+        }
+      ];
+
+      const currentMessage = proactiveMessages[proactiveMessageCount];
+      if (currentMessage) {
+        const timer = setTimeout(() => {
+          const timeSinceLastActivity = Date.now() - lastUserActivity;
+          // Solo mostrar mensaje si el usuario ha estado inactivo
+          if (timeSinceLastActivity >= 25000) { // 25 segundos de inactividad
+            addMessage('assistant', currentMessage.message);
+            setProactiveMessageCount(prev => prev + 1);
+          }
+        }, currentMessage.delay);
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [hasActiveProjects, isChatMinimized, proactiveMessageCount, lastUserActivity]);
+
+  // 11. Efecto para resetear actividad del usuario
+  useEffect(() => {
+    const handleUserActivity = () => {
+      setLastUserActivity(Date.now());
+    };
+
+    // Escuchar eventos de actividad del usuario
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+      document.addEventListener(event, handleUserActivity, true);
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleUserActivity, true);
+      });
+    };
+  }, []);
 
   // ===== FUNCIONES AUXILIARES =====
   // Función para determinar el tipo de dispositivo basado en el tamaño de pantalla
@@ -3432,7 +3550,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
             }}>Estado del Proyecto</span>
           </div>
           <div style={{ height: 'auto', overflow: 'visible', padding: '0 0.75rem' }}>
-            {hasActiveProjects ? renderProjectStatus() : <NoProjectsContent onNavigateToServices={navigateToServices} />}
+            {hasActiveProjects ? renderProjectStatus() : <NoProjectsContent onNavigateToServices={navigateToServices} onOpenQuotation={openQuotationForm} />}
           </div>
         </div>
 
@@ -3699,6 +3817,25 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
     }, 300);
   };
 
+  // Función para abrir formulario de cotizaciones
+  const openQuotationForm = async () => {
+    try {
+      // Cargar contexto del usuario si está disponible
+      const userId = localStorage.getItem('chat_user_id');
+      if (userId) {
+        const response = await fetch(`/api/ai/context/${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setUserContextForQuotation(data.context);
+        }
+      }
+      setShowQuotationForm(true);
+    } catch (error) {
+      console.error('Error cargando contexto para cotización:', error);
+      setShowQuotationForm(true);
+    }
+  };
+
 
 
   // Función para enviar la valoración
@@ -3880,7 +4017,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
                     <circle cx="15" cy="19" r="1" />
                   </svg>
                 </DragHandle>
-                {hasActiveProjects ? renderProjectStatus() : <NoProjectsContent onNavigateToServices={navigateToServices} />}
+                {hasActiveProjects ? renderProjectStatus() : <NoProjectsContent onNavigateToServices={navigateToServices} onOpenQuotation={openQuotationForm} />}
               </DraggableItem>
 
               <DraggableItem key="preview">
@@ -4064,6 +4201,13 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           setShowRatingModal(false);
           localStorage.setItem(`rated_${selectedSiteId || 'default'}`, 'skipped');
         }}
+      />
+
+      {/* Modal de cotización */}
+      <QuotationForm
+        isOpen={showQuotationForm}
+        onClose={() => setShowQuotationForm(false)}
+        userContext={userContextForQuotation}
       />
     </DashboardContainer>
   );

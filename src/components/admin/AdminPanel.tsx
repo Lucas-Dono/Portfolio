@@ -8,6 +8,8 @@ import PreciosAdmin from './PreciosAdmin';
 import AdminRefunds from './AdminRefunds';
 import AdminRatings from './AdminRatings';
 import StockAdmin from './StockAdmin';
+import MetricsDashboard from './MetricsDashboard';
+import NotificationCenter from './NotificationCenter';
 
 // Interfaces para los datos
 interface Project {
@@ -394,7 +396,7 @@ const Tab = styled.button<{ active: boolean }>`
 
 // Componente principal
 const AdminPanel = () => {
-  const [activeTab, setActiveTab] = useState<'proyectos' | 'promociones' | 'precios' | 'reembolsos' | 'valoraciones' | 'stock'>('proyectos');
+  const [activeTab, setActiveTab] = useState<'proyectos' | 'promociones' | 'precios' | 'reembolsos' | 'valoraciones' | 'stock' | 'metricas' | 'notificaciones'>('proyectos');
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -704,6 +706,10 @@ const AdminPanel = () => {
         return <AdminRatings />;
       case 'stock':
         return <StockAdmin />;
+      case 'metricas':
+        return <MetricsDashboard />;
+      case 'notificaciones':
+        return <NotificationCenter />;
       default:
         return (
           <>
@@ -841,6 +847,18 @@ const AdminPanel = () => {
             onClick={() => setActiveTab('stock')}
           >
             Gestión de Stock
+          </Tab>
+          <Tab
+            active={activeTab === 'metricas'}
+            onClick={() => setActiveTab('metricas')}
+          >
+            📊 Métricas
+          </Tab>
+          <Tab
+            active={activeTab === 'notificaciones'}
+            onClick={() => setActiveTab('notificaciones')}
+          >
+            🔔 Notificaciones
           </Tab>
         </TabsContainer>
       </div>

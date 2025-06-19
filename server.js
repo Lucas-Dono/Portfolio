@@ -38,6 +38,18 @@ import preciosRoutes from './routes/preciosRoutes.js';
 import ratingsRoutes from './routes/ratingsRoutes.js';
 // Importar rutas de stock
 import stockRoutes from './routes/stockRoutes.js';
+// Importar rutas de analytics
+import analyticsRoutes from './routes/analyticsRoutes.js';
+// Importar rutas de contexto de IA
+import aiContextRoutes from './routes/aiContextRoutes.js';
+// Importar rutas de cotizaciones
+import quotationRoutes from './routes/quotationRoutes.js';
+// Importar rutas de email sequences
+import emailSequenceRoutes from './routes/emailSequenceRoutes.js';
+// Importar rutas de métricas
+import metricsRoutes from './routes/metricsRoutes.js';
+// Importar rutas de notificaciones
+import notificationRoutes from './routes/notificationRoutes.js';
 
 // Importar controladores de pago
 import { processPayment, createPreference, handleWebhook, processApiPayment } from './controllers/paymentController.js';
@@ -308,6 +320,24 @@ app.use('/api/ratings', ratingsRoutes);
 
 // Usar las rutas de stock
 app.use('/api/stock', stockRoutes);
+
+// Usar las rutas de analytics
+app.use('/api/analytics', analyticsRoutes);
+
+// Usar las rutas de contexto de IA
+app.use('/api/ai', aiContextRoutes);
+
+// Usar las rutas de cotizaciones
+app.use('/api/quotations', quotationRoutes);
+
+// Usar las rutas de email sequences
+app.use('/api/email-sequences', emailSequenceRoutes);
+
+// Usar las rutas de métricas
+app.use('/api/metrics', metricsRoutes);
+
+// Usar las rutas de notificaciones
+app.use('/api/notifications', notificationRoutes);
 
 // Rutas de administración
 app.use('/api/admin', (req, res, next) => {

@@ -3,6 +3,43 @@ import styled, { css } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+// Funciones para captura de leads (definidas localmente por ahora)
+const addCapturedLead = (email: string, context: string) => {
+  const lead = {
+    email,
+    context,
+    timestamp: new Date().toISOString(),
+    source: 'chat-assistant'
+  };
+  
+  // Guardar en localStorage
+  try {
+    const existingLeads = JSON.parse(localStorage.getItem('captured_leads') || '[]');
+    existingLeads.push(lead);
+    localStorage.setItem('captured_leads', JSON.stringify(existingLeads));
+    
+    // Enviar al backend
+    fetch('/api/auth/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lead)
+    }).catch(error => console.error('Error enviando lead al backend:', error));
+    
+  } catch (error) {
+    console.error('Error guardando lead:', error);
+  }
+  
+  return lead;
+};
+
+const isEmailCaptured = (email: string): boolean => {
+  try {
+    const existingLeads = JSON.parse(localStorage.getItem('captured_leads') || '[]');
+    return existingLeads.some((lead: any) => lead.email.toLowerCase() === email.toLowerCase());
+  } catch {
+    return false;
+  }
+};
 
 // --- Iconos SVG --- 
 const CloseIcon = () => (
@@ -459,11 +496,118 @@ const Chat = ({ isChatOpen, setIsChatOpen, setOpenProject, onNavigate }: ChatPro
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Estados para memoria contextual
+  const [userContext, setUserContext] = useState<any>(null);
+  const [userId] = useState(() => {
+    // Generar o recuperar userId único para esta sesión
+    let id = localStorage.getItem('chat_user_id');
+    if (!id) {
+      id = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('chat_user_id', id);
+    }
+    return id;
+  });
 
   // Scroll al último mensaje cuando se añade uno nuevo
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Cargar contexto del usuario al abrir el chat
+  useEffect(() => {
+    if (isChatOpen && userId && !userContext) {
+      loadUserContext();
+    }
+  }, [isChatOpen, userId]);
+
+  // Función para cargar contexto del usuario
+  const loadUserContext = async () => {
+    try {
+      const response = await fetch(`/api/ai/context/${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUserContext(data.context);
+        
+        // Si el usuario tiene historial, personalizar mensaje de bienvenida
+        if (data.context.conversationHistory.length > 0) {
+          const lastInteraction = new Date(data.context.lastInteraction);
+          const daysSince = Math.floor((Date.now() - lastInteraction.getTime()) / (1000 * 60 * 60 * 24));
+          
+          let welcomeMessage = "¡Hola de nuevo! 👋";
+          if (daysSince === 0) {
+            welcomeMessage += " Me alegra verte otra vez hoy.";
+          } else if (daysSince === 1) {
+            welcomeMessage += " Me alegra verte después de ayer.";
+          } else if (daysSince < 7) {
+            welcomeMessage += ` Me alegra verte después de ${daysSince} días.`;
+          } else {
+            welcomeMessage += " ¡Cuánto tiempo sin verte!";
+          }
+          
+          // Agregar contexto personalizado si existe
+          if (data.context.personalizedData.businessType) {
+            welcomeMessage += ` Recuerdo que estás interesado en ${data.context.personalizedData.businessType}.`;
+          }
+          
+          welcomeMessage += " ¿En qué puedo ayudarte hoy?";
+          
+          // Actualizar mensaje inicial
+          setMessages([{ role: 'assistant', content: welcomeMessage }]);
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando contexto:', error);
+    }
+  };
+
+  // Función para actualizar contexto del usuario
+  const updateUserContext = async (message: string, response: string, additionalData?: any) => {
+    try {
+      await fetch(`/api/ai/context/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          response,
+          source: 'chat',
+          ...additionalData
+        })
+      });
+    } catch (error) {
+      console.error('Error actualizando contexto:', error);
+    }
+  };
+
+  // Función para extraer datos personalizados del mensaje
+  const extractPersonalizedData = (message: string) => {
+    const data: any = {};
+    const lowerMessage = message.toLowerCase();
+
+    // Detectar tipo de negocio
+    if (lowerMessage.includes('tienda') || lowerMessage.includes('ecommerce') || lowerMessage.includes('vender')) {
+      data.businessType = 'ecommerce';
+    } else if (lowerMessage.includes('portfolio') || lowerMessage.includes('personal') || lowerMessage.includes('mostrar trabajo')) {
+      data.businessType = 'portfolio';
+    } else if (lowerMessage.includes('empresa') || lowerMessage.includes('corporativo') || lowerMessage.includes('compañía')) {
+      data.businessType = 'empresa';
+    }
+
+    // Detectar presupuesto
+    const budgetMatch = lowerMessage.match(/(\d+)\s*(peso|dollar|€|euro)/);
+    if (budgetMatch) {
+      data.budget = parseInt(budgetMatch[1]);
+    }
+
+    // Detectar urgencia
+    if (lowerMessage.includes('urgente') || lowerMessage.includes('rápido') || lowerMessage.includes('pronto')) {
+      data.urgency = 'high';
+    } else if (lowerMessage.includes('tranquilo') || lowerMessage.includes('sin prisa')) {
+      data.urgency = 'low';
+    }
+
+    return data;
+  };
 
   // Función para ejecutar el comando (redirección a proyecto o navegación)
   const executeCommand = (command: string) => {
@@ -503,6 +647,31 @@ const Chat = ({ isChatOpen, setIsChatOpen, setOpenProject, onNavigate }: ChatPro
     return message.replace(/{[^}]*}/g, '').trim();
   };
 
+  // Función para detectar y capturar emails en mensajes
+  const detectAndCaptureEmail = (message: string, context: string) => {
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const emails = message.match(emailRegex);
+    
+    if (emails && emails.length > 0) {
+      const email = emails[0]; // Tomar el primer email encontrado
+      if (!isEmailCaptured(email)) {
+        addCapturedLead(email, context);
+        console.log('✅ Lead capturado:', email, 'Contexto:', context);
+        
+        // Agregar mensaje de confirmación del asistente
+        setTimeout(() => {
+          setMessages((prev) => [...prev, { 
+            role: 'assistant', 
+            content: `¡Perfecto! He guardado tu email: ${email}. Lucas se contactará contigo pronto para brindarte más información personalizada. ¿Hay algo más en lo que pueda ayudarte mientras tanto?` 
+          }]);
+        }, 500);
+        
+        return true;
+      }
+    }
+    return false;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading) return;
@@ -516,18 +685,35 @@ const Chat = ({ isChatOpen, setIsChatOpen, setOpenProject, onNavigate }: ChatPro
     setInputMessage('');
     setIsLoading(true);
 
+    // Detectar email en el mensaje del usuario
+    const conversationContext = messages.slice(-3).map(msg => msg.content).join(' ');
+    detectAndCaptureEmail(messageText, conversationContext);
+
     try {
-      // Enviar mensaje al backend para clasificación y generación
+      // Enviar mensaje al backend para clasificación y generación con contexto
       const conversationHistory = updatedMessages.map(msg => msg.content);
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: messageText, history: conversationHistory })
+        body: JSON.stringify({ 
+          message: messageText, 
+          history: conversationHistory,
+          userContext: userContext // Incluir contexto del usuario
+        })
       });
       const data = await response.json();
       if (data.answer) {
         const assistantMessageObj: ChatMessage = { role: 'assistant', content: data.answer };
         setMessages((prev) => [...prev, assistantMessageObj]);
+        
+        // Actualizar contexto con la nueva conversación
+        await updateUserContext(messageText, data.answer);
+        
+        // Detectar y actualizar datos personalizados basados en la conversación
+        const personalizedData = extractPersonalizedData(messageText);
+        if (Object.keys(personalizedData).length > 0) {
+          await updateUserContext(messageText, data.answer, { personalizedData });
+        }
       } else {
         setMessages((prev) => [...prev, { role: 'assistant', content: 'Lo siento, no he podido procesar tu solicitud en este momento.' }]);
       }

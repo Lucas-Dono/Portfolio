@@ -101,6 +101,21 @@ export const processPayment = async (req, res) => {
       // Registrar el servicio
       const registeredService = await registerUserService(registrationData, req);
       console.log('✅ Servicio registrado después del pago:', registeredService.id);
+
+      // Crear notificación de pago exitoso
+      try {
+        const { notify } = require('./notificationController');
+        await notify('PAYMENT_SUCCESS', {
+          email: email,
+          amount: servicePrice,
+          paymentMethod: formData.paymentMethodId || 'Mercado Pago',
+          transactionId: result?.id || 'N/A',
+          serviceType: serviceType || serviceId,
+          customerName: fullName || userName
+        });
+      } catch (notificationError) {
+        console.error('Error creando notificación de pago:', notificationError);
+      }
     } catch (registerError) {
       console.error('❌ Error al registrar el servicio:', registerError);
       // No fallar el proceso completo si el registro falla
