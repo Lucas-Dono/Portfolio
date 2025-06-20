@@ -81,7 +81,7 @@ const SECTIONS = ['inicio', 'services', 'projects', 'sobre-nosotros', 'contacto'
 // Componente contenedor con el contenido principal
 const MainContent = () => {
   const { scrollTo } = useScroll();
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(true); // Chat protagonista - abierto por defecto
   const [, setOpenProject] = useState<string | null>(null);
 
   // Estado para controlar la visibilidad del modal del juego
@@ -133,10 +133,10 @@ const MainContent = () => {
           <Chat
             isChatOpen={isChatOpen}
             setIsChatOpen={setIsChatOpen}
-            setOpenProject={setOpenProject}
-            onNavigate={handleNavigation}
           />
         </Suspense>
+
+
       </div>
 
       {/* Modal del juego */}

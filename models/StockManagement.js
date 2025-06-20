@@ -542,6 +542,11 @@ class StockManager {
         }
     }
 
+    // Obtener métricas del sistema (alias para compatibilidad)
+    static async getStockMetrics() {
+        return await this.getMetrics();
+    }
+
     // Obtener métricas del sistema
     static async getMetrics() {
         if (!sequelize) {

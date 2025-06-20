@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { media } from '../../styles/breakpoints';
-
 import React from 'react';
 
 // Interfaz para HeroContainer
@@ -103,13 +102,13 @@ const ButtonContainer = styled(motion.div)`
   }
 `;
 
-// Enlaces estilizados como botones
+// Botón principal con colores consistentes con servicios
 const PrimaryButtonLink = styled.a`
-  min-width: 180px;
-  padding: 0.8rem 1.8rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  border-radius: 8px;
+  min-width: 200px;
+  padding: 1rem 2rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-radius: 12px;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -117,51 +116,71 @@ const PrimaryButtonLink = styled.a`
   cursor: pointer;
   background: linear-gradient(135deg, #FF00FF 0%, #00DDFF 100%);
   color: white;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 6px 20px rgba(255, 0, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.9);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   letter-spacing: 0.5px;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
   
   &:hover {
-    filter: brightness(1.1);
-    box-shadow: 0 6px 20px rgba(255, 0, 255, 0.4);
     transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(255, 0, 255, 0.6);
+    background: linear-gradient(135deg, #FF33FF 0%, #33DDFF 100%);
+    
+    &::before {
+      left: 100%;
+    }
   }
   
   &:focus {
-    outline: 3px solid rgba(255, 255, 255, 0.6);
+    outline: 3px solid rgba(255, 0, 255, 0.6);
     outline-offset: 2px;
   }
   
   @media (max-width: 600px) {
     width: 100%;
-    max-width: 250px;
+    max-width: 280px;
+    font-size: 1.1rem;
   }
 `;
 
+// Botón secundario más sutil
 const SecondaryButtonLink = styled.a`
   min-width: 180px;
-  padding: 0.8rem 1.8rem;
+  padding: 1rem 1.8rem;
   font-size: 1.125rem;
   font-weight: 600;
-  border-radius: 8px;
+  border-radius: 12px;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  background: rgba(30, 30, 30, 0.9);
-  border: 2px solid #00FFFF;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   
   &:hover {
-    background: rgba(50, 50, 50, 0.95);
-    border-color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.6);
     color: white;
-    box-shadow: 0 4px 15px rgba(0, 255, 255, 0.7);
-    transform: translateY(-3px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
   }
   
   &:focus {
@@ -173,80 +192,88 @@ const SecondaryButtonLink = styled.a`
     width: 100%;
     max-width: 250px;
   }
-  
-  ${media.sm} {
-    display: none;
-  }
 `;
 
-// Indicador de scroll
+// Indicador de scroll mejorado
 const ScrollIndicator = styled(motion.div)`
   position: absolute;
-  bottom: 1.5rem;
+  bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
   z-index: 10;
+  cursor: pointer;
+  
+  &:hover {
+    color: #00FFFF;
+  }
 
   ${media.sm} {
-    display: none;
+    bottom: 1.5rem;
   }
 `;
 
 const ScrollText = styled.span`
   margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-    letter-spacing: 2px;
-  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 2px;
+  font-size: 0.9rem;
   font-weight: 600;
   
   ${media.xs} {
-    font-size: 1.1rem;
+    font-size: 0.8rem;
   }
 `;
 
 // Animaciones
 const fadeInUpVariants = {
   hidden: { opacity: 0, y: 50 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.8, ease: "easeOut" }
-    }
-  };
-  
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.8, ease: "easeOut" }
+  }
+};
+
 const staggerContainerVariants = {
   hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1, 
-      transition: { 
+  visible: { 
+    opacity: 1, 
+    transition: { 
       staggerChildren: 0.3,
       delayChildren: 0.2
-      }
+    }
+  }
+};
+
+const Hero: React.FC = () => {
+  const scrollToServices = () => {
+    const servicesSection = document.getElementById('services');
+    if (servicesSection) {
+      servicesSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
     }
   };
-  
-const Hero: React.FC = () => {
+
   return (
     <HeroContainer id="inicio">
       {/* Contenido principal */}
       <ContentWrapper
         variants={staggerContainerVariants}
-            initial="hidden"
-            animate="visible"
-          >
+        initial="hidden"
+        animate="visible"
+      >
         <MainTitle variants={fadeInUpVariants}>
-              Circuit Prompt
+          Circuit Prompt
         </MainTitle>
         <SubTitle variants={fadeInUpVariants}>
-              Desarrollo Full-Stack & Diseño UI/UX
+          Desarrollo Full-Stack & Diseño UI/UX
         </SubTitle>
         <ButtonContainer variants={fadeInUpVariants}>
           <motion.div
@@ -254,10 +281,14 @@ const Hero: React.FC = () => {
             whileTap={{ scale: 0.98 }}
           >
             <PrimaryButtonLink 
-              href="#proyectos"
-              aria-label="Explorar proyectos"
+              href="#services"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToServices();
+              }}
+              aria-label="Ver nuestros servicios"
             >
-              Explorar Proyectos
+              🚀 Ver Servicios
             </PrimaryButtonLink>
           </motion.div>
           
@@ -266,17 +297,27 @@ const Hero: React.FC = () => {
             whileTap={{ scale: 0.98 }}
           >
             <SecondaryButtonLink 
-              href="#contacto"
-              aria-label="Contactar"
+              href="#projects"
+              onClick={(e) => {
+                e.preventDefault();
+                const projectsSection = document.getElementById('projects');
+                if (projectsSection) {
+                  projectsSection.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                  });
+                }
+              }}
+              aria-label="Ver proyectos realizados"
             >
-              Contactar
+              📂 Proyectos
             </SecondaryButtonLink>
           </motion.div>
         </ButtonContainer>
       </ContentWrapper>
       
-      {/* Indicador de scroll */}
-        <ScrollIndicator
+      {/* Indicador de scroll mejorado */}
+      <ScrollIndicator
         initial={{ opacity: 1, y: 0 }}
         animate={{ 
           opacity: [1, 0.7, 1],
@@ -287,8 +328,9 @@ const Hero: React.FC = () => {
           repeat: Infinity,
           repeatType: "mirror"
         }}
-        >
-        <ScrollText>SCROLL</ScrollText>
+        onClick={scrollToServices}
+      >
+        <ScrollText>VER SERVICIOS</ScrollText>
         <svg 
           xmlns="http://www.w3.org/2000/svg" 
           width="24" 
@@ -304,7 +346,7 @@ const Hero: React.FC = () => {
           <path d="M12 5v14" />
           <path d="m19 12-7 7-7-7" />
         </svg>
-        </ScrollIndicator>
+      </ScrollIndicator>
     </HeroContainer>
   );
 };

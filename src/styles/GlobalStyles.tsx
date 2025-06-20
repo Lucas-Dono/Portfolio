@@ -66,23 +66,20 @@ export const GlobalStyles = createGlobalStyle<{ theme: CustomTheme }>`
   }
   
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    background-color: #050505;
-    color: var(--text-primary);
+    font-family: 'Inter', 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
     line-height: 1.6;
+    color: #FFFFFF;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
     overflow-x: hidden;
-    
-    /* Eliminar fondos adicionales para usar solo GlobalBackground */
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #FFFFFF;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
     font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: 1rem;
-    background: var(--gradient-primary); /* Usar variable definida */
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
   }
   
   h1 {
@@ -100,113 +97,142 @@ export const GlobalStyles = createGlobalStyle<{ theme: CustomTheme }>`
     font-size: 2rem;
   }
 
-  p {
-    margin-bottom: 1rem;
-    color: var(--text-secondary);
+  p, span, div {
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
   }
 
   a {
-    color: var(--secondary);
+    color: #4CAF50;
     text-decoration: none;
-    position: relative;
-    transition: all var(--transition-medium) ease; /* Usar variable de transición */
+    font-weight: 600;
     
     &:hover {
-      color: var(--primary);
-      text-shadow: var(--glow-primary); /* Usar variable definida */
+      color: #66BB6A;
+      text-decoration: underline;
     }
     
-    &::after {
-      content: '';
-      position: absolute;
-      width: 0;
-      height: 2px;
-      bottom: -2px;
-      left: 0;
-      background: var(--gradient-primary); /* Usar variable definida */
-      transition: width var(--transition-medium) ease; /* Usar variable de transición */
-    }
-    
-    &:hover::after {
-      width: 100%;
+    &:focus {
+      outline: 3px solid #4CAF50;
+      outline-offset: 2px;
     }
   }
 
   button {
-    font-family: var(--font-primary);
-    border: none;
+    font-family: inherit;
     cursor: pointer;
-    transition: all var(--transition-medium) ease; /* Usar variable de transición */
     
     &:focus {
-      outline: none;
+      outline: 3px solid #4CAF50;
+      outline-offset: 2px;
     }
   }
-  
-  /* Personalización de la barra de scroll */
-  ::-webkit-scrollbar {
-    width: 10px;
-  }
 
-  ::-webkit-scrollbar-track {
-    background: var(--surface); /* Usar variable definida */
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: linear-gradient(to bottom, var(--primary), var(--secondary)); /* Puede usar --gradient-primary si encaja */
-    border-radius: 5px;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(to bottom, var(--secondary), var(--accent)); /* Puede usar --gradient-secondary o --gradient-accent si encaja */
-  }
-  
-  /* Clases de utilidad global */
-  .container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem;
-  }
-  
-  .section {
-    padding: 100px 0;
-    position: relative;
-    }
+  input, textarea, select {
+    font-family: inherit;
     
-  .text-gradient {
-    background: var(--gradient-primary); /* Usar variable definida */
+    &:focus {
+      outline: 3px solid #4CAF50;
+      outline-offset: 2px;
+    }
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    font-weight: 700;
+    text-shadow: none;
+  }
+
+  .high-contrast-section {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+  }
+
+  .interactive-element {
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    }
+    
+    &:focus {
+      outline: 3px solid #4CAF50;
+      outline-offset: 2px;
+    }
+  }
+
+  .text-on-light {
+    color: #1a1a1a;
+    text-shadow: none;
+    font-weight: 600;
+  }
+
+  ::-webkit-scrollbar {
+    width: 12px;
   }
   
-  .glow-effect {
-    text-shadow: var(--glow-primary); /* Usar variable definida */
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
   }
   
-  .neon-border {
-    border: 1px solid var(--primary);
-    box-shadow: var(--glow-primary); /* Usar variable definida */
+  ::-webkit-scrollbar-thumb {
+    background: #4CAF50;
+    border-radius: 6px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
   }
   
-  /* Estilos para texto highlight en about section */
-  .text-paragraph.highlight {
-    font-size: 1.5rem;
-    color: var(--text-primary);
-    font-weight: 500;
-    line-height: 1.5;
-    margin-bottom: 2rem;
-    border-left: 4px solid var(--accent);
-    padding-left: 1.5rem;
-    background: rgba(0, 255, 255, 0.05);
-    border-radius: 0 8px 8px 0;
+  ::-webkit-scrollbar-thumb:hover {
+    background: #66BB6A;
   }
-  
-  /* Animación para el spinner de verificación */
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  @media (prefers-contrast: high) {
+    body {
+      background: #000000;
+      color: #FFFFFF;
+    }
+    
+    .gradient-text {
+      background: #FFFFFF;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    a {
+      color: #00FF00;
+    }
+    
+    button {
+      border: 2px solid #FFFFFF;
+    }
+  }
+
+  @media (max-width: 768px) {
+    body {
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    body {
+      font-size: 13px;
+    }
   }
 `;
 

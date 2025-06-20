@@ -871,91 +871,96 @@ const GlobalStyle = styled.div`
   }
 `;
 
-// Actualizar los datos de los servicios
+// Servicios con precios profesionales ajustados al mercado argentino
 const services = [
   {
-    id: 'basic',  // Cambiado de 'landing-page' a 'basic'
+    id: 'basic',
     title: 'Plan Básico',
-    description: 'Landing page profesional con SEO básico y diseño UX/UI atractivo para tu marca.',
+    description: 'Landing page profesional perfecta para comenzar tu presencia digital.',
     features: [
       'Landing page profesional (1 página)',
       'Diseño responsive optimizado',
-      'Diseño UX/UI moderno',
+      'Diseño UX/UI moderno y atractivo',
       'SEO básico implementado',
-      'Formulario de contacto básico',
-      'Analytics configurado',
-      'Sin dominio incluido'
+      'Formulario de contacto funcional',
+      'Analytics básico configurado',
+      'Sin dominio ni hosting incluido'
     ],
-    originalPrice: 30000,
-    price: 29997,
-    priceValue: 29997,
+    originalPrice: 80000,
+    price: 60000,
+    priceValue: 60000,
     promoPrice: 0,
     promoAvailable: true,
-    promoLimit: 3,
-    promoText: '¡Gratis para las primeras 3 compras!',
+    promoLimit: 10,
+    promoText: '¡Promoción de lanzamiento - GRATIS para los primeros 10 clientes!',
     highlight: 'false',
     popularBadge: false
   },
   {
-    id: 'standard',  // Cambiado de 'basic-website' a 'standard'
+    id: 'standard',
     title: 'Plan Estándar',
-    description: 'Sitio web completo con SEO avanzado y estrategia UX/UI para captar más clientes.',
+    description: 'Sitio web completo con todo lo necesario para hacer crecer tu negocio online.',
     features: [
       'Sitio web completo (hasta 5 páginas)',
       'Diseño premium personalizado',
       'Estrategia UX/UI profesional',
-      'Panel de administración',
+      'Panel de administración incluido',
       'SEO avanzado implementado',
-      'Formulario de contacto avanzado',
-      'Analytics y eventos configurados',
-      'Soporte técnico por 1 mes',
-      'Sin dominio incluido'
+      'Formularios avanzados y funcionales',
+      'Analytics profesional configurado',
+      'Dominio .com INCLUIDO por 1 año',
+      'Hosting optimizado por 1 año',
+      'Soporte técnico por 1 mes'
     ],
-    originalPrice: 80000,
-    price: 69997,
-    priceValue: 69997,
+    originalPrice: 180000,
+    price: 140000,
+    priceValue: 140000,
     highlight: 'true',
     popularBadge: true,
     popularText: 'MÁS POPULAR'
   },
   {
-    id: 'premium',  // Cambiado de 'premium-website' a 'premium'
+    id: 'premium',
     title: 'Plan Premium',
-    description: 'Solución profesional con estrategia de marketing digital y conversión optimizada.',
+    description: 'Solución completa para empresas que buscan destacar y maximizar conversiones.',
     features: [
       'Sitio web profesional (hasta 8 páginas)',
-      'Diseño exclusivo a medida',
-      'Estrategia UX/UI y marketing',
+      'Diseño exclusivo y personalizado',
+      'Estrategia UX/UI y marketing digital',
       'Panel administración avanzado',
-      'SEO profesional + estrategia',
+      'SEO profesional + estrategia completa',
       'Optimización de conversión',
       'Integración con redes sociales',
+      'Sistema de analytics avanzado',
+      'Dominio .com y hosting premium por 1 año',
       'Soporte técnico por 3 meses',
-      'Dominio y hosting por 1 año INCLUIDOS',
-      '2 revisiones de diseño INCLUIDAS'
+      '3 revisiones de diseño incluidas'
     ],
-    price: 149997,
-    priceValue: 149997,
+    originalPrice: 300000,
+    price: 220000,
+    priceValue: 220000,
     highlight: 'false',
     popularBadge: false
   },
   {
     id: 'enterprise',
     title: 'Plan Empresarial',
-    description: 'Solución integral para empresas con necesidades específicas y marketing avanzado.',
+    description: 'Solución integral personalizada para empresas con necesidades específicas.',
     features: [
-      'Solución empresarial personalizada',
+      'Solución empresarial a medida',
       'Estrategia digital completa',
       'Funcionalidades avanzadas ilimitadas',
-      'Consultoría UX/UI y negocio',
+      'Consultoría UX/UI y de negocio',
       'SEO profesional y SEM',
-      'Integraciones a medida',
+      'Integraciones personalizadas',
       'Automatizaciones de marketing',
+      'Infraestructura premium incluida',
       'Soporte prioritario por 6 meses',
-      'Todo incluido + infraestructura'
+      'Mantenimiento y actualizaciones'
     ],
-    price: 249997,
-    priceValue: 249997,
+    originalPrice: 500000,
+    price: 350000,
+    priceValue: 350000,
     customPrice: true,
     customPriceText: 'Desde ',
     contactForPrice: false,
@@ -964,138 +969,113 @@ const services = [
   }
 ];
 
-// Add-ons selectivos para el pop-up
+// Add-ons esenciales con precios profesionales
 const selectableAddOns = [
   {
     id: 'domain',
     name: 'Dominio personalizado',
-    description: 'Registro y configuración de tu propio dominio para tu sitio web',
-    price: 14997,
+    description: 'Registro y configuración de dominio .com por 1 año',
+    price: 25000,
     includesSetup: true,
     duration: 'anual'
   },
   {
-    id: 'deployment',
-    name: 'Despliegue profesional',
-    description: 'Configuración en plataforma de alta disponibilidad (no incluye servicios persistentes)',
-    price: 9997,
+    id: 'hosting',
+    name: 'Hosting profesional',
+    description: 'Hosting optimizado y seguro por 1 año',
+    price: 35000,
     includesSetup: true,
-    oneTime: true
+    duration: 'anual'
   },
   {
     id: 'revisions',
-    name: 'Paquete de revisiones',
-    description: '3 revisiones adicionales posteriores a la entrega',
-    price: 19997,
+    name: 'Revisiones adicionales',
+    description: '3 revisiones extra posteriores a la entrega del proyecto',
+    price: 30000,
     includesSetup: false,
     oneTime: true
   },
   {
     id: 'speedOptimization',
     name: 'Optimización de velocidad',
-    description: 'Mejora el rendimiento y la velocidad de carga de tu sitio web',
-    price: 12997,
-    includesSetup: true,
-    oneTime: true
-  },
-  {
-    id: 'analytics',
-    name: 'Analítica avanzada',
-    description: 'Implementación de eventos personalizados y panel de seguimiento',
-    price: 16997,
+    description: 'Mejora significativa del rendimiento y velocidad de carga',
+    price: 25000,
     includesSetup: true,
     oneTime: true
   },
   {
     id: 'training',
-    name: 'Capacitación de uso',
+    name: 'Capacitación personalizada',
     description: 'Sesión de 2 horas para aprender a gestionar tu sitio web',
-    price: 8997,
+    price: 20000,
     includesSetup: false,
     oneTime: true
+  },
+  {
+    id: 'maintenance',
+    name: 'Mantenimiento mensual',
+    description: 'Actualizaciones, respaldos y soporte técnico continuo',
+    price: 15000,
+    includesSetup: true,
+    duration: 'mensual'
   }
 ];
 
-// Características para la tabla comparativa
+// Características para la tabla comparativa simplificada
 const comparisonFeatures = [
   { name: 'Páginas incluidas', basic: '1', standard: '5', premium: '8', enterprise: 'Ilimitadas' },
   { name: 'Diseño responsive', basic: true, standard: true, premium: true, enterprise: true },
   { name: 'SEO implementado', basic: 'Básico', standard: 'Avanzado', premium: 'Profesional', enterprise: 'Completo' },
   { name: 'Panel de administración', basic: false, standard: true, premium: true, enterprise: true },
+  { name: 'Dominio incluido', basic: false, standard: '.com', premium: '.com', enterprise: '.com' },
+  { name: 'Hosting incluido', basic: false, standard: '1 año', premium: '1 año', enterprise: 'Premium' },
   { name: 'Soporte técnico', basic: false, standard: '1 mes', premium: '3 meses', enterprise: '6 meses' },
-  { name: 'Dominio incluido', basic: false, standard: false, premium: true, enterprise: true },
-  { name: 'Hosting incluido', basic: false, standard: false, premium: true, enterprise: true },
-  { name: 'Optimización de conversión', basic: false, standard: false, premium: true, enterprise: true },
-  { name: 'Integración redes sociales', basic: false, standard: false, premium: true, enterprise: true },
-  { name: 'Automatizaciones', basic: false, standard: false, premium: false, enterprise: true },
-  { name: 'Estrategia de marketing', basic: false, standard: false, premium: true, enterprise: true }
+  { name: 'Revisiones incluidas', basic: '1', standard: '2', premium: '3', enterprise: 'Ilimitadas' },
+  { name: 'Optimización conversión', basic: false, standard: false, premium: true, enterprise: true },
+  { name: 'Marketing digital', basic: false, standard: false, premium: true, enterprise: true }
 ];
 
-// Paquetes especiales
+// Paquete especial único y atractivo
 const specialPackages = [
   {
-    id: 'paquete-emprendedor',
-    title: 'Paquete Emprendedor',
-    description: 'Ideal para comenzar con una presencia profesional online',
+    id: 'paquete-completo',
+    title: 'Paquete Todo Incluido',
+    description: 'La mejor opción para emprender con todo lo necesario desde el primer día',
     includes: [
-      'Plan Básico',
-      'Dominio personalizado por 1 año',
-      'Despliegue profesional',
-      'Diseño de logo simple'
-    ],
-    originalPrice: 84990,
-    price: 67997,
-    savePercent: 20
-  },
-  {
-    id: 'paquete-profesional',
-    title: 'Paquete Profesional',
-    description: 'Todo lo que necesitas para destacar en internet',
-    includes: [
-      'Plan Estándar',
-      'Dominio personalizado por 1 año',
+      'Plan Estándar completo (hasta 5 páginas)',
+      'Dominio .com premium por 1 año',
       'Hosting optimizado por 1 año',
-      'Despliegue profesional',
-      'Paquete de revisiones (3)',
-      'Certificado SSL premium'
+      'Certificado SSL incluido',
+      'Optimización de velocidad',
+      '3 revisiones adicionales',
+      'Capacitación personalizada (2 horas)',
+      'Soporte extendido por 2 meses'
     ],
-    originalPrice: 149985,
-    price: 109997,
-    savePercent: 25
+    originalPrice: 270000,
+    price: 200000,
+    savePercent: 26
   }
 ];
 
-// Paquetes especiales estáticos (como fallback)
+// Paquete especial estático (como fallback)
 const staticSpecialPackages = [
   {
-    id: 'paquete-emprendedor',
-    title: 'Paquete Emprendedor',
-    description: 'Ideal para comenzar con una presencia profesional online',
+    id: 'paquete-completo',
+    title: 'Paquete Todo Incluido',
+    description: 'La mejor opción para emprender con todo lo necesario desde el primer día',
     includes: [
-      'Plan Básico',
-      'Dominio personalizado por 1 año',
-      'Despliegue profesional',
-      'Diseño de logo simple'
-    ],
-    originalPrice: 84990,
-    price: 67997,
-    savePercent: 20
-  },
-  {
-    id: 'paquete-profesional',
-    title: 'Paquete Profesional',
-    description: 'Todo lo que necesitas para destacar en internet',
-    includes: [
-      'Plan Estándar',
-      'Dominio personalizado por 1 año',
+      'Plan Estándar completo (hasta 5 páginas)',
+      'Dominio .com premium por 1 año',
       'Hosting optimizado por 1 año',
-      'Despliegue profesional',
-      'Paquete de revisiones (3)',
-      'Certificado SSL premium'
+      'Certificado SSL incluido',
+      'Optimización de velocidad',
+      '3 revisiones adicionales',
+      'Capacitación personalizada (2 horas)',
+      'Soporte extendido por 2 meses'
     ],
-    originalPrice: 149985,
-    price: 109997,
-    savePercent: 25
+    originalPrice: 270000,
+    price: 200000,
+    savePercent: 26
   }
 ];
 

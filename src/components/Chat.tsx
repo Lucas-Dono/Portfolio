@@ -112,755 +112,461 @@ const HeaderActions = styled.div`
 `;
 
 // Estilos cinematográficos para el chat
-const ChatContainer = styled(motion.div)`
+const ChatContainer = styled(motion.div)<{ isOpen: boolean }>`
   position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  z-index: 1050;
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: flex-end;
-  
-  @media (max-width: 768px) {
-    bottom: 1rem;
-    right: 1rem;
-  }
-`;
-
-const ChatWindow = styled(motion.div) <{ $isOpen: boolean; $isDarkMode: boolean; $isMaximized: boolean; children?: React.ReactNode }>`
-  width: 360px;
-  height: 500px;
-  background: ${props => props.$isDarkMode
-    ? 'rgba(15, 15, 15, 0.85)'
-    : 'rgba(250, 250, 250, 0.9)'};
-  border-radius: 16px;
-  box-shadow: ${props => props.$isDarkMode
-    ? '0 10px 40px rgba(0, 0, 0, 0.5)'
-    : '0 10px 30px rgba(0, 0, 0, 0.15)'};
-  display: flex;
-  flex-direction: column;
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  width: ${props => props.isOpen ? '400px' : '60px'};
+  height: ${props => props.isOpen ? '600px' : '60px'};
+  background: rgba(0, 0, 0, 0.95);
+  border-radius: ${props => props.isOpen ? '16px' : '50%'};
+  border: 2px solid #00FFFF;
+  box-shadow: ${props => props.isOpen 
+    ? '0 8px 32px rgba(0, 255, 255, 0.4), 0 0 0 4px rgba(0, 255, 255, 0.1)' 
+    : '0 8px 32px rgba(0, 255, 255, 0.3)'};
+  backdrop-filter: blur(20px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  margin-bottom: 1rem;
-  opacity: ${props => props.$isOpen ? 1 : 0};
-  transform: ${props => props.$isOpen ? 'translateY(0)' : 'translateY(50px)'};
-  transition: background-color 0.3s, border-color 0.3s;
-  pointer-events: ${props => props.$isOpen ? 'auto' : 'none'};
-  /* Optimiza transform y opacity para evitar parpadeos en la animación */
-  will-change: opacity, transform;
-  backface-visibility: hidden;
-  /* Maximizado */
-  ${props =>
-    props.$isMaximized &&
-    css`
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100vw;
-      height: 100vh;
-      border-radius: 0;
-      margin-bottom: 0;
-    `}
-
-  @media (max-width: 768px) {
-      width: calc(100vw - 2rem);
-      height: calc(100vh - 7rem);
-      bottom: 5rem;
-  }
-`;
-
-interface ChatHeaderProps {
-  $isDarkMode: boolean;
-  children?: React.ReactNode;
-}
-
-const ChatHeader = styled.div<ChatHeaderProps>`
-  padding: 0.8rem 1rem;
-  background: ${props => props.$isDarkMode
-    ? 'linear-gradient(135deg, rgba(255, 0, 255, 0.1) 0%, rgba(0, 255, 255, 0.1) 100%)'
-    : 'linear-gradient(135deg, rgba(230, 230, 250, 0.8) 0%, rgba(210, 240, 255, 0.8) 100%)'};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  flex-shrink: 0;
-`;
-
-interface HeaderTitleProps {
-  $isDarkMode: boolean;
-  children?: React.ReactNode;
-}
-
-const HeaderTitle = styled.div<HeaderTitleProps>`
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
   
-  h3 {
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0;
-    color: ${props => props.$isDarkMode ? '#fff' : '#333'};
-  }
-  
-  svg {
-    color: ${props => props.$isDarkMode ? '#00FFFF' : '#FF00FF'};
-    width: 20px;
-    height: 20px;
-  }
-`;
-
-// Interfaz para CloseButton si recibe $isDarkMode directamente
-interface CloseButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  $isDarkMode: boolean;
-}
-
-const CloseButton = styled(motion.button) <CloseButtonProps>`
-    background: none;
-    border: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  color: ${props => props.$isDarkMode ? '#aaa' : '#777'};
+  /* Efecto de pulso sutil cuando está abierto */
+  ${props => props.isOpen && css`
+    animation: subtlePulse 3s ease-in-out infinite;
     
-    &:hover {
-    background-color: ${props => props.$isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'};
-    color: ${props => props.$isDarkMode ? '#fff' : '#000'};
+    @keyframes subtlePulse {
+      0%, 100% { 
+        box-shadow: 0 8px 32px rgba(0, 255, 255, 0.4), 0 0 0 4px rgba(0, 255, 255, 0.1);
+      }
+      50% { 
+        box-shadow: 0 8px 32px rgba(0, 255, 255, 0.6), 0 0 0 6px rgba(0, 255, 255, 0.2);
+      }
     }
-
-  svg {
-    width: 18px;
-    height: 18px;
+  `}
+  
+  @media (max-width: 768px) {
+    width: ${props => props.isOpen ? 'calc(100vw - 20px)' : '60px'};
+    height: ${props => props.isOpen ? 'calc(100vh - 40px)' : '60px'};
+    bottom: 10px;
+    right: 10px;
+    border-radius: ${props => props.isOpen ? '12px' : '50%'};
   }
 `;
 
-// Botón para maximizar/restaurar
-const MaximizeButton = styled(motion.button) <CloseButtonProps>`
-  background: none;
+const ChatHeader = styled.div<{ isOpen: boolean }>`
+  display: ${props => props.isOpen ? 'flex' : 'none'};
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);
+  color: white;
+  font-weight: 600;
+  border-radius: 14px 14px 0 0;
+`;
+
+const ChatTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+`;
+
+const ChatToggle = styled.button<{ isOpen: boolean }>`
+  position: ${props => props.isOpen ? 'static' : 'absolute'};
+  top: ${props => props.isOpen ? 'auto' : '50%'};
+  left: ${props => props.isOpen ? 'auto' : '50%'};
+  transform: ${props => props.isOpen ? 'none' : 'translate(-50%, -50%)'};
+  width: ${props => props.isOpen ? '32px' : '60px'};
+  height: ${props => props.isOpen ? '32px' : '60px'};
   border: none;
-  width: 30px;
-  height: 30px;
+  background: ${props => props.isOpen ? 'rgba(255, 255, 255, 0.2)' : 'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)'};
+  color: white;
   border-radius: 50%;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  color: ${props => props.$isDarkMode ? '#aaa' : '#777'};
-  margin-right: 0.5rem;
-
+  font-size: ${props => props.isOpen ? '1.2rem' : '1.5rem'};
+  transition: all 0.3s ease;
+  
   &:hover {
-    background-color: ${props => props.$isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'};
-    color: ${props => props.$isDarkMode ? '#fff' : '#000'};
+    background: ${props => props.isOpen ? 'rgba(255, 255, 255, 0.3)' : 'linear-gradient(135deg, #FF33FF 0%, #33FFFF 100%)'};
+    transform: ${props => props.isOpen ? 'none' : 'translate(-50%, -50%) scale(1.1)'};
   }
-  svg { width: 18px; height: 18px; }
-`;
-
-interface NavButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  $isDarkMode?: boolean;
-  children?: React.ReactNode;
-}
-
-const NavigationButtons = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  justify-content: flex-start;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  flex-shrink: 0;
-`;
-
-const NavButton = styled(motion.button) <NavButtonProps>`
-  background: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  
-  &:hover, &:focus {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(255, 0, 255, 0.3);
-    filter: brightness(1.1);
-  }
-  
-  &:active {
-    transform: translateY(0);
-    filter: brightness(0.95);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  }
-`;
-
-interface MessagesContainerProps {
-  children?: React.ReactNode;
-  ref?: React.RefObject<HTMLDivElement | null>;
-}
-
-const MessagesContainer = styled.div<MessagesContainerProps>`
-  padding: 1rem;
-  flex-grow: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 4px;
-  }
-  &:hover::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.25);
-  }
-`;
-
-interface MessageBubbleProps {
-  $isUser?: boolean;
-  $isDarkMode: boolean;
-  children?: React.ReactNode;
-}
-
-const MessageBubble = styled(motion.div) <MessageBubbleProps>`
-  padding: 0.6rem 1rem;
-  border-radius: ${props => props.$isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};
-  max-width: 85%;
-  background: ${props =>
-    props.$isUser
-      ? 'linear-gradient(135deg, #FF00FF 0%, #00A0FF 100%)'
-      : props.$isDarkMode
-        ? 'rgba(255, 255, 255, 0.07)'
-        : '#e9eef2'};
-  align-self: ${props => props.$isUser ? 'flex-end' : 'flex-start'};
-  word-break: break-word;
-  color: ${props => props.$isUser ? '#fff' : props.$isDarkMode ? '#eee' : '#333'};
-  box-shadow: ${props => props.$isDarkMode
-    ? '0 2px 5px rgba(0, 0, 0, 0.3)'
-    : '0 2px 4px rgba(0, 0, 0, 0.08)'};
-  font-size: 0.95rem;
-  line-height: 1.5;
-  p { margin: 0; }
-`;
-
-interface InputContainerProps {
-  $isDarkMode: boolean;
-  children?: React.ReactNode;
-}
-
-const InputContainer = styled.form<InputContainerProps & { onSubmit: (e: React.FormEvent) => void }>`
-  padding: 0.8rem 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  background: ${props => props.$isDarkMode ? 'rgba(5, 5, 5, 0.7)' : 'rgba(245, 247, 250, 0.9)'};
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-`;
-
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  $isDarkMode?: boolean;
-}
-
-const Input = styled.input<InputProps>`
-  flex-grow: 1;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 0.7rem 1rem;
-  color: ${props => props.$isDarkMode ? '#eee' : '#333'};
-  font-family: 'Inter', sans-serif;
-  font-size: 0.95rem;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  outline: none;
   
   &:focus {
-    border-color: #00FFFF;
-    box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+    outline: 3px solid rgba(255, 255, 255, 0.6);
+    outline-offset: 2px;
   }
-  
-  &::placeholder {
-    color: rgba(255, 255, 255, 0.4);
-  }
-
-  ${props => !props.$isDarkMode && `
-    background: #fff;
-    border-color: #ccc;
-    color: #333;
-    &::placeholder {
-      color: #999;
-    }
-    &:focus {
-      border-color: #FF00FF;
-      box-shadow: 0 0 8px rgba(255, 0, 255, 0.3);
-  }
-  `}
 `;
 
-const SendButton = styled(motion.button)`
-  background: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);
+const ChatBody = styled.div<{ isOpen: boolean }>`
+  display: ${props => props.isOpen ? 'flex' : 'none'};
+  flex-direction: column;
+  height: calc(100% - 70px);
+  padding: 0;
+`;
+
+const MessagesContainer = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #00FFFF;
+    border-radius: 3px;
+  }
+`;
+
+const Message = styled(motion.div)<{ isUser: boolean }>`
+  align-self: ${props => props.isUser ? 'flex-end' : 'flex-start'};
+  max-width: 80%;
+  padding: 0.8rem 1rem;
+  border-radius: ${props => props.isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};
+  background: ${props => props.isUser 
+    ? 'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)' 
+    : 'rgba(255, 255, 255, 0.1)'};
+  color: white;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  backdrop-filter: blur(10px);
+  border: 1px solid ${props => props.isUser ? 'transparent' : 'rgba(255, 255, 255, 0.2)'};
+`;
+
+const InputContainer = styled.div`
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+`;
+
+const ChatInput = styled.textarea`
+  flex: 1;
+  padding: 0.8rem 1rem;
+  border: 2px solid rgba(0, 255, 255, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: none;
+  min-height: 44px;
+  max-height: 120px;
+  
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: #00FFFF;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  }
+`;
+
+const SendButton = styled.button`
+  width: 44px;
+  height: 44px;
   border: none;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  border-radius: 50%;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);
+  color: white;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  color: white;
-  transition: filter 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+  
   &:hover:not(:disabled) {
-    filter: brightness(1.1);
-    box-shadow: 0 4px 10px rgba(255, 0, 255, 0.3);
+    background: linear-gradient(135deg, #FF33FF 0%, #33FFFF 100%);
+    transform: translateY(-2px);
   }
   
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: none;
+  }
+  
+  &:focus {
+    outline: 3px solid rgba(0, 255, 255, 0.6);
+    outline-offset: 2px;
   }
 `;
 
-const FloatingButton = styled(motion.button)`
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);
-  border: none;
+const TypingIndicator = styled(motion.div)`
+  align-self: flex-start;
+  padding: 0.8rem 1rem;
+  border-radius: 16px 16px 16px 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  font-style: italic;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: white;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  svg {
-    width: 28px;
-    height: 28px;
-  }
-
-  &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 25px rgba(255, 0, 255, 0.4);
-  }
+  gap: 0.5rem;
 `;
 
-// Definimos la interfaz para cada mensaje
+const WelcomeMessage = styled(motion.div)`
+  padding: 1rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+`;
+
+// Interfaces
 interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
+  id: string;
+  text: string;
+  isUser: boolean;
+  timestamp: Date;
 }
 
 interface ChatProps {
-  isChatOpen: boolean;
-  setIsChatOpen: (open: boolean) => void;
-  // Prop para ejecutar la redirección o apertura de proyecto
-  setOpenProject: (projectId: string | null) => void;
-  // Prop para la navegación entre secciones
-  onNavigate?: (section: string) => void;
+  isChatOpen?: boolean;
+  setIsChatOpen?: (open: boolean) => void;
 }
 
-
-const Chat = ({ isChatOpen, setIsChatOpen, setOpenProject, onNavigate }: ChatProps) => {
-  const [isMaximized, setIsMaximized] = useState(false);
+// Componente principal del Chat
+const Chat: React.FC<ChatProps> = ({ isChatOpen = true, setIsChatOpen }) => {
+  const [isOpen, setIsOpen] = useState(false); // Inicia cerrado para hacer animación de apertura
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: "¡Hola! Soy el asistente virtual de Lucas. Puedo ayudarte a navegar por el portfolio, mostrarte proyectos o responder tus preguntas. ¿En qué puedo ayudarte hoy?" }
+    {
+      id: '1',
+      text: '¡Bienvenido a Circuit Prompt! 🚀\n\nSoy tu asistente personal y estoy aquí para ayudarte a:\n\n• 🎯 Encontrar el servicio perfecto para tu proyecto\n• 💰 Obtener cotizaciones personalizadas\n• 📂 Explorar nuestros proyectos anteriores\n• ❓ Resolver cualquier duda sobre desarrollo web\n\n¿En qué puedo ayudarte hoy?',
+      isUser: false,
+      timestamp: new Date()
+    }
   ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // Estados para memoria contextual
-  const [userContext, setUserContext] = useState<any>(null);
-  const [userId] = useState(() => {
-    // Generar o recuperar userId único para esta sesión
-    let id = localStorage.getItem('chat_user_id');
-    if (!id) {
-      id = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('chat_user_id', id);
-    }
-    return id;
-  });
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Scroll al último mensaje cuando se añade uno nuevo
+  // Animación de apertura automática al cargar la página
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Cargar contexto del usuario al abrir el chat
-  useEffect(() => {
-    if (isChatOpen && userId && !userContext) {
-      loadUserContext();
-    }
-  }, [isChatOpen, userId]);
-
-  // Función para cargar contexto del usuario
-  const loadUserContext = async () => {
-    try {
-      const response = await fetch(`/api/ai/context/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUserContext(data.context);
-        
-        // Si el usuario tiene historial, personalizar mensaje de bienvenida
-        if (data.context.conversationHistory.length > 0) {
-          const lastInteraction = new Date(data.context.lastInteraction);
-          const daysSince = Math.floor((Date.now() - lastInteraction.getTime()) / (1000 * 60 * 60 * 24));
-          
-          let welcomeMessage = "¡Hola de nuevo! 👋";
-          if (daysSince === 0) {
-            welcomeMessage += " Me alegra verte otra vez hoy.";
-          } else if (daysSince === 1) {
-            welcomeMessage += " Me alegra verte después de ayer.";
-          } else if (daysSince < 7) {
-            welcomeMessage += ` Me alegra verte después de ${daysSince} días.`;
-          } else {
-            welcomeMessage += " ¡Cuánto tiempo sin verte!";
-          }
-          
-          // Agregar contexto personalizado si existe
-          if (data.context.personalizedData.businessType) {
-            welcomeMessage += ` Recuerdo que estás interesado en ${data.context.personalizedData.businessType}.`;
-          }
-          
-          welcomeMessage += " ¿En qué puedo ayudarte hoy?";
-          
-          // Actualizar mensaje inicial
-          setMessages([{ role: 'assistant', content: welcomeMessage }]);
-        }
+    const timer = setTimeout(() => {
+      setIsOpen(true);
+      if (setIsChatOpen) {
+        setIsChatOpen(true);
       }
-    } catch (error) {
-      console.error('Error cargando contexto:', error);
+    }, 1500); // Abre automáticamente después de 1.5 segundos
+
+    return () => clearTimeout(timer);
+  }, []); // Solo se ejecuta una vez al montar el componente
+
+  // Sincronizar con props externas (solo si se cambia desde fuera)
+  useEffect(() => {
+    if (isChatOpen !== undefined) {
+      setIsOpen(isChatOpen);
     }
+  }, [isChatOpen]);
+
+  // Auto-scroll al final de los mensajes
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Función para actualizar contexto del usuario
-  const updateUserContext = async (message: string, response: string, additionalData?: any) => {
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping]);
+
+  // Manejar envío de mensajes
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isTyping) return;
+
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      text: inputValue.trim(),
+      isUser: true,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+    setIsTyping(true);
+
     try {
-      await fetch(`/api/ai/context/${userId}`, {
+      const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message,
-          response,
-          source: 'chat',
-          ...additionalData
+          message: inputValue.trim(),
+          context: 'quotation_assistant',
+          conversationHistory: messages.slice(-5) // Últimos 5 mensajes para contexto
         })
       });
-    } catch (error) {
-      console.error('Error actualizando contexto:', error);
-    }
-  };
 
-  // Función para extraer datos personalizados del mensaje
-  const extractPersonalizedData = (message: string) => {
-    const data: any = {};
-    const lowerMessage = message.toLowerCase();
-
-    // Detectar tipo de negocio
-    if (lowerMessage.includes('tienda') || lowerMessage.includes('ecommerce') || lowerMessage.includes('vender')) {
-      data.businessType = 'ecommerce';
-    } else if (lowerMessage.includes('portfolio') || lowerMessage.includes('personal') || lowerMessage.includes('mostrar trabajo')) {
-      data.businessType = 'portfolio';
-    } else if (lowerMessage.includes('empresa') || lowerMessage.includes('corporativo') || lowerMessage.includes('compañía')) {
-      data.businessType = 'empresa';
-    }
-
-    // Detectar presupuesto
-    const budgetMatch = lowerMessage.match(/(\d+)\s*(peso|dollar|€|euro)/);
-    if (budgetMatch) {
-      data.budget = parseInt(budgetMatch[1]);
-    }
-
-    // Detectar urgencia
-    if (lowerMessage.includes('urgente') || lowerMessage.includes('rápido') || lowerMessage.includes('pronto')) {
-      data.urgency = 'high';
-    } else if (lowerMessage.includes('tranquilo') || lowerMessage.includes('sin prisa')) {
-      data.urgency = 'low';
-    }
-
-    return data;
-  };
-
-  // Función para ejecutar el comando (redirección a proyecto o navegación)
-  const executeCommand = (command: string) => {
-    console.log("Ejecutando comando:", command);
-
-    // Comandos de redirección a proyectos
-    if (command === '{Tech-store}') {
-      setOpenProject('tech-store');
-    } else if (command === '{FreeVibes}') {
-      setOpenProject('youtube-music-player');
-    } else if (command === '{CV}') {
-      window.location.href = '/curriculum';
-    }
-    // Comandos de navegación
-    else if (command === '{Hero}' && onNavigate) {
-      onNavigate('hero');
-    } else if (command === '{About}' && onNavigate) {
-      onNavigate('about');
-    } else if (command === '{Projects}' && onNavigate) {
-      onNavigate('projects');
-    } else if (command === '{Contact}' && onNavigate) {
-      onNavigate('contact');
-    } else {
-      console.log("Comando no reconocido:", command);
-    }
-  };
-
-
-  // Función para limpiar el mensaje (eliminar los comandos) y ejecutar el comando
-  const cleanMessage = (message: string): string => {
-    const commandMatch = message.match(/{([^}]*)}/);
-    if (commandMatch) {
-      const command = commandMatch[0]; // Ej: "{FreeVibes}"
-      executeCommand(command);
-    }
-    // Eliminamos cualquier parte entre llaves y retornamos el mensaje limpio
-    return message.replace(/{[^}]*}/g, '').trim();
-  };
-
-  // Función para detectar y capturar emails en mensajes
-  const detectAndCaptureEmail = (message: string, context: string) => {
-    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-    const emails = message.match(emailRegex);
-    
-    if (emails && emails.length > 0) {
-      const email = emails[0]; // Tomar el primer email encontrado
-      if (!isEmailCaptured(email)) {
-        addCapturedLead(email, context);
-        console.log('✅ Lead capturado:', email, 'Contexto:', context);
-        
-        // Agregar mensaje de confirmación del asistente
-        setTimeout(() => {
-          setMessages((prev) => [...prev, { 
-            role: 'assistant', 
-            content: `¡Perfecto! He guardado tu email: ${email}. Lucas se contactará contigo pronto para brindarte más información personalizada. ¿Hay algo más en lo que pueda ayudarte mientras tanto?` 
-          }]);
-        }, 500);
-        
-        return true;
-      }
-    }
-    return false;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isLoading) return;
-    // Capturar el texto del mensaje antes de limpiar el input
-    const messageText = inputMessage.trim();
-    if (!messageText) return;
-    const userMessageObj: ChatMessage = { role: 'user', content: messageText };
-
-    const updatedMessages = [...messages, userMessageObj];
-    setMessages(updatedMessages);
-    setInputMessage('');
-    setIsLoading(true);
-
-    // Detectar email en el mensaje del usuario
-    const conversationContext = messages.slice(-3).map(msg => msg.content).join(' ');
-    detectAndCaptureEmail(messageText, conversationContext);
-
-    try {
-      // Enviar mensaje al backend para clasificación y generación con contexto
-      const conversationHistory = updatedMessages.map(msg => msg.content);
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: messageText, 
-          history: conversationHistory,
-          userContext: userContext // Incluir contexto del usuario
-        })
-      });
-      const data = await response.json();
-      if (data.answer) {
-        const assistantMessageObj: ChatMessage = { role: 'assistant', content: data.answer };
-        setMessages((prev) => [...prev, assistantMessageObj]);
-        
-        // Actualizar contexto con la nueva conversación
-        await updateUserContext(messageText, data.answer);
-        
-        // Detectar y actualizar datos personalizados basados en la conversación
-        const personalizedData = extractPersonalizedData(messageText);
-        if (Object.keys(personalizedData).length > 0) {
-          await updateUserContext(messageText, data.answer, { personalizedData });
-        }
+      if (response.ok) {
+        const data = await response.json();
+        const aiMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          text: data.response || 'Lo siento, no pude procesar tu mensaje. ¿Podrías intentar de nuevo?',
+          isUser: false,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, aiMessage]);
       } else {
-        setMessages((prev) => [...prev, { role: 'assistant', content: 'Lo siento, no he podido procesar tu solicitud en este momento.' }]);
+        throw new Error('Error en la respuesta del servidor');
       }
     } catch (error) {
-      console.error('Error al obtener la respuesta del bot:', error);
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'Lo siento, ha ocurrido un error. Por favor, intenta de nuevo más tarde.' }]);
+      console.error('Error enviando mensaje:', error);
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        text: 'Disculpa, hubo un problema técnico. Mientras tanto, puedes usar nuestro formulario de cotización o contactarnos directamente.',
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setIsLoading(false);
+      setIsTyping(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputMessage(e.target.value);
-  };
-
-  // Variantes para animaciones
-  const chatContainerVariants = {
-    hidden: { opacity: 0, y: 50 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
-    exit: { opacity: 0, y: 50, transition: { duration: 0.2, ease: 'easeIn' } }
-  };
-
-  const messageVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.3 }
+  // Manejar Enter para enviar
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
-  const handleNavButtonClick = (section: string) => {
-    if (onNavigate) {
-      onNavigate(section);
-      setIsChatOpen(false); // Cerrar chat al navegar
+  // Auto-resize del textarea
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+  };
+
+  // Manejar toggle del chat
+  const handleToggle = () => {
+    const newState = !isOpen;
+    setIsOpen(newState);
+    if (setIsChatOpen) {
+      setIsChatOpen(newState);
     }
   };
 
   return (
-    <ChatContainer>
-      <AnimatePresence mode="wait">
-        {isChatOpen ? (
-          <ChatWindow
-            key="chatwindow"
-            $isOpen={isChatOpen}
-            $isDarkMode={true}
-            $isMaximized={isMaximized}
-            variants={chatContainerVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-          >
-            <ChatHeader $isDarkMode={true}>
-              <HeaderTitle $isDarkMode={true}>
-                <SparkleIcon />
-                <h3>Asistente Virtual</h3>
-              </HeaderTitle>
-              <HeaderActions>
-                <MaximizeButton
-                  onClick={() => setIsMaximized(!isMaximized)}
-                  $isDarkMode={true}
-                  aria-label={isMaximized ? "Restaurar chat" : "Maximizar chat"}
-                >
-                  {isMaximized ? <MinimizeIcon /> : <MaximizeIcon />}
-                </MaximizeButton>
-                <CloseButton
-                  onClick={() => setIsChatOpen(false)}
-                  $isDarkMode={true}
-                  aria-label="Cerrar chat"
-                >
-                  <CloseIcon />
-                </CloseButton>
-              </HeaderActions>
-            </ChatHeader>
+    <ChatContainer
+      isOpen={isOpen}
+      initial={{ scale: 0.8, opacity: 0, y: 20 }}
+      animate={{ 
+        scale: 1, 
+        opacity: 1, 
+        y: 0,
+        transition: {
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
+          duration: 0.6
+        }
+      }}
+    >
+      {/* Header del chat */}
+      <ChatHeader isOpen={isOpen}>
+        <ChatTitle>
+          🤖 Asistente de Cotización
+        </ChatTitle>
+        <ChatToggle
+          isOpen={isOpen}
+          onClick={handleToggle}
+          aria-label={isOpen ? 'Cerrar chat' : 'Abrir chat'}
+        >
+          {isOpen ? '×' : '💬'}
+        </ChatToggle>
+      </ChatHeader>
 
-            {/* Botones de navegación rápida */}
-            <NavigationButtons>
-              <NavButton $isDarkMode={true} onClick={() => handleNavButtonClick('projects')}>Proyectos</NavButton>
-              <NavButton $isDarkMode={true} onClick={() => handleNavButtonClick('sobre-nosotros')}>Sobre Nosotros</NavButton>
-              <NavButton $isDarkMode={true} onClick={() => handleNavButtonClick('servicios')}>Servicios</NavButton>
-              <NavButton $isDarkMode={true} onClick={() => handleNavButtonClick('contacto')}>Contacto</NavButton>
-            </NavigationButtons>
+      {/* Botón toggle cuando está cerrado */}
+      {!isOpen && (
+        <ChatToggle
+          isOpen={isOpen}
+          onClick={handleToggle}
+          aria-label="Abrir chat"
+        >
+          💬
+        </ChatToggle>
+      )}
 
-            <MessagesContainer ref={messagesEndRef}>
-              {messages.map((msg, index) => (
-                <MessageBubble
-                  key={index}
-                  $isUser={msg.role === 'user'}
-                  $isDarkMode={true}
-                  variants={messageVariants}
-                  initial="hidden"
-                  animate="visible"
-                  layout
-                >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {cleanMessage(msg.content)}
-                  </ReactMarkdown>
-                </MessageBubble>
-              ))}
-              {isLoading && (
-                <MessageBubble $isDarkMode={true} $isUser={false} >
-                  <motion.div
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 1, repeat: Infinity }}>
-                    Escribiendo...
-                  </motion.div>
-                </MessageBubble>
-              )}
-              <div ref={messagesEndRef} />
-            </MessagesContainer>
+      {/* Cuerpo del chat */}
+      <ChatBody isOpen={isOpen}>
+        {/* Mensaje de bienvenida */}
+        <WelcomeMessage
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          💡 <strong>Tip:</strong> Cuéntame sobre tu proyecto y te ayudo a elegir el servicio perfecto
+        </WelcomeMessage>
 
-            <InputContainer $isDarkMode={true} onSubmit={handleSubmit}>
-              <Input
-                type="text"
-                placeholder="Escribe tu mensaje..."
-                value={inputMessage}
-                onChange={handleInputChange}
-                disabled={isLoading}
-                $isDarkMode={true}
-              />
-              <SendButton
-                type="submit"
-                disabled={!inputMessage.trim() || isLoading}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                aria-label="Enviar mensaje"
+        {/* Contenedor de mensajes */}
+        <MessagesContainer>
+          <AnimatePresence>
+            {messages.map((message) => (
+              <Message
+                key={message.id}
+                isUser={message.isUser}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
               >
-                <SendIcon />
-              </SendButton>
-            </InputContainer>
-          </ChatWindow>
-        ) : (
-          <FloatingButton
-            key="floatingbutton"
-            onClick={() => setIsChatOpen(true)}
-            variants={chatContainerVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            whileHover={{ scale: 1.05, rotate: 5 }}
-            whileTap={{ scale: 0.95 }}
-            aria-label="Abrir chat"
+                {message.text}
+              </Message>
+            ))}
+            
+            {/* Indicador de escritura */}
+            {isTyping && (
+              <TypingIndicator
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  ⚙️
+                </motion.div>
+                Escribiendo...
+              </TypingIndicator>
+            )}
+          </AnimatePresence>
+          <div ref={messagesEndRef} />
+        </MessagesContainer>
+
+        {/* Input para escribir mensajes */}
+        <InputContainer>
+          <ChatInput
+            ref={inputRef}
+            value={inputValue}
+            onChange={handleInputChange}
+            onKeyPress={handleKeyPress}
+            placeholder="Describe tu proyecto web ideal..."
+            disabled={isTyping}
+            rows={1}
+          />
+          <SendButton
+            onClick={handleSendMessage}
+            disabled={!inputValue.trim() || isTyping}
+            aria-label="Enviar mensaje"
           >
-            <ChatIcon />
-          </FloatingButton>
-        )}
-      </AnimatePresence>
+            {isTyping ? '⏳' : '🚀'}
+          </SendButton>
+        </InputContainer>
+      </ChatBody>
     </ChatContainer>
   );
 };

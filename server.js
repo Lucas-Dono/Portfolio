@@ -72,11 +72,25 @@ const openai = new OpenAI({
 
 const app = express();
 
+// Importar script de migraciones
+import runMigrations from './scripts/run-migration.js';
+
 // Llamamos a la inicialización de la base de datos PostgreSQL (Sequelize)
-connectDB().then(sequelizeInstance => {
+connectDB().then(async (sequelizeInstance) => {
   if (sequelizeInstance || process.env.DISABLE_DB === 'true' || process.env.ENABLE_FILE_FALLBACK === 'true') {
     console.log('✅ Inicialización de base de datos (PostgreSQL/Sequelize o fallback) completada.');
-    // Aquí podrías continuar con la configuración de la app que depende de la BD si es necesario
+    
+    // Ejecutar migraciones si la base de datos está disponible
+    if (sequelizeInstance && process.env.NODE_ENV === 'production') {
+      try {
+        console.log('🔄 Ejecutando migraciones de base de datos...');
+        await runMigrations();
+        console.log('✅ Migraciones completadas exitosamente');
+      } catch (error) {
+        console.error('❌ Error ejecutando migraciones:', error);
+        // No detener el servidor, continuar con fallback
+      }
+    }
   } else {
     console.error('❌ No se pudo inicializar la base de datos PostgreSQL y no hay modo fallback habilitado. El servidor podría no funcionar correctamente.');
     // Considera no iniciar el servidor o manejar este caso críticamente si la BD es esencial.
@@ -912,691 +926,168 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// Sirvo frontend estático generado en 'dist'
-app.use(express.static(path.join(__dirname, 'dist')));
-
-// Fallback: para cualquier otra ruta que no sea API o admin, sirvo index.html
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/admin')) {
-    return next();
-  }
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
-
-// Manejador de rutas API no encontradas (especialmente importante para rutas de servicios)
-app.all('/api/users/services/:serviceId/:action', (req, res) => {
-  console.log(`⚠️ Intento de acceder a ruta no manejada: ${req.method} ${req.originalUrl}`);
-  console.log(`📋 Parámetros disponibles:`, req.params);
-
-  // Obtener el controlador correcto para el caso de servicios/detalles
-  if (req.params.serviceId && req.params.action === 'details') {
-    console.log(`🔄 Redirigiendo manualmente a la función updateServiceDetails`);
-    return updateServiceDetails(req, res);
-  }
-
-  res.status(200).json({
-    message: 'Ruta interceptada por el manejador de fallback',
-    serviceId: req.params.serviceId,
-    action: req.params.action,
-    method: req.method,
-    url: req.originalUrl,
-    info: 'Intenta de nuevo mientras arreglamos este problema'
-  });
-});
-
-// Configuración de JWT para autenticación
-const JWT_SECRET = process.env.JWT_SECRET || 'secreto-desarrollo-cambiar-en-produccion';
-
-// Endpoint para login con credenciales
-app.post('/api/auth/login', async (req, res) => {
+// Endpoint para descargar la guía gratuita
+app.get('/api/download/web-development-guide', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    // Crear PDF dinámicamente o servir un archivo estático
+    const pdfContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Guía: Cómo Elegir el Desarrollo Web Perfecto</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+            h1 { color: #FF00FF; text-align: center; }
+            h2 { color: #00FFFF; border-bottom: 2px solid #00FFFF; padding-bottom: 5px; }
+            .checklist { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .tip { background: #e8f4fd; padding: 15px; border-left: 4px solid #00FFFF; margin: 15px 0; }
+        </style>
+    </head>
+    <body>
+        <h1>🚀 Guía Completa: Cómo Elegir el Desarrollo Web Perfecto</h1>
+        
+        <h2>📋 Checklist de Tecnologías</h2>
+        <div class="checklist">
+            <h3>Frontend:</h3>
+            <ul>
+                <li>✅ React.js - Para aplicaciones interactivas</li>
+                <li>✅ Next.js - Para SEO y performance</li>
+                <li>✅ TypeScript - Para código más seguro</li>
+                <li>✅ Styled Components - Para diseño moderno</li>
+            </ul>
+            
+            <h3>Backend:</h3>
+            <ul>
+                <li>✅ Node.js + Express - Rápido y escalable</li>
+                <li>✅ PostgreSQL - Base de datos robusta</li>
+                <li>✅ JWT - Autenticación segura</li>
+                <li>✅ Docker - Deploy confiable</li>
+            </ul>
+        </div>
 
-    // En un caso real, verificaríamos contra una base de datos
-    // Este es un ejemplo simplificado
-    if (email && password && password.length >= 6) {
-      // Generar información del usuario
-      const user = {
-        id: 'user-' + Math.floor(Math.random() * 1000),
-        name: email.split('@')[0],
-        email
-      };
+        <h2>💰 Calculadora de Presupuesto</h2>
+        <div class="tip">
+            <h3>Factores que afectan el precio:</h3>
+            <ul>
+                <li><strong>Landing Page:</strong> $800 - $2,000</li>
+                <li><strong>E-commerce:</strong> $2,500 - $8,000</li>
+                <li><strong>App Web Completa:</strong> $5,000 - $15,000</li>
+                <li><strong>Sistema Empresarial:</strong> $10,000+</li>
+            </ul>
+        </div>
 
-      // Crear token JWT
-      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+        <h2>📝 Template de Briefing</h2>
+        <div class="checklist">
+            <h3>Preguntas esenciales para tu proyecto:</h3>
+            <ol>
+                <li>¿Cuál es el objetivo principal de tu sitio web?</li>
+                <li>¿Quién es tu público objetivo?</li>
+                <li>¿Qué funcionalidades necesitas?</li>
+                <li>¿Tienes referencias de diseño?</li>
+                <li>¿Cuál es tu presupuesto disponible?</li>
+                <li>¿Cuándo necesitas el proyecto terminado?</li>
+            </ol>
+        </div>
 
-      return res.json({
-        success: true,
-        user,
-        token
-      });
-    }
+        <h2>🎯 Casos de Éxito Reales</h2>
+        <div class="tip">
+            <h3>Proyecto: E-commerce Tech Store</h3>
+            <p><strong>Desafío:</strong> Tienda online con carrito inteligente</p>
+            <p><strong>Solución:</strong> React + Node.js + PostgreSQL</p>
+            <p><strong>Resultado:</strong> +200% conversiones en 3 meses</p>
+        </div>
 
-    return res.status(401).json({
-      success: false,
-      error: 'Credenciales inválidas'
-    });
+        <div class="tip">
+            <h3>Proyecto: Sistema de IA Empresarial</h3>
+            <p><strong>Desafío:</strong> Automatizar atención al cliente</p>
+            <p><strong>Solución:</strong> IA conversacional + Dashboard</p>
+            <p><strong>Resultado:</strong> -80% tiempo de respuesta</p>
+        </div>
+
+        <hr style="margin: 40px 0;">
+        <p style="text-align: center; color: #666;">
+            <strong>¿Listo para tu proyecto?</strong><br>
+            Contacta a Circuit Prompt: https://circuitprompt.com.ar
+        </p>
+    </body>
+    </html>
+    `;
+
+    // Configurar headers para descarga
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Disposition', 'attachment; filename="guia-desarrollo-web-circuit-prompt.html"');
+    res.send(pdfContent);
+
   } catch (error) {
-    console.error('Error en login:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Error en el servidor'
-    });
+    console.error('Error generando guía:', error);
+    res.status(500).json({ success: false, error: 'Error generando la guía' });
   }
 });
 
-// Endpoint para registro de usuarios
-app.post('/api/auth/register', async (req, res) => {
+// Mejorar el endpoint de captura de leads
+app.post('/api/auth/leads', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { email, source, context, name, phone } = req.body;
 
-    // En un caso real, verificaríamos si el usuario ya existe y guardaríamos en BD
-    if (name && email && password && password.length >= 6) {
-      // Generar información del usuario
-      const user = {
-        id: 'user-' + Math.floor(Math.random() * 1000),
-        name,
-        email
-      };
-
-      // Crear token JWT
-      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-
-      return res.json({
-        success: true,
-        user,
-        token
-      });
-    }
-
-    return res.status(400).json({
-      success: false,
-      error: 'Datos de registro inválidos'
-    });
-  } catch (error) {
-    console.error('Error en registro:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Error en el servidor'
-    });
-  }
-});
-
-// Endpoint para autenticación con Google
-app.post('/api/auth/google', async (req, res) => {
-  try {
-    const { token } = req.body;
-
-    // En un caso real, verificaríamos el token con Google
-    // https://developers.google.com/identity/sign-in/web/backend-auth
-
-    // Para fines de demostración, simulamos la verificación
-    if (!token) {
+    if (!email) {
       return res.status(400).json({
         success: false,
-        error: 'Token no proporcionado'
+        error: 'Email es requerido'
       });
     }
 
-    // Aquí normalmente llamaríamos a la API de Google para validar el token
-    // const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${token}`);
-    // const data = await response.json();
-
-    // Simulación de respuesta exitosa
-    const googleUser = {
-      id: 'google-' + Math.floor(Math.random() * 1000),
-      name: 'Usuario de Google',
-      email: 'usuario@gmail.com',
-      provider: 'google',
-      avatar: 'https://lh3.googleusercontent.com/a/default-user'
-    };
-
-    // Crear token JWT para nuestra aplicación
-    const appToken = jwt.sign({
-      userId: googleUser.id,
-      provider: 'google'
-    }, JWT_SECRET, { expiresIn: '7d' });
-
-    return res.json({
-      success: true,
-      user: googleUser,
-      token: appToken
-    });
-
-  } catch (error) {
-    console.error('Error en autenticación con Google:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Error en autenticación con Google'
-    });
-  }
-});
-
-// Nuevo endpoint para iniciar el flujo de autenticación con Google usando ventana emergente
-app.get('/api/auth/google/login', (req, res) => {
-  try {
-    // Obtener la URL de callback del parámetro de la consulta
-    const callbackUrl = req.query.callback || `${process.env.CORS_FRONT || 'http://localhost:3001'}/html/auth-callback.html`;
-    console.log('🔄 Iniciando flujo OAuth de Google con callback:', callbackUrl);
-
-    // Configurar URL de redireccionamiento a la autenticación de Google (autenticación real)
-    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.VITE_API_URL + '/auth/google/callback')}&response_type=code&scope=email profile&state=${encodeURIComponent(callbackUrl)}`;
-
-    console.log('🔄 Redirigiendo a autenticación de Google:', googleAuthUrl);
-    res.redirect(googleAuthUrl);
-  } catch (error) {
-    console.error('❌ Error iniciando flujo OAuth de Google:', error);
-    res.status(500).send(`
-      <html>
-        <body style="font-family: sans-serif; padding: 20px; text-align: center;">
-          <h2>Error de autenticación</h2>
-          <p>Lo sentimos, ocurrió un error al iniciar la autenticación con Google.</p>
-          <p>Detalles: ${error.message}</p>
-          <p><a href="${process.env.CORS_FRONT || 'http://localhost:3001'}/login">Volver al inicio de sesión</a></p>
-        </body>
-      </html>
-    `);
-  }
-});
-
-// Endpoint para manejar el callback de Google (implementación real)
-app.get('/api/auth/google/callback', async (req, res) => {
-  try {
-    const { code, state } = req.query;
-    console.log('🔄 Callback de Google recibido con código:', code?.substring(0, 10) + '...');
-
-    if (!code) {
-      throw new Error('No se recibió código de autorización de Google');
-    }
-
-    // Intercambiar el código por un token de acceso
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code,
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: `${process.env.VITE_API_URL}/auth/google/callback`,
-        grant_type: 'authorization_code'
-      })
-    });
-
-    const tokenData = await tokenResponse.json();
-
-    if (!tokenData.access_token) {
-      console.error('❌ Error al obtener token de acceso:', tokenData);
-      throw new Error('Error al obtener token de acceso de Google');
-    }
-
-    console.log('✅ Token de acceso obtenido correctamente');
-
-    // Obtener información del usuario con el token de acceso
-    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` }
-    });
-
-    const userData = await userResponse.json();
-    console.log('✅ Datos de usuario obtenidos:', userData.email);
-
-    if (!userData.id) {
-      throw new Error('No se pudo obtener la información del usuario de Google');
-    }
-
-    // Crear token JWT para nuestra aplicación
-    const userId = `google-${userData.id}`;
-    const token = jwt.sign({
-      userId,
-      provider: 'google',
-      email: userData.email
-    }, process.env.JWT_SECRET || 'secret-jwt-key', { expiresIn: '7d' });
-
-    // Recuperar la URL de callback del estado
-    const callbackUrl = state || `${process.env.CORS_FRONT || 'http://localhost:3001'}/html/auth-callback.html`;
-
-    // Construir URL de redirección con parámetros del usuario real
-    const redirectUrl = `${callbackUrl}?token=${token}&userid=${userId}&name=${encodeURIComponent(userData.name)}&email=${encodeURIComponent(userData.email)}&provider=google&avatar=${encodeURIComponent(userData.picture || '')}`;
-
-    console.log('✅ Redirigiendo a callback con datos autenticados:', redirectUrl);
-    res.redirect(redirectUrl);
-
-  } catch (error) {
-    console.error('❌ Error en callback de Google:', error);
-    const errorMessage = encodeURIComponent(error.message || 'Error en la autenticación de Google');
-    res.redirect(`${process.env.CORS_FRONT || 'http://localhost:3001'}/html/auth-callback.html?error=${errorMessage}`);
-  }
-});
-
-// Endpoint para autenticación con GitHub
-app.post('/api/auth/github', async (req, res) => {
-  try {
-    const { code } = req.body;
-
-    // En un caso real, intercambiaríamos este código por un token de acceso
-    if (!code) {
-      return res.status(400).json({
-        success: false,
-        error: 'Código de autorización no proporcionado'
-      });
-    }
-
-    // Paso 1: Intercambiar el código por un token de acceso (en un caso real)
-    // const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     'Accept': 'application/json'
-    //   },
-    //   body: JSON.stringify({
-    //     client_id: process.env.GITHUB_CLIENT_ID,
-    //     client_secret: process.env.GITHUB_CLIENT_SECRET,
-    //     code
-    //   })
-    // });
-    // const tokenData = await tokenResponse.json();
-    // const accessToken = tokenData.access_token;
-
-    // Paso 2: Usar el token para obtener información del usuario (en un caso real)
-    // const userResponse = await fetch('https://api.github.com/user', {
-    //   headers: {
-    //     'Authorization': `token ${accessToken}`
-    //   }
-    // });
-    // const userData = await userResponse.json();
-
-    // Simulación de respuesta exitosa
-    const githubUser = {
-      id: 'github-' + Math.floor(Math.random() * 1000),
-      name: 'Usuario de GitHub',
-      email: 'usuario@github.com',
-      provider: 'github',
-      avatar: 'https://avatars.githubusercontent.com/u/default'
-    };
-
-    // Crear token JWT para nuestra aplicación
-    const appToken = jwt.sign({
-      userId: githubUser.id,
-      provider: 'github'
-    }, JWT_SECRET, { expiresIn: '7d' });
-
-    return res.json({
-      success: true,
-      user: githubUser,
-      token: appToken
-    });
-
-  } catch (error) {
-    console.error('Error en autenticación GitHub:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Error en la autenticación: ' + error.message
-    });
-  }
-});
-
-// Añadir endpoint GET para el callback de GitHub
-app.get('/api/auth/github', async (req, res) => {
-  try {
-    console.log('📥 Callback de GitHub recibido (GET):', req.query);
-    const { code, error } = req.query;
-
-    // Si hay un error en la respuesta de GitHub
-    if (error) {
-      console.error(`❌ Error devuelto por GitHub: ${error}`);
-      return res.redirect(`${process.env.CORS_FRONT || 'http://localhost:3001'}/login?error=github_${error}`);
-    }
-
-    if (!code) {
-      console.error('❌ No se proporcionó código de autorización');
-      return res.redirect(`${process.env.CORS_FRONT || 'http://localhost:3001'}/login?error=no_code`);
-    }
-
-    // Simulación de proceso real de autenticación
-    console.log('🔑 Procesando código de autorización de GitHub:', code);
-
+    // Crear notificación para el admin
     try {
-      // Intercambiar el código por un token de acceso
-      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          client_id: process.env.GITHUB_CLIENT_ID,
-          client_secret: process.env.GITHUB_CLIENT_SECRET,
-          code
-        })
+      const { notify } = await import('./controllers/notificationController.js');
+      await notify('NEW_LEAD', {
+        email,
+        name: name || 'No proporcionado',
+        source: source || 'web',
+        page: context || 'Captura general',
+        phone: phone || 'No proporcionado'
       });
-
-      if (!tokenResponse.ok) {
-        const errorText = await tokenResponse.text();
-        console.error('❌ Error al solicitar token a GitHub:', errorText);
-        throw new Error(`Error al obtener token: ${tokenResponse.status} ${errorText}`);
-      }
-
-      const tokenData = await tokenResponse.json();
-
-      if (tokenData.error) {
-        console.error('❌ Error en respuesta de GitHub:', tokenData.error);
-        throw new Error(tokenData.error_description || tokenData.error);
-      }
-
-      // Obtener el token de acceso
-      const accessToken = tokenData.access_token;
-
-      if (!accessToken) {
-        throw new Error('No se recibió token de acceso de GitHub');
-      }
-
-      // Obtener información del usuario
-      const userResponse = await fetch('https://api.github.com/user', {
-        headers: {
-          'Authorization': `token ${accessToken}`,
-          'User-Agent': 'Portfolio-App'
-        }
-      });
-
-      if (!userResponse.ok) {
-        throw new Error(`Error al obtener datos de usuario: ${userResponse.status}`);
-      }
-
-      const githubUser = await userResponse.json();
-
-      // Si no tenemos email, intentar obtenerlo
-      if (!githubUser.email) {
-        const emailsResponse = await fetch('https://api.github.com/user/emails', {
-          headers: {
-            'Authorization': `token ${accessToken}`,
-            'User-Agent': 'Portfolio-App'
-          }
-        });
-
-        if (emailsResponse.ok) {
-          const emails = await emailsResponse.json();
-          const primaryEmail = emails.find(email => email.primary);
-
-          if (primaryEmail) {
-            githubUser.email = primaryEmail.email;
-          } else if (emails.length > 0) {
-            githubUser.email = emails[0].email;
-          }
-        }
-      }
-
-      // Crear token JWT para nuestra aplicación
-      const appToken = jwt.sign({
-        userId: `github-${githubUser.id}`,
-        provider: 'github'
-      }, JWT_SECRET, { expiresIn: '7d' });
-
-      console.log('✅ Autenticación exitosa, redirigiendo al frontend');
-
-      // Redirigir al frontend con el token
-      return res.redirect(`${process.env.CORS_FRONT || 'http://localhost:3001'}/?token=${appToken}&userId=github-${githubUser.id}`);
-    } catch (error) {
-      console.error('❌ Error procesando autenticación GitHub:', error);
-      return res.redirect(`${process.env.CORS_FRONT || 'http://localhost:3001'}/login?error=${encodeURIComponent(error.message)}`);
-    }
-  } catch (error) {
-    console.error('❌ Error general en callback de GitHub:', error);
-    res.status(500).send(`
-      <html>
-        <body style="font-family: sans-serif; padding: 20px; text-align: center;">
-          <h2>Error de autenticación</h2>
-          <p>Lo sentimos, ocurrió un error al procesar la autenticación de GitHub.</p>
-          <p>Detalles: ${error.message}</p>
-          <p><a href="${process.env.CORS_FRONT || 'http://localhost:3001'}/login">Volver al inicio de sesión</a></p>
-        </body>
-      </html>
-    `);
-  }
-});
-
-// Endpoint para imprimir información de GitHub (solo para desarrollo)
-app.get('/api/auth/github-debug', (req, res) => {
-  const clientId = process.env.GITHUB_CLIENT_ID || process.env.VITE_GITHUB_CLIENT_ID;
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET || 'Secret no disponible';
-  const frontendUrl = process.env.CORS_FRONT || 'http://localhost:3001';
-  const backendUrl = process.env.CORS_BACK || 'http://localhost:5001';
-  const expectedCallback = `${backendUrl}/api/auth/github`;
-
-  res.json({
-    config: {
-      clientId: clientId ? `${clientId.substring(0, 5)}...` : 'No configurado',
-      clientSecret: clientSecret ? 'Configurado (secreto)' : 'No configurado',
-      frontendUrl,
-      backendUrl,
-      expectedCallback
-    },
-    info: `
-      Para configurar correctamente GitHub OAuth, debes registrar exactamente esta URL de callback en la consola de desarrolladores de GitHub:
-      ${expectedCallback}
-      
-      Pasos:
-      1. Ve a https://github.com/settings/developers
-      2. Selecciona tu aplicación OAuth
-      3. En "Authorization callback URL", asegúrate de que coincida exactamente con ${expectedCallback}
-      4. Guarda los cambios
-    `
-  });
-});
-
-// Middleware para verificar autenticación
-const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      success: false,
-      error: 'No autorizado'
-    });
-  }
-
-  const token = authHeader.split(' ')[1];
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(401).json({
-      success: false,
-      error: 'Token inválido o expirado'
-    });
-  }
-};
-
-// Middleware para configurar cabeceras de seguridad
-app.use((req, res, next) => {
-  // Configurar cabeceras de seguridad
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-
-  // Configurar Content Security Policy permitiendo los dominios necesarios para Mercado Pago
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;"
-  );
-
-  next();
-});
-
-// Ruta para el health check (útil para monitoreo y pruebas de configuración)
-app.get('/health', (req, res) => {
-  // Incluir información sobre la configuración actual para diagnóstico
-  res.status(200).json({
-    status: 'UP',
-    time: new Date().toISOString(),
-    config: {
-      port: process.env.PORT,
-      apiPort: process.env.API_PORT || process.env.PORT,
-      environment: process.env.NODE_ENV,
-      apiUrl: process.env.VITE_API_URL,
-      corsFront: process.env.CORS_FRONT,
-      corsBack: process.env.CORS_BACK
-    }
-  });
-});
-
-// Endpoint específico para probar CORS
-app.get('/api/cors-test', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'CORS está configurado correctamente',
-    origin: req.headers.origin || 'No origin header',
-    time: new Date().toISOString(),
-    headers: {
-      'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin') || 'No header set',
-      'access-control-allow-credentials': res.getHeader('Access-Control-Allow-Credentials') || 'No header set'
-    }
-  });
-});
-
-// Servir archivos estáticos del frontend (build de Vite)
-const distPath = path.join(__dirname, 'dist');
-if (fs.existsSync(distPath)) {
-  console.log(`✅ Sirviendo archivos estáticos desde: ${distPath}`);
-  app.use(express.static(distPath));
-
-  // Ruta para todas las solicitudes que no son de la API (siempre al final)
-  app.get('/*', function (req, res, next) {
-    // Evita redirigir solicitudes a la API
-    if (!req.url.startsWith('/api')) {
-      res.sendFile(path.join(distPath, 'index.html'));
-    } else {
-      next();
-    }
-  });
-} else {
-  console.warn(`⚠️ Directorio 'dist' no encontrado. El frontend no será servido.`);
-}
-
-// Endpoint para procesar formulario de contacto empresarial
-app.post('/api/enterprise/contact', async (req, res) => {
-  console.log('📨 POST /api/enterprise/contact recibido');
-
-  try {
-    const { responses, summary, conversation } = req.body;
-
-    if (!responses || !summary) {
-      return res.status(400).json({ ok: false, error: 'Datos incompletos' });
+    } catch (notificationError) {
+      console.error('Error creando notificación de lead:', notificationError);
     }
 
-    // Formatear las respuestas para el mensaje
-    const formattedResponses = Object.entries(responses).map(([questionIndex, answer]) => {
-      const questionNumber = parseInt(questionIndex) + 1;
-      const question = enterpriseQuestions[parseInt(questionIndex)];
-      return `*Pregunta ${questionNumber}:* ${question}\n*Respuesta:* ${answer}`;
-    }).join('\n\n');
-
-    // Crear texto del mensaje para WhatsApp
-    const empresaName = responses[0] || 'Cliente empresarial';
-    const timestamp = new Date().toLocaleString('es-AR');
-
-    const text =
-      `🏢 *Nueva consulta empresarial* 🏢\n\n` +
-      `*Fecha:* ${timestamp}\n` +
-      `*Empresa:* ${empresaName}\n\n` +
-      `*📋 Resumen generado por IA:*\n${summary}\n\n` +
-      `*📝 Respuestas del formulario:*\n\n` +
-      formattedResponses;
-
-    // Si WhatsApp está deshabilitado, usar directamente el fallback
-    if (whatsappDisabled) {
-      console.log('WhatsApp deshabilitado, usando fallback directamente');
-      await enterpriseContactFallback(new Error('WhatsApp Web deshabilitado'), { responses, summary, conversation });
-      return res.json({ ok: true, message: 'Datos procesados vía fallback (WhatsApp deshabilitado)' });
-    }
-
-    // Leer ID de chat desde .env
-    const chatId = process.env.GROUP_CHAT_ID || process.env.ENTERPRISE_CHAT_ID;
-    if (!chatId) {
-      const errMsg = 'ID de chat de WhatsApp no configurado en .env';
-      console.error('Error:', errMsg);
-      await enterpriseContactFallback(new Error(errMsg), { responses, summary, conversation });
-      return res.status(500).json({ ok: false, error: errMsg });
-    }
-
-    console.log(`Enviando mensaje empresarial al chatId=${chatId}`);
-    await client.sendMessage(chatId, text);
-    console.log('Mensaje empresarial enviado con éxito');
-
-    return res.json({ ok: true, message: 'Consulta empresarial enviada correctamente' });
-  } catch (err) {
-    console.error('Error al procesar formulario empresarial:', err.message);
-
-    // Intentar fallback
+    // Iniciar secuencia de email automática
     try {
-      await enterpriseContactFallback(err, req.body);
-    } catch (fallbackErr) {
-      console.error('Error en fallback empresarial:', fallbackErr);
+      const emailSequenceController = await import('./controllers/emailSequenceController.js');
+      await emailSequenceController.startEmailSequence({
+        body: {
+          email,
+          sequenceType: 'lead-nurturing',
+          userData: { name: name || 'Usuario', source }
+        }
+      }, {
+        json: () => {},
+        status: () => ({ json: () => {} })
+      });
+    } catch (sequenceError) {
+      console.error('Error iniciando secuencia de email:', sequenceError);
     }
 
-    return res.status(500).json({ ok: false, error: err.message });
-  }
-});
-
-// Variables globales para el formulario empresarial
-const enterpriseQuestions = [
-  "¿Cómo se llama tu empresa?",
-  "¿En qué mercado o industria se desarrolla tu empresa?",
-  "¿Cuáles son tus principales necesidades o exigencias para este proyecto?",
-  "¿Cuál es el tamaño aproximado de tu empresa? (cantidad de empleados, sucursales, etc.)",
-  "¿Qué objetivos específicos tienes con este proyecto digital?",
-  "¿Hay algún plazo específico en el que necesitas tener el proyecto implementado?",
-  "¿Hay alguna información adicional que consideres relevante para entender mejor tus necesidades?"
-];
-
-// Función de fallback para formulario empresarial
-async function enterpriseContactFallback(error, formData) {
-  try {
-    console.log('📧 Ejecutando fallback para formulario empresarial');
-
-    const { responses, summary, conversation } = formData;
-
-    // Formatear las respuestas para el email
-    let formattedResponses = '';
-    if (responses) {
-      formattedResponses = Object.entries(responses).map(([questionIndex, answer]) => {
-        const questionNumber = parseInt(questionIndex) + 1;
-        const question = enterpriseQuestions[parseInt(questionIndex)];
-        return `Pregunta ${questionNumber}: ${question}\nRespuesta: ${answer}`;
-      }).join('\n\n');
-    }
-
-    // Crear texto del email
-    const empresaName = responses?.[0] || 'Cliente empresarial';
-    const timestamp = new Date().toLocaleString('es-AR');
-
-    const subject = `🏢 Nueva consulta empresarial: ${empresaName}`;
-    const text =
-      `Nueva consulta empresarial recibida\n\n` +
-      `Fecha: ${timestamp}\n` +
-      `Empresa: ${empresaName}\n\n` +
-      `RESUMEN GENERADO POR IA:\n${summary || 'No disponible'}\n\n` +
-      `RESPUESTAS DEL FORMULARIO:\n\n` +
-      (formattedResponses || 'No disponible') +
-      `\n\nCONVERSACIÓN COMPLETA:\n\n` +
-      (conversation ? JSON.stringify(conversation, null, 2) : 'No disponible') +
-      `\n\nError que causó el fallback: ${error.message}`;
-
-    // Enviar email usando el transporter existente
-    await transporter.sendMail({
-      from: process.env.ADMIN_EMAIL || 'no_reply@circuitprompt.com.ar',
-      to: process.env.Email, // Tu correo personal como destinatario
-      subject: subject,
-      text: text
+    console.log('📧 Nuevo lead capturado:', {
+      email,
+      source,
+      context,
+      timestamp: new Date().toISOString()
     });
 
-    console.log('✅ Notificación por email de consulta empresarial enviada correctamente');
-    return true;
-  } catch (e) {
-    console.error('❌ Error al ejecutar fallback empresarial:', e);
-    return false;
+    res.json({
+      success: true,
+      message: 'Lead capturado exitosamente'
+    });
+
+  } catch (error) {
+    console.error('Error capturando lead:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
   }
-}
+});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 Servidor escuchando en puerto ${PORT}`));

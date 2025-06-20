@@ -1,6 +1,7 @@
 import express from 'express';
 import { StockConfig, StockStatus, StockHistory, WaitingQueue, StockManager } from '../models/StockManagement.js';
 import { authenticateToken as auth } from '../middleware/auth.js';
+import { Op } from 'sequelize';
 
 const router = express.Router();
 
@@ -191,18 +192,27 @@ router.put('/admin/config/:planType', auth, requireAdmin, async (req, res) => {
         const { planType } = req.params;
         const { weight, estimatedDeliveryDays, isActive } = req.body;
 
-        const config = await StockConfig.findOneAndUpdate(
-            { planType },
-            {
+        const [config] = await StockConfig.findOrCreate({
+            where: { planType },
+            defaults: {
+                planType,
                 weight,
                 estimatedDeliveryDays,
                 isActive
-            },
-            { new: true, upsert: true }
-        );
+            }
+        });
+
+        // Actualizar si ya existe
+        if (config) {
+            await config.update({
+                weight,
+                estimatedDeliveryDays,
+                isActive
+            });
+        }
 
         // Registrar cambio en historial
-        await new StockHistory({
+        await StockHistory.create({
             action: 'manual_adjustment',
             planType,
             weightChange: 0,
@@ -210,7 +220,7 @@ router.put('/admin/config/:planType', auth, requireAdmin, async (req, res) => {
             newLoad: 0,
             adminId: req.user.id,
             reason: `Configuración actualizada: peso=${weight}, días=${estimatedDeliveryDays}, activo=${isActive}`
-        }).save();
+        });
 
         res.json({
             success: true,
@@ -241,9 +251,9 @@ router.put('/admin/status', auth, requireAdmin, async (req, res) => {
         const previousStatus = await StockStatus.findOne();
         const previousLoad = previousStatus ? previousStatus.currentLoad : 0;
 
-        const status = await StockStatus.findOneAndUpdate(
-            {},
-            {
+        let status;
+        if (previousStatus) {
+            await previousStatus.update({
                 currentLoad,
                 maxCapacity,
                 warningThreshold,
@@ -251,36 +261,42 @@ router.put('/admin/status', auth, requireAdmin, async (req, res) => {
                 isAcceptingOrders,
                 notes,
                 lastUpdated: new Date()
-            },
-            { new: true, upsert: true }
-        );
+            });
+            status = previousStatus;
+        } else {
+            status = await StockStatus.create({
+                currentLoad,
+                maxCapacity,
+                warningThreshold,
+                criticalThreshold,
+                isAcceptingOrders,
+                notes,
+                lastUpdated: new Date()
+            });
+        }
 
         // Registrar cambio en historial si cambió la carga
         if (currentLoad !== previousLoad) {
-            await new StockHistory({
+            await StockHistory.create({
                 action: 'manual_adjustment',
                 weightChange: currentLoad - previousLoad,
                 previousLoad,
                 newLoad: currentLoad,
                 adminId: req.user.id,
                 reason: 'Ajuste manual del stock'
-            }).save();
+            });
         }
 
         // Si se cambió la capacidad, registrarlo
         if (maxCapacity !== previousStatus?.maxCapacity) {
-            await new StockHistory({
+            await StockHistory.create({
                 action: 'capacity_changed',
                 weightChange: 0,
                 previousLoad: currentLoad,
                 newLoad: currentLoad,
                 adminId: req.user.id,
-                reason: `Capacidad cambiada de ${previousStatus?.maxCapacity || 0} a ${maxCapacity}`,
-                metadata: {
-                    oldCapacity: previousStatus?.maxCapacity || 0,
-                    newCapacity: maxCapacity
-                }
-            }).save();
+                reason: `Capacidad cambiada de ${previousStatus?.maxCapacity || 0} a ${maxCapacity}`
+            });
         }
 
         // Procesar cola de espera si se liberó espacio
@@ -340,25 +356,24 @@ router.get('/admin/history', auth, requireAdmin, async (req, res) => {
     try {
         const { page = 1, limit = 50, action, planType, startDate, endDate } = req.query;
 
-        const query = {};
+        const where = {};
 
-        if (action) query.action = action;
-        if (planType) query.planType = planType;
+        if (action) where.action = action;
+        if (planType) where.planType = planType;
         if (startDate || endDate) {
-            query.createdAt = {};
-            if (startDate) query.createdAt.$gte = new Date(startDate);
-            if (endDate) query.createdAt.$lte = new Date(endDate);
+            where.createdAt = {};
+            if (startDate) where.createdAt[Op.gte] = new Date(startDate);
+            if (endDate) where.createdAt[Op.lte] = new Date(endDate);
         }
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const offset = (parseInt(page) - 1) * parseInt(limit);
 
-        const [history, total] = await Promise.all([
-            StockHistory.find(query)
-                .sort({ createdAt: -1 })
-                .skip(skip)
-                .limit(parseInt(limit)),
-            StockHistory.countDocuments(query)
-        ]);
+        const { rows: history, count: total } = await StockHistory.findAndCountAll({
+            where,
+            order: [['createdAt', 'DESC']],
+            offset,
+            limit: parseInt(limit)
+        });
 
         res.json({
             success: true,
@@ -385,11 +400,13 @@ router.get('/admin/waiting-queue', auth, requireAdmin, async (req, res) => {
     try {
         const { status = 'waiting', planType } = req.query;
 
-        const query = { status };
-        if (planType) query.planType = planType;
+        const where = { status };
+        if (planType) where.planType = planType;
 
-        const queue = await WaitingQueue.find(query)
-            .sort({ requestedAt: 1 });
+        const queue = await WaitingQueue.findAll({
+            where,
+            order: [['requestedAt', 'ASC']]
+        });
 
         res.json({
             success: true,
@@ -421,7 +438,7 @@ router.post('/admin/notify-queue', auth, requireAdmin, async (req, res) => {
         const notified = [];
 
         for (const queueId of queueIds) {
-            const queueEntry = await WaitingQueue.findById(queueId);
+            const queueEntry = await WaitingQueue.findByPk(queueId);
             if (queueEntry && queueEntry.status === 'waiting') {
                 await StockManager.notifyUserStockAvailable(queueEntry);
                 queueEntry.status = 'notified';
@@ -449,16 +466,18 @@ router.post('/admin/notify-queue', auth, requireAdmin, async (req, res) => {
 // Limpiar entradas expiradas de la cola
 router.delete('/admin/cleanup-queue', auth, requireAdmin, async (req, res) => {
     try {
-        const result = await WaitingQueue.deleteMany({
-            $or: [
-                { expiresAt: { $lt: new Date() } },
-                { status: { $in: ['expired', 'converted'] } }
-            ]
+        const result = await WaitingQueue.destroy({
+            where: {
+                [Op.or]: [
+                    { expiresAt: { [Op.lt]: new Date() } },
+                    { status: { [Op.in]: ['expired', 'converted'] } }
+                ]
+            }
         });
 
         res.json({
             success: true,
-            deletedCount: result.deletedCount
+            deletedCount: result
         });
 
     } catch (error) {
