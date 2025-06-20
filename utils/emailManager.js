@@ -42,7 +42,7 @@ try {
 }
 
 // Configuración del transporter de nodemailer
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.donweb.com',
     port: process.env.SMTP_PORT || 587,
     secure: false, // true para 465, false para otros puertos
