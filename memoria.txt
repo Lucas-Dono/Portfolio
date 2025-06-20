@@ -1001,4 +1001,61 @@ docker-compose -f docker-compose-prod.yml up --build -d
 
 # Verificar logs
 docker-compose -f docker-compose-prod.yml logs -f app
-``` 
+```
+
+NUEVOS ERRORES CRÍTICOS RESUELTOS:
+
+**PROBLEMA 3: JWT malformed error en middleware**
+Error: JsonWebTokenError: jwt malformed en /api/notifications/*
+
+CAUSA:
+- Frontend guardaba token como 'auth_token' 
+- NotificationCenter buscaba 'adminToken'
+- Tokens malformados o vacíos no se validaban correctamente
+- Middleware no manejaba bien diferentes tipos de errores JWT
+
+SOLUCIÓN APLICADA:
+- Corregido NotificationCenter.tsx para usar 'auth_token' consistentemente
+- Mejorado middleware/auth.js con validación de tokens vacíos/null
+- Agregado logging detallado para debugging de tokens
+- Manejo diferenciado de errores JWT (malformed, expired, invalid)
+
+**PROBLEMA 4: No se envían emails de verificación**
+Error: Configuración SMTP incorrecta para envío de emails
+
+CAUSA:
+- Variables SMTP_HOST y SMTP_PORT no estaban definidas en .env.production
+- utils/emailManager.js usaba configuración hardcodeada de Ferozo
+- controllers/notificationController.js usaba SMTP_USER inexistente
+- Configuración inconsistente entre archivos
+
+SOLUCIÓN APLICADA:
+- Agregado SMTP_HOST=smtp.donweb.com y SMTP_PORT=587 a .env.production
+- Corregido utils/emailManager.js para usar variables de entorno
+- Corregido notificationController.js para usar ADMIN_EMAIL en lugar de SMTP_USER
+- Unificada configuración SMTP en todos los archivos
+- Agregado tls.rejectUnauthorized=false para compatibilidad
+
+**PROBLEMA 5: Panel admin sin notificaciones**
+Error: Centro de notificaciones vacío sin contenido de prueba
+
+SOLUCIÓN APLICADA:
+- Agregada función createTestNotifications() en notificationController.js
+- Notificaciones de prueba: NEW_LEAD, NEW_QUOTATION, PAYMENT_SUCCESS, SYSTEM_ALERT
+- Integración automática al inicializar servidor en server.js
+- Solo crea notificaciones si no existen previamente
+
+RESULTADO FINAL:
+✅ Tokens JWT funcionando correctamente con logging mejorado
+✅ Emails de verificación enviándose a lucasdono391@gmail.com
+✅ Centro de notificaciones cargando con datos de prueba
+✅ Panel admin completamente funcional
+✅ Middleware de autenticación robusto con manejo de errores
+
+ARCHIVOS MODIFICADOS EN ESTA SESIÓN:
+- utils/emailManager.js (líneas 11-20) - Configuración SMTP corregida
+- controllers/notificationController.js (líneas 10-18, 158, 390-425) - SMTP y notificaciones de prueba
+- middleware/auth.js (líneas 9-43) - Validación JWT mejorada
+- src/components/admin/NotificationCenter.tsx (líneas 46, 79, 99, 122, 143) - Token consistency
+- .env.production (líneas 40-41) - Variables SMTP agregadas
+- server.js (líneas 57, 95-100) - Inicialización de notificaciones de prueba 

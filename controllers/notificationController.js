@@ -8,12 +8,15 @@ let notificationId = 1;
 
 // Configuración de email (usando la existente del proyecto)
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  host: process.env.SMTP_HOST || 'smtp.donweb.com',
   port: process.env.SMTP_PORT || 587,
   secure: false,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
+    user: process.env.ADMIN_EMAIL || 'no_reply@circuitprompt.com.ar',
+    pass: process.env.EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
@@ -155,7 +158,7 @@ const sendNotificationEmail = async (type, notification, data) => {
     const emailHtml = await generateEmailTemplate(type, notification, data);
     
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: process.env.ADMIN_EMAIL || 'no_reply@circuitprompt.com.ar',
       to: process.env.ADMIN_EMAIL,
       subject: config.emailSubject,
       html: emailHtml,
@@ -391,6 +394,43 @@ const notify = async (type, data) => {
   return await createNotification(type, data);
 };
 
+// Función para crear notificaciones de prueba (solo para desarrollo/testing)
+const createTestNotifications = async () => {
+  try {
+    console.log('🧪 Creando notificaciones de prueba...');
+    
+    // Solo crear si no hay notificaciones existentes
+    if (notifications.length === 0) {
+      await createNotification('NEW_LEAD', {
+        email: 'cliente@ejemplo.com',
+        name: 'Juan Pérez',
+        source: 'web',
+        page: 'Landing Page'
+      });
+
+      await createNotification('NEW_QUOTATION', {
+        serviceType: 'E-commerce Premium',
+        finalPrice: 89997,
+        email: 'empresa@ejemplo.com'
+      });
+
+      await createNotification('PAYMENT_SUCCESS', {
+        amount: 29997,
+        email: 'cliente@ejemplo.com',
+        paymentMethod: 'MercadoPago'
+      });
+
+      await createNotification('SYSTEM_ALERT', {
+        message: 'Sistema de notificaciones inicializado correctamente'
+      });
+
+      console.log('✅ Notificaciones de prueba creadas');
+    }
+  } catch (error) {
+    console.error('Error creando notificaciones de prueba:', error);
+  }
+};
+
 export {
   getNotifications,
   markAsRead,
@@ -398,5 +438,6 @@ export {
   deleteNotification,
   getStats,
   notify,
+  createTestNotifications,
   NOTIFICATION_TYPES
 }; 

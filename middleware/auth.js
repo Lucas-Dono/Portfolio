@@ -12,13 +12,37 @@ export const authenticateToken = (req, res, next) => {
         });
     }
 
+    // Verificar que el token no esté vacío o sea solo espacios
+    if (!token.trim() || token === 'null' || token === 'undefined') {
+        console.error('Token inválido recibido:', { token: token.substring(0, 20) + '...' });
+        return res.status(401).json({
+            success: false,
+            message: 'Token inválido'
+        });
+    }
+
     jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key', (err, decoded) => {
         if (err) {
-            console.error('Error al verificar token:', err);
-            return res.status(403).json({
-                success: false,
-                message: 'Token inválido o expirado'
-            });
+            console.error('Error al verificar token:', err.message);
+            console.error('Token recibido (primeros 20 chars):', token.substring(0, 20) + '...');
+            
+            // Diferentes tipos de errores JWT
+            if (err.name === 'JsonWebTokenError') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Token malformado o inválido'
+                });
+            } else if (err.name === 'TokenExpiredError') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Token expirado'
+                });
+            } else {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Token inválido'
+                });
+            }
         }
 
         // Normalizar la estructura del usuario para compatibilidad

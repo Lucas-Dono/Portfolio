@@ -44,7 +44,7 @@ const NotificationCenter: React.FC = () => {
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('auth_token');
       
       const params = new URLSearchParams({
         limit: ITEMS_PER_PAGE.toString(),
@@ -77,7 +77,7 @@ const NotificationCenter: React.FC = () => {
   // Cargar estadísticas
   const loadStats = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/notifications/stats', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -97,7 +97,7 @@ const NotificationCenter: React.FC = () => {
   // Marcar como leída
   const markAsRead = async (notificationId: number) => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
@@ -120,7 +120,7 @@ const NotificationCenter: React.FC = () => {
   // Marcar todas como leídas
   const markAllAsRead = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/notifications/read-all', {
         method: 'PUT',
         headers: {
@@ -141,7 +141,7 @@ const NotificationCenter: React.FC = () => {
   // Eliminar notificación
   const deleteNotification = async (notificationId: number) => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {

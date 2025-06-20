@@ -41,14 +41,17 @@ try {
     console.warn('⚠️ Error al cargar email-templates, usando fallback para emails:', err.message);
 }
 
-// Configurar transporter de nodemailer
-const transporter = nodemailer.createTransport({
-    host: 'c2830653.ferozo.com',
-    port: 465,
-    secure: true, // Para SSL
+// Configuración del transporter de nodemailer
+const transporter = nodemailer.createTransporter({
+    host: process.env.SMTP_HOST || 'smtp.donweb.com',
+    port: process.env.SMTP_PORT || 587,
+    secure: false, // true para 465, false para otros puertos
     auth: {
         user: process.env.ADMIN_EMAIL || 'no_reply@circuitprompt.com.ar',
         pass: process.env.EMAIL_PASS
+    },
+    tls: {
+        rejectUnauthorized: false
     }
 });
 

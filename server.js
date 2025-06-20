@@ -60,6 +60,9 @@ import { registerUserService, getUserServices, updateServiceProgress, updateServ
 // Importar middleware de autenticación
 import { authenticateToken } from './middleware/auth.js';
 
+// Inicializar notificaciones de prueba al arrancar el servidor
+import { createTestNotifications } from './controllers/notificationController.js';
+
 dotenv.config(); // Cargar variables de entorno
 
 const __filename = fileURLToPath(import.meta.url);
@@ -89,6 +92,13 @@ connectDB().then(async (sequelizeInstance) => {
         console.error('❌ Error ejecutando migraciones:', error);
         // No detener el servidor, continuar con fallback
       }
+    }
+
+    // Inicializar notificaciones de prueba
+    try {
+      await createTestNotifications();
+    } catch (error) {
+      console.error('❌ Error inicializando notificaciones de prueba:', error);
     }
   } else {
     console.error('❌ No se pudo inicializar la base de datos PostgreSQL y no hay modo fallback habilitado. El servidor podría no funcionar correctamente.');
