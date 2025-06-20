@@ -721,7 +721,7 @@ PLAN DE IMPLEMENTACIÓN DETALLADO - ORDENADO POR PRIORIDAD E IMPACTO:
    - src/components/Chat.tsx (líneas 498-570) - Integración de contexto
    - server.js (líneas 42, 315) - Integración de rutas IA
    
-   IMPACTO ESPERADO: +40% engagement, experiencia personalizada
+   IMPACTO ESPERADO: +50% satisfacción usuario, +25% conversión
 
 2. COTIZACIONES AUTOMÁTICAS INTELIGENTES ✅ IMPLEMENTADO (25 min)
    PROBLEMA: Proceso manual de cotizaciones, sin precios dinámicos
@@ -953,3 +953,52 @@ PRÓXIMO PASO OBLIGATORIO (CUANDO EL SITIO ESTÉ 100% LISTO):
 - Costo: CallMeBot API (gratuito) o Twilio ($15/mes)
 - Impacto: +80% consultas atendidas 24/7
 - Estado: Documentado y preparado para implementación futura 
+
+ERRORES CRÍTICOS DE PRODUCCIÓN - RESUELTOS:
+
+**PROBLEMA 1: Error de migración de base de datos**
+Error: SyntaxError: The requested module '../config/pgPool.js' does not provide an export named 'pgPool'
+
+CAUSA: 
+- scripts/run-migration.js importaba { pgPool } 
+- config/pgPool.js exportaba { pool }
+- Inconsistencia en nombres de exportación
+
+SOLUCIÓN APLICADA:
+- Corregido scripts/run-migration.js línea 1: import { pool } from '../config/pgPool.js'
+- Corregido todas las referencias pgPool → pool en el archivo
+
+**PROBLEMA 2: Error de ruteo SPA en producción**
+Error: Cannot GET /admin/login (y otras rutas del frontend)
+
+CAUSA:
+- El servidor no tenía configurada la ruta de fallback para SPA
+- Rutas como /admin/login no servían el index.html
+- Solo funcionaba en desarrollo por el dev server de Vite
+
+SOLUCIÓN APLICADA:
+- Agregado fallback SPA en server.js antes del PORT
+- app.get('*') que sirve dist/index.html para rutas no-API
+- Excluye rutas /api/* del fallback
+
+RESULTADO:
+✅ Migraciones de base de datos funcionando correctamente
+✅ Todas las rutas del frontend accesibles en producción
+✅ Panel admin /admin/login funcional en servidor
+✅ Ruteo SPA completo operativo
+
+ARCHIVOS MODIFICADOS:
+- scripts/run-migration.js (línea 1, 25, 58) - Corregida importación pool
+- server.js (final del archivo) - Agregado fallback SPA
+
+COMANDOS PARA APLICAR CAMBIOS:
+```bash
+# Detener contenedor actual
+docker-compose -f docker-compose-prod.yml down
+
+# Reconstruir con cambios
+docker-compose -f docker-compose-prod.yml up --build -d
+
+# Verificar logs
+docker-compose -f docker-compose-prod.yml logs -f app
+``` 

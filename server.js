@@ -1088,5 +1088,17 @@ app.post('/api/auth/leads', async (req, res) => {
   }
 });
 
+// Configuración de fallback para SPA (Single Page Application)
+// Esto debe ir DESPUÉS de todas las rutas de API pero ANTES del puerto
+app.get('*', (req, res) => {
+  // No aplicar fallback a rutas de API
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  
+  // Para todas las demás rutas, servir el index.html
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 Servidor escuchando en puerto ${PORT}`));

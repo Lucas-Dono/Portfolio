@@ -1,4 +1,4 @@
-import { pgPool } from '../config/pgPool.js';
+import { pool } from '../config/pgPool.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -23,7 +23,7 @@ async function runMigrations() {
                 console.log(`📄 Ejecutando migración: ${migrationFile}`);
                 
                 const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
-                await pgPool.query(migrationSQL);
+                await pool.query(migrationSQL);
                 
                 console.log(`✅ Migración completada: ${migrationFile}`);
             } else {
@@ -50,7 +50,7 @@ async function runMigrations() {
         console.error('❌ Error ejecutando migraciones:', error);
         throw error;
     } finally {
-        await pgPool.end();
+        await pool.end();
     }
 }
 
