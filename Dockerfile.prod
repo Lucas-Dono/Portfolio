@@ -80,6 +80,7 @@ COPY --chown=appuser:appgroup config/ ./config/
 COPY --chown=appuser:appgroup utils/ ./utils/
 COPY --chown=appuser:appgroup templates/ ./templates/
 COPY --chown=appuser:appgroup migrations/ ./migrations/
+COPY --chown=appuser:appgroup scripts/ ./scripts/
 COPY --chown=appuser:appgroup security/ ./security/
 COPY --chown=appuser:appgroup src/ia/ ./src/ia/
 COPY --chown=appuser:appgroup middleware/ ./middleware/

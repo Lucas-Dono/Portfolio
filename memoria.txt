@@ -129,12 +129,17 @@ Los logs del servidor mostraban errores 500 en el panel admin:
    - $in → [Op.in]
    - $lt → [Op.lt]
 
+6. **Corrección Docker y importación** (Dockerfile.prod + server.js):
+   - Agregada copia de carpeta scripts/ al contenedor
+   - Importación dinámica de runMigrations para evitar errores de módulo
+
 **RESULTADO:**
 ✅ Panel admin funcional con todos los módulos:
 - Reembolsos: Tabla refund_requests creada y funcional
 - Stock: Métricas, historial y cola de espera funcionando
 - Valoraciones: Sistema completo operativo
 - Archivos JSON: Creación automática de userServices.json
+- Docker: Carpeta scripts/ correctamente copiada al contenedor
 
 INFORMACIÓN DEL PROYECTO:
 

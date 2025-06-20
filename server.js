@@ -72,9 +72,6 @@ const openai = new OpenAI({
 
 const app = express();
 
-// Importar script de migraciones
-import runMigrations from './scripts/run-migration.js';
-
 // Llamamos a la inicialización de la base de datos PostgreSQL (Sequelize)
 connectDB().then(async (sequelizeInstance) => {
   if (sequelizeInstance || process.env.DISABLE_DB === 'true' || process.env.ENABLE_FILE_FALLBACK === 'true') {
@@ -84,6 +81,8 @@ connectDB().then(async (sequelizeInstance) => {
     if (sequelizeInstance && process.env.NODE_ENV === 'production') {
       try {
         console.log('🔄 Ejecutando migraciones de base de datos...');
+        // Importar dinámicamente el script de migraciones
+        const { default: runMigrations } = await import('./scripts/run-migration.js');
         await runMigrations();
         console.log('✅ Migraciones completadas exitosamente');
       } catch (error) {
