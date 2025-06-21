@@ -1060,23 +1060,24 @@ ARCHIVOS MODIFICADOS EN ESTA SESIÓN:
 - .env.production (líneas 40-41) - Variables SMTP agregadas
 - server.js (líneas 57, 95-100) - Inicialización de notificaciones de prueba
 
-**PROBLEMA 6: ERROR CRÍTICO DE SINTAXIS NODEMAILER**
-Error: TypeError: nodemailer.createTransporter is not a function
+**PROBLEMA 7: ERROR DNS SMTP DONWEB - ACTUALIZADO CON DATOS REALES**
+Error: getaddrinfo ENOTFOUND smtp.donweb.com
 
 CAUSA:
-- Error de sintaxis en utils/emailManager.js línea 45
-- Función incorrecta: createTransporter en lugar de createTransport
-- Error tipográfico que impedía el inicio del servidor
+- Servidor SMTP incorrecto: smtp.donweb.com no existe
+- El usuario proporcionó los datos reales de configuración de DonWeb/Ferozo
+- Configuración errónea en utils/emailManager.js y notificationController.js
+
+DATOS REALES DE CONFIGURACIÓN SMTP (proporcionados por el usuario):
+- Servidor SMTP: c2830653.ferozo.com
+- Puerto: 465 (SSL)
+- Usuario: no_reply@circuitprompt.com.ar
+- Contraseña: @04LucasDono17/
+- SSL: Sí (puerto 465)
+- Certificado SSL: Sí
 
 SOLUCIÓN APLICADA:
-- Corregido utils/emailManager.js línea 45: createTransporter → createTransport
-- Verificado que nodemailer está correctamente instalado en package.json
-- Función correcta: nodemailer.createTransport()
-
-RESULTADO:
-✅ Servidor arranca sin errores de sintaxis
-✅ Configuración SMTP funcional
-✅ Sistema de emails operativo
-
-ARCHIVOS MODIFICADOS ADICIONALES:
-- utils/emailManager.js (línea 45) - Corregida función createTransport 
+- Corregido utils/emailManager.js: host: 'c2830653.ferozo.com', port: 465, secure: true
+- Corregido controllers/notificationController.js: misma configuración
+- Actualizado .env.production: SMTP_HOST=c2830653.ferozo.com, SMTP_PORT=465
+- Cambiado secure: true para puerto 465 (SSL)

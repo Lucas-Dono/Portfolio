@@ -43,12 +43,12 @@ try {
 
 // Configuración del transporter de nodemailer
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.donweb.com',
-    port: process.env.SMTP_PORT || 587,
-    secure: false, // true para 465, false para otros puertos
+    host: process.env.SMTP_HOST || 'c2830653.ferozo.com',
+    port: process.env.SMTP_PORT || 465,
+    secure: true, // true para 465, false para otros puertos
     auth: {
         user: process.env.ADMIN_EMAIL || 'no_reply@circuitprompt.com.ar',
-        pass: process.env.EMAIL_PASS
+        pass: process.env.EMAIL_PASS || '@04LucasDono17/'
     },
     tls: {
         rejectUnauthorized: false

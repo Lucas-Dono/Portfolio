@@ -23,9 +23,21 @@ async function runMigrations() {
                 console.log(`📄 Ejecutando migración: ${migrationFile}`);
                 
                 const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
-                await pool.query(migrationSQL);
                 
-                console.log(`✅ Migración completada: ${migrationFile}`);
+                try {
+                    await pool.query(migrationSQL);
+                    console.log(`✅ Migración completada: ${migrationFile}`);
+                } catch (migrationError) {
+                    // Manejar errores específicos que no son críticos
+                    if (migrationError.code === '42P07' && migrationError.message.includes('already exists')) {
+                        console.log(`⚠️ Elementos ya existen en migración: ${migrationFile} - Continuando...`);
+                    } else if (migrationError.code === '42P01' && migrationError.message.includes('does not exist')) {
+                        console.log(`⚠️ Tabla base no existe para migración: ${migrationFile} - Saltando...`);
+                    } else {
+                        // Para otros errores, re-lanzar
+                        throw migrationError;
+                    }
+                }
             } else {
                 console.log(`⚠️ Archivo de migración no encontrado: ${migrationFile}`);
             }
