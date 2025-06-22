@@ -19,10 +19,10 @@ CREATE TABLE IF NOT EXISTS refund_requests (
     CONSTRAINT fk_refund_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Índices para mejorar el rendimiento de consultas
-CREATE INDEX idx_refund_user_id ON refund_requests(user_id);
-CREATE INDEX idx_refund_status ON refund_requests(status);
-CREATE INDEX idx_refund_created_at ON refund_requests(created_at);
+-- Índices para mejorar el rendimiento de consultas (usando IF NOT EXISTS)
+CREATE INDEX IF NOT EXISTS idx_refund_user_id ON refund_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_refund_status ON refund_requests(status);
+CREATE INDEX IF NOT EXISTS idx_refund_created_at ON refund_requests(created_at);
 
 -- Comentarios para documentar la tabla
 COMMENT ON TABLE refund_requests IS 'Almacena solicitudes de reembolso de usuarios y su estado de procesamiento';
