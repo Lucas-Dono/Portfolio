@@ -161,15 +161,31 @@ ARQUITECTURA TÉCNICA:
 - Comunicación: WhatsApp Web.js + Nodemailer
 - Deploy: Docker + PM2
 
+**CONFIGURACIÓN SERVIDOR:**
+- SSH: ssh -p5289 root@179.43.121.187 (contraseña: kA/Ef37uSudOwj)
+- Directorio: /home/circuitprompt/htdocs/circuitprompt.com.ar
+- Comando deploy: ./docker-prod.sh
+- Antes de comandos en servidor: git pull
+
 ESTADO ACTUAL:
 ✅ Errores de importación resueltos completamente
-✅ Servidor funcional (requiere PostgreSQL para producción)
+✅ Panel admin funcional con autenticación corregida
+❌ ERRORES CRÍTICOS BASE DE DATOS EN SERVIDOR:
+   - Error: índice "idx_refund_user_id" already exists
+   - Error: tipos incompatibles user_id UUID vs VARCHAR(255)
+   - Error: database "circuitprompt" does not exist
 ✅ Hero simplificado con colores consistentes (magenta/cyan)
 ✅ Chat profesional abierto inmediatamente con colores consistentes
 ✅ Componente Services restaurado al diseño original superior
 ✅ Botón QuickQuote eliminado (redundante)
 ✅ Coherencia visual de colores entre secciones
 ✅ Flujo optimizado: Hero → Chat IA → Servicios → Compra
+
+**ARCHIVOS CREADOS PARA SOLUCIÓN BD:**
+- fix-database.sh (script corrección PostgreSQL)
+- fix-database-errors.sql (SQL directo)
+- migrations/refund_requests.sql (corregido con IF NOT EXISTS)
+- migrations/create_user_services_table.sql (corregido VARCHAR vs UUID)
 
 ÚLTIMOS CAMBIOS REALIZADOS:
 ✅ BOTONES DE NAVEGACIÓN HERO CORREGIDOS:
