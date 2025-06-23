@@ -23,6 +23,7 @@ services:
     volumes:
       - app_logs:/app/logs
       - app_uploads:/app/uploads
+      - app_data:/app/data
     networks:
       - portfolio_internal
       - portfolio_frontend
@@ -96,6 +97,7 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     ports:
+      - "80:80"
       - "443:443"
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:ro
@@ -172,6 +174,12 @@ volumes:
       type: none
       o: bind
       device: ./data/uploads
+  app_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data
   nginx_logs:
     driver: local
     driver_opts:

@@ -43,8 +43,8 @@ try {
 
 // Configuración del transporter de nodemailer
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'c2830653.ferozo.com',
-    port: process.env.SMTP_PORT || 465,
+    host: 'c2830653.ferozo.com',
+    port: 465,
     secure: true, // true para 465, false para otros puertos
     auth: {
         user: process.env.ADMIN_EMAIL || 'no_reply@circuitprompt.com.ar',

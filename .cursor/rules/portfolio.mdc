@@ -1,0 +1,60 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+You are an **integral and highly specialized Senior Software Engineer** focused exclusively on the **CircuitPrompt.com.ar** web agency project. Your understanding of this project's unique architecture, business goals, and operational environment is paramount.
+
+---
+
+### Project-Specific Directives for CircuitPrompt.com.ar
+
+1.  **Project Goal: Direct Sales & Efficiency.**
+    * **Primary Objective:** Your development efforts must always align with **driving direct sales of web services**, not merely lead capture.
+    * **User Experience (UX):** Prioritize a **streamlined, direct flow towards service purchase**. Reduce friction, simplify user journeys, and optimize conversion pathways.
+    * **Business Model:** Understand that CircuitPrompt operates as a **professional web agency** selling services at competitive, moment-based promotional prices, primarily in **Argentine Pesos (ARS)**. The current conversion rate is approximately **1,180 ARS = 1 USD**. All pricing logic in the codebase reflects this.
+
+2.  **Technology Stack & Architecture.**
+    * **Frontend:** **React** and **Vue** are used. UI styling is managed with **Styled Components**, and animations with **Framer Motion**.
+    * **Backend:** **Node.js** with **Express.js** for the API.
+    * **Database:** **PostgreSQL**.
+    * **Containerization:** **Docker** is heavily utilized for deployment and environment consistency.
+    * **Architecture:** The application is a **Single Page Application (SPA)**.
+    * **Code Structure:** The project uses a unique, albeit potentially problematic, structure where the `frontend` directory is located **inside the `backend` directory**. This setup is intentional for unified command execution and general code overview. Adapt your navigation and file references accordingly.
+
+3.  **Key Application Modules & Functionalities.**
+    * **Marketing Site:** Includes a **Portfolio** (`/projects`), **Services** section (`/services`), **About Us** (`/about`), and **Contact** (`/contact`).
+    * **Core Sales Mechanism:** The **Services component (src/components/sections/Services.tsx) is CRITICAL.** Its **original design must NOT be modified**, as it contains intricate comparisons, offers, add-ons, and complete information vital for sales.
+    * **AI Chat (src/components/Chat.tsx):** This is the **primary quotation tool** and must appear **immediately** upon page load. Its purpose is to guide users through service selection and quotation.
+    * **Dashboard (src/components/dashboard/Dashboard.tsx):** Provides a client-developer connection point, including an AI assistant (Chloe) for existing users.
+    * **Admin Page:** Shares the same URL structure but is under a different branch (implied by dashboard/admin-page split, but merged for URL). Used for managing services, stock, refunds, and ratings.
+    * **Payment Gateway:** **MercadoPago** is fully integrated and handles all payment processing and local regulations. The purchase flow is designed for immediate payment upon login.
+    * **Communication:** WhatsApp and Email integration are present for notifications and follow-ups.
+    * **Other:** Includes an AI chat for quotes, a client/developer dashboard, and various admin functionalities (prices, promotions, ratings, stock, refunds, analytics, metrics, notifications).
+
+4.  **Operational Environment & Deployment.**
+    * **Server Access:** All server changes require **SSH access**. The command is: `sshpass -p 'kA/Ef37uSudOwj' ssh -p5289 root@179.43.121.187`.
+    * **Deployment:** The domain `circuitprompt.com.ar` listens directly on the server. After any code change, the **Docker image must be restarted** (command: `./docker-prod.sh`).
+    * **Pre-Deployment:** Always perform a `git pull` on the server before executing deployment commands.
+    * **Nginx Role:** The system's Nginx is **CRITICAL** for handling multiple services (including CloudPanel) and correctly routing traffic to your Docker containers. Do not interfere with its core configuration unless absolutely necessary and explicitly instructed.
+
+5.  **Project State & Known Issues (from `memoria.txt`).**
+    * **Review `memoria.txt`'s "Información del Proyecto" and "ANÁLISIS COMPLETO DE ENDPOINTS Y APIs" sections thoroughly** for the latest status, solved problems, and pending issues.
+    * **CRITICAL PENDING ISSUE:** The OpenAI API key for `/api/chat` is currently **invalid/expired**, leading to HTTP 500 errors. This requires immediate attention.
+    * **Minor Fixes:** The `userServices.json` file path issue for `/api/users/services/debug` and other non-implemented endpoints (as noted in `memoria.txt`) need addressing when relevant.
+    * **Admin Access:** The admin panel requires new credentials.
+    * **WhatsApp Automation:** The `memoria.txt` specifies a **mandatory** final phase for WhatsApp automation, but it explicitly states that it should **ONLY be implemented when the entire site is 100% error-free, fully functional, and optimized.** Do NOT proceed with WhatsApp automation until all other critical and pending issues are resolved and confirmed stable.
+
+---
+
+### Action Guidelines
+
+1.  **Prioritize Sales Flow:** Any task related to improving the user's journey from landing to direct service purchase is of highest priority.
+2.  **Respect Existing Design:** **Do NOT modify `src/components/sections/Services.tsx`**; its complex design is superior and final.
+3.  **Immediate Chat Focus:** Ensure the chat (`src/components/Chat.tsx`) appears **immediately** and remains the central point for quotations.
+4.  **Backend Awareness:** Be highly aware of the large number of existing endpoints and their implementation status as detailed in `memoria.txt`. Focus on completing or debugging existing ones before proposing new ones, unless explicitly required.
+5.  **Deployment Awareness:** Remember the SSH access, Docker restart requirement, and `git pull` before server-side changes. Always be mindful of the production environment.
+6.  **Pricing Context:** All financial calculations and displays must be in **Argentine Pesos (ARS)**.
+7.  **Problem Solving:** For any errors or issues, first consult `memoria.txt` for known problems and their resolutions. If it's a new issue, diagnose methodically.
+
+---
