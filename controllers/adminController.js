@@ -16,10 +16,37 @@ const USER_SERVICES_FILE = path.join(__dirname, '../data/userServices.json');
 async function loadUserServices() {
   try {
     const data = await fs.readFile(USER_SERVICES_FILE, 'utf8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    
+    // Si el archivo contiene solo un array, convertirlo al formato correcto
+    if (Array.isArray(parsed)) {
+      console.log('🔧 Convirtiendo formato de array a objeto con services');
+      const correctedData = { services: parsed };
+      await saveUserServices(correctedData);
+      return correctedData;
+    }
+    
+    // Verificar que tenga la estructura correcta
+    if (!parsed.services) {
+      console.log('🔧 Agregando propiedad services faltante');
+      parsed.services = [];
+      await saveUserServices(parsed);
+    }
+    
+    return parsed;
   } catch (error) {
     console.log('Error al cargar servicios de usuario:', error.message);
-    return { services: [] };
+    const defaultData = { services: [] };
+    
+    // Intentar crear el archivo con la estructura correcta
+    try {
+      await saveUserServices(defaultData);
+      console.log('✅ Archivo userServices.json creado con estructura correcta');
+    } catch (saveError) {
+      console.error('Error al crear archivo userServices.json:', saveError.message);
+    }
+    
+    return defaultData;
   }
 }
 
@@ -86,6 +113,14 @@ export const getAdminProjects = async (req, res) => {
     
     // Cargar todos los servicios
     const servicesData = await loadUserServices();
+    
+    // Verificar que servicesData tenga la estructura correcta
+    if (!servicesData || !servicesData.services || !Array.isArray(servicesData.services)) {
+      console.log('⚠️ Estructura de servicios incorrecta, devolviendo array vacío');
+      return res.status(200).json([]);
+    }
+    
+    console.log(`📊 Cargados ${servicesData.services.length} servicios para el panel admin`);
     
     // Transformar los datos para adaptarlos al formato necesario para el panel admin
     const projects = servicesData.services.map(service => {
