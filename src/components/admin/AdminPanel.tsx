@@ -693,6 +693,26 @@ const AdminPanel = () => {
     }
   };
 
+  // Función para abrir el chat de un proyecto específico
+  const handleOpenProjectChat = async (project: Project) => {
+    try {
+      // Redirigir al sistema de chat híbrido con el contexto del proyecto
+      // Por ahora, cambiaremos a la pestaña de chat en lugar de abrir un modal
+      // En el futuro, esto podría abrir un modal de chat específico para el proyecto
+      console.log('Abriendo chat para el proyecto:', project.serviceName, 'del usuario:', project.userName);
+      
+      // Cambiar a la pestaña de notificaciones que incluye gestión de chat
+      setActiveTab('notificaciones');
+      
+      // Opcional: Mostrar una notificación temporal
+      alert(`Chat abierto para el proyecto "${project.serviceName}" del cliente ${project.userName}. Puedes gestionar las conversaciones desde la sección de notificaciones.`);
+      
+    } catch (error) {
+      console.error('Error al abrir el chat del proyecto:', error);
+      alert('Error al abrir el chat. Por favor, inténtalo de nuevo.');
+    }
+  };
+
   // Renderizar cada pestaña según la activa
   const renderActiveTab = () => {
     switch (activeTab) {
