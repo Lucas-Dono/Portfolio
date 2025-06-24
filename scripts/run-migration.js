@@ -14,7 +14,8 @@ async function runMigrations() {
         const migrationFiles = [
             '../migrations/refund_requests.sql',
             '../migrations/create_user_services_table.sql',
-            '../migrations/create_promociones_table.sql'
+            '../migrations/create_promociones_table.sql',
+            '../migrations/create_chat_tables.sql'
         ];
         
         for (const migrationFile of migrationFiles) {

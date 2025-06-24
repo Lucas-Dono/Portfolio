@@ -52,6 +52,8 @@ import emailSequenceRoutes from './routes/emailSequenceRoutes.js';
 import metricsRoutes from './routes/metricsRoutes.js';
 // Importar rutas de notificaciones
 import notificationRoutes from './routes/notificationRoutes.js';
+// Importar rutas de chat híbrido
+import hybridChatRoutes from './routes/hybridChatRoutes.js';
 
 // Importar controladores de pago
 import { processPayment, createPreference, handleWebhook, processApiPayment } from './controllers/paymentController.js';
@@ -366,6 +368,9 @@ app.use('/api/metrics', metricsRoutes);
 
 // Usar las rutas de notificaciones
 app.use('/api/notifications', notificationRoutes);
+
+// Usar las rutas de chat híbrido
+app.use('/api/hybrid-chat', hybridChatRoutes);
 
 // Rutas de administración
 app.use('/api/admin', (req, res, next) => {

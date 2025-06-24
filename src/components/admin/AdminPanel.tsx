@@ -785,6 +785,9 @@ const AdminPanel = () => {
                     </PreviewSection>
 
                     <ProjectActions>
+                      <Button onClick={() => handleOpenProjectChat(project)}>
+                        <ActionIcon>💬</ActionIcon> Chat
+                      </Button>
                       <Button onClick={() => handleOpenAddImageModal(project)}>
                         <ActionIcon>📸</ActionIcon> Añadir imagen
                       </Button>

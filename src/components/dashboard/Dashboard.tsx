@@ -13,6 +13,7 @@ import { enableReactError310Debugging, reactErrorDebugger } from '../../utils/re
 import SecuritySettings from './SecuritySettings';
 import RefundRequest from './RefundRequest';
 import QuotationForm from '../QuotationForm';
+import HybridChat from './HybridChat';
 import {
   SectionContainer,
   SectionHeader,
