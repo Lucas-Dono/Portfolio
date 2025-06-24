@@ -394,40 +394,47 @@ const notify = async (type, data) => {
   return await createNotification(type, data);
 };
 
+// Función para limpiar notificaciones de prueba
+const clearTestNotifications = () => {
+  try {
+    // Eliminar notificaciones con emails de ejemplo
+    const testEmails = ['cliente@ejemplo.com', 'empresa@ejemplo.com', 'user@example.com'];
+    const initialLength = notifications.length;
+    
+    for (let i = notifications.length - 1; i >= 0; i--) {
+      const notification = notifications[i];
+      const hasTestEmail = testEmails.some(email => 
+        notification.message.includes(email) || 
+        (notification.data && notification.data.email && testEmails.includes(notification.data.email))
+      );
+      
+      if (hasTestEmail || notification.message.includes('Sistema de notificaciones inicializado')) {
+        notifications.splice(i, 1);
+      }
+    }
+    
+    const removedCount = initialLength - notifications.length;
+    if (removedCount > 0) {
+      console.log(`🧹 Eliminadas ${removedCount} notificaciones de prueba`);
+    }
+  } catch (error) {
+    console.error('Error limpiando notificaciones de prueba:', error);
+  }
+};
+
 // Función para crear notificaciones de prueba (solo para desarrollo/testing)
 const createTestNotifications = async () => {
   try {
-    console.log('🧪 Creando notificaciones de prueba...');
+    console.log('🧪 Sistema de notificaciones inicializado');
     
-    // Solo crear si no hay notificaciones existentes
-    if (notifications.length === 0) {
-      await createNotification('NEW_LEAD', {
-        email: 'cliente@ejemplo.com',
-        name: 'Juan Pérez',
-        source: 'web',
-        page: 'Landing Page'
-      });
-
-      await createNotification('NEW_QUOTATION', {
-        serviceType: 'E-commerce Premium',
-        finalPrice: 89997,
-        email: 'empresa@ejemplo.com'
-      });
-
-      await createNotification('PAYMENT_SUCCESS', {
-        amount: 29997,
-        email: 'cliente@ejemplo.com',
-        paymentMethod: 'MercadoPago'
-      });
-
-      await createNotification('SYSTEM_ALERT', {
-        message: 'Sistema de notificaciones inicializado correctamente'
-      });
-
-      console.log('✅ Notificaciones de prueba creadas');
-    }
+    // Primero limpiamos las notificaciones de prueba existentes
+    clearTestNotifications();
+    
+    // Ya no creamos notificaciones de prueba automáticamente
+    // Solo mostraremos notificaciones reales cuando ocurran
+    console.log('✅ Sistema de notificaciones listo - solo notificaciones reales');
   } catch (error) {
-    console.error('Error creando notificaciones de prueba:', error);
+    console.error('Error inicializando sistema de notificaciones:', error);
   }
 };
 
@@ -439,5 +446,6 @@ export {
   getStats,
   notify,
   createTestNotifications,
+  clearTestNotifications,
   NOTIFICATION_TYPES
 }; 

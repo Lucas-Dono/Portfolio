@@ -159,6 +159,28 @@ const NotificationCenter: React.FC = () => {
     }
   };
 
+  // Limpiar notificaciones de prueba
+  const clearTestNotifications = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/notifications/clear-test', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        await loadNotifications();
+        await loadStats();
+        console.log('Notificaciones de prueba eliminadas');
+      }
+    } catch (error) {
+      console.error('Error limpiando notificaciones de prueba:', error);
+    }
+  };
+
   // Efectos
   useEffect(() => {
     loadNotifications();
@@ -229,6 +251,9 @@ const NotificationCenter: React.FC = () => {
           </button>
           <button onClick={markAllAsRead} disabled={!stats?.unread}>
             ✅ Marcar todas como leídas
+          </button>
+          <button onClick={clearTestNotifications}>
+            🧹 Limpiar notificaciones de prueba
           </button>
         </HeaderActions>
       </Header>
@@ -369,11 +394,15 @@ const LoadingSpinner = styled.div`
   .spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid #f3f3f3;
+    border: 4px solid rgba(255, 255, 255, 0.3);
     border-top: 4px solid #667eea;
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 20px;
+  }
+  
+  p {
+    color: #e2e8f0;
   }
   
   @keyframes spin {
@@ -390,7 +419,9 @@ const Header = styled.div`
   
   h2 {
     margin: 0;
-    color: #2d3748;
+    color: #e2e8f0;
+    font-size: 1.8rem;
+    font-weight: 600;
   }
 `;
 
@@ -399,16 +430,19 @@ const HeaderActions = styled.div`
   gap: 10px;
   
   button {
-    padding: 8px 16px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    background: white;
+    padding: 10px 16px;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+    background: #2d3748;
+    color: #e2e8f0;
     cursor: pointer;
     transition: all 0.2s;
+    font-weight: 500;
     
     &:hover {
-      background: #f7fafc;
-      border-color: #cbd5e0;
+      background: #4a5568;
+      border-color: #667eea;
+      transform: translateY(-1px);
     }
     
     &:disabled {
@@ -426,68 +460,82 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled.div<{ priority?: string }>`
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: #2d3748;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   text-align: center;
   border-left: 4px solid ${props => 
     props.priority === 'critical' ? '#e53e3e' : '#667eea'
   };
+  transition: all 0.2s;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  }
 `;
 
 const StatNumber = styled.div`
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: bold;
-  color: #2d3748;
-  margin-bottom: 5px;
+  color: #e2e8f0;
+  margin-bottom: 8px;
 `;
 
 const StatLabel = styled.div`
-  color: #718096;
+  color: #a0aec0;
   font-size: 0.9rem;
+  font-weight: 500;
 `;
 
 const Filters = styled.div`
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 `;
 
 const FilterButton = styled.button<{ active?: boolean }>`
-  padding: 8px 16px;
-  border: 1px solid ${props => props.active ? '#667eea' : '#e2e8f0'};
-  border-radius: 20px;
-  background: ${props => props.active ? '#667eea' : 'white'};
-  color: ${props => props.active ? 'white' : '#4a5568'};
+  padding: 10px 18px;
+  border: 1px solid ${props => props.active ? '#667eea' : '#4a5568'};
+  border-radius: 25px;
+  background: ${props => props.active ? '#667eea' : '#2d3748'};
+  color: ${props => props.active ? 'white' : '#e2e8f0'};
   cursor: pointer;
   transition: all 0.2s;
+  font-weight: 500;
   
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    background: ${props => props.active ? '#5a67d8' : '#4a5568'};
   }
 `;
 
 const NotificationsList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 16px;
 `;
 
 const EmptyState = styled.div`
   text-align: center;
-  padding: 60px 20px;
-  color: #718096;
-  font-size: 1.1rem;
+  padding: 80px 20px;
+  color: #a0aec0;
+  font-size: 1.2rem;
+  
+  p {
+    margin: 0;
+    font-weight: 500;
+  }
 `;
 
 const NotificationCard = styled.div<{ priority: string; unread: boolean }>`
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: #2d3748;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border-left: 4px solid ${props => {
     switch (props.priority) {
       case 'critical': return '#e53e3e';
@@ -498,50 +546,56 @@ const NotificationCard = styled.div<{ priority: string; unread: boolean }>`
     }
   }};
   ${props => props.unread && `
-    background: #f0f8ff;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+    background: #1a365d;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+    border-left-color: #667eea;
   `}
   transition: all 0.2s;
   
   &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
   }
 `;
 
 const NotificationHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 12px;
+  margin-bottom: 12px;
 `;
 
 const TypeIcon = styled.span`
-  font-size: 1.2rem;
+  font-size: 1.3rem;
 `;
 
 const NotificationTitle = styled.h3`
   margin: 0;
   flex: 1;
-  color: #2d3748;
+  color: #e2e8f0;
   font-size: 1.1rem;
+  font-weight: 600;
 `;
 
 const NotificationTime = styled.span`
-  color: #718096;
+  color: #a0aec0;
   font-size: 0.9rem;
+  font-weight: 500;
 `;
 
 const NotificationMessage = styled.p`
-  margin: 0 0 15px 0;
-  color: #4a5568;
-  line-height: 1.5;
+  margin: 0 0 16px 0;
+  color: #cbd5e0;
+  line-height: 1.6;
+  font-size: 0.95rem;
 `;
 
 const NotificationFooter = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 `;
 
 const PriorityBadge = styled.span<{ priority: string }>`
@@ -555,10 +609,12 @@ const PriorityBadge = styled.span<{ priority: string }>`
     }
   }};
   color: white;
-  padding: 4px 8px;
-  border-radius: 12px;
+  padding: 6px 12px;
+  border-radius: 16px;
   font-size: 0.75rem;
   font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const NotificationActions = styled.div`
@@ -567,18 +623,20 @@ const NotificationActions = styled.div`
 `;
 
 const ActionButton = styled.button<{ danger?: boolean }>`
-  padding: 6px 12px;
-  border: 1px solid ${props => props.danger ? '#e53e3e' : '#e2e8f0'};
-  border-radius: 4px;
-  background: white;
-  color: ${props => props.danger ? '#e53e3e' : '#4a5568'};
+  padding: 8px 14px;
+  border: 1px solid ${props => props.danger ? '#e53e3e' : '#4a5568'};
+  border-radius: 6px;
+  background: ${props => props.danger ? 'transparent' : '#4a5568'};
+  color: ${props => props.danger ? '#fc8181' : '#e2e8f0'};
   cursor: pointer;
   font-size: 0.85rem;
+  font-weight: 500;
   transition: all 0.2s;
   
   &:hover {
-    background: ${props => props.danger ? '#e53e3e' : '#f7fafc'};
-    color: ${props => props.danger ? 'white' : '#2d3748'};
+    background: ${props => props.danger ? '#e53e3e' : '#667eea'};
+    color: white;
+    transform: translateY(-1px);
   }
 `;
 
@@ -589,19 +647,27 @@ const Pagination = styled.div`
   gap: 20px;
   margin-top: 30px;
   padding: 20px;
+  
+  span {
+    color: #e2e8f0;
+    font-weight: 500;
+  }
 `;
 
 const PaginationButton = styled.button`
-  padding: 8px 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: white;
+  padding: 10px 18px;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  background: #2d3748;
+  color: #e2e8f0;
   cursor: pointer;
   transition: all 0.2s;
+  font-weight: 500;
   
   &:hover:not(:disabled) {
-    background: #f7fafc;
-    border-color: #cbd5e0;
+    background: #4a5568;
+    border-color: #667eea;
+    transform: translateY(-1px);
   }
   
   &:disabled {
