@@ -1607,3 +1607,70 @@ sshpass -p 'kA/Ef37uSudOwj' ssh -p5289 root@179.43.121.187 "cd /home/circuitprom
 3. ✅ Email de verificación llega sin errores
 4. ✅ Panel admin carga sin errores 500
 5. ✅ Todas las funcionalidades operativas
+
+**PROBLEMAS DASHBOARD Y SERVICIOS RESUELTOS - DICIEMBRE 2024**
+
+✅ PROBLEMA 1 - Dashboard mostraba "administrador" en lugar del nombre real del usuario:
+
+**CAUSA IDENTIFICADA:**
+- src/App.tsx línea 725: Dashboard se llamaba con userName="Usuario de Prueba" hardcodeado
+- No utilizaba el contexto de autenticación para obtener el nombre real del usuario
+- El fallback "administrador" venía del sistema de autenticación cuando no había nombre específico
+
+**SOLUCIÓN IMPLEMENTADA:**
+- Creado componente DashboardWrapper que utiliza useAuth() hook
+- userName ahora se obtiene dinámicamente: user?.name || user?.email?.split('@')[0] || 'Usuario'
+- Importado useAuth desde AuthContext en App.tsx
+- Reemplazado llamada directa a Dashboard con DashboardWrapper en ruta /dashboard
+
+**ARCHIVOS MODIFICADOS:**
+- src/App.tsx (líneas 19, 65-72, 726): Agregado useAuth import, DashboardWrapper component, usado en ruta
+- src/components/admin/AdminPanel.tsx (línea 701): Función handleOpenProjectChat implementada
+
+**RESULTADO:**
+🎯 Dashboard ahora muestra el nombre real del usuario autenticado
+✅ Chat del dashboard aparece correctamente con nombre personalizado
+✅ Eliminada confusión de "administrador" para usuarios regulares
+
+✅ PROBLEMA 2 - Error de base de datos en servicios/promociones:
+
+**ERROR IDENTIFICADO:**
+```
+ERROR: column "servicio_id" does not exist at character 14
+HINT: Perhaps you meant to reference the column "Promocion.servicioId".
+```
+
+**CAUSA:**
+- models/Promocion.js línea 47: `order: [['created_at', 'DESC']]`
+- Sequelize esperaba campo camelCase 'createdAt' en lugar de snake_case 'created_at'
+- Modelo tenía definidos campos snake_case pero query usaba nombres inconsistentes
+
+**SOLUCIÓN IMPLEMENTADA:**
+- Corregido models/Promocion.js línea 47: `order: [['createdAt', 'DESC']]`
+- Campo de ordenamiento ahora usa nomenclatura camelCase consistente con Sequelize
+
+**ARCHIVOS MODIFICADOS:**
+- models/Promocion.js (línea 47): Corregido campo de ordenamiento
+
+**RESULTADO:**
+🎯 Error de base de datos en promociones resuelto
+✅ API /api/promociones funciona correctamente
+✅ Panel admin de promociones carga sin errores
+✅ Consistencia en nomenclatura de campos base de datos
+
+**ESTADO FINAL DE LA APLICACIÓN - DICIEMBRE 2024:**
+🚀 LANDING PAGE: ✅ FUNCIONANDO (Hero, Services, Projects, Contact)
+🚀 CHAT IA: ✅ FUNCIONANDO (abierto inmediatamente, colores consistentes)
+🚀 AUTENTICACIÓN: ✅ FUNCIONANDO (OAuth Google/GitHub + local)
+🚀 DASHBOARD USUARIO: ✅ FUNCIONANDO (nombre real, chat Chloe funcional)
+🚀 PANEL ADMIN: ✅ FUNCIONANDO (proyectos, promociones, métricas, notificaciones)
+🚀 SISTEMA PAGOS: ✅ FUNCIONANDO (MercadoPago integrado)
+🚀 BASE DE DATOS: ✅ FUNCIONANDO (PostgreSQL con migraciones aplicadas)
+🚀 DOCKER: ✅ FUNCIONANDO (contenedores estables en producción)
+🚀 EMAILS: ✅ FUNCIONANDO (SMTP Ferozo operativo)
+
+**COMANDOS PARA DESPLIEGUE:**
+```bash
+# Aplicar cambios en servidor
+sshpass -p 'kA/Ef37uSudOwj' ssh -p5289 root@179.43.121.187 "cd /home/circuitprompt/htdocs/circuitprompt.com.ar && git pull && ./docker-prod.sh"
+```

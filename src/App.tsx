@@ -16,6 +16,7 @@ import { AnimatePresence } from 'framer-motion';
 import GithubCallback from './pages/GithubCallback';
 import { isAuthenticated as checkAuthentication, initializeAuthStorage } from '../src/services/auth';
 import { API_BASE_URL } from './config/apiConfig';
+import { useAuth } from './context/AuthContext';
 
 // Importaciones perezosas para mejorar performance
 const Chat = lazy(() => import('./components/Chat'));
@@ -77,6 +78,16 @@ const Terms = lazy(() => import('./pages/Terms'));
 
 // Lista de secciones disponibles en el sitio (debe coincidir con los IDs en el DOM)
 const SECTIONS = ['inicio', 'services', 'projects', 'sobre-nosotros', 'contacto'];
+
+// Componente wrapper para el Dashboard que utiliza el contexto de autenticación
+const DashboardWrapper = () => {
+  const { user } = useAuth();
+  
+  // Obtener el nombre del usuario desde el contexto, o usar fallback
+  const userName = user?.name || user?.email?.split('@')[0] || 'Usuario';
+  
+  return <Dashboard userName={userName} />;
+};
 
 // Componente contenedor con el contenido principal
 const MainContent = () => {
@@ -723,7 +734,7 @@ const AppRoutes = () => {
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <Suspense fallback={<div>Cargando...</div>}>
-            <Dashboard userName="Usuario de Prueba" />
+            <DashboardWrapper />
           </Suspense>
         </ProtectedRoute>
       } />

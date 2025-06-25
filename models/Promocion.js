@@ -45,7 +45,7 @@ class Promocion extends Model {
 
       // Intentar buscar en la base de datos
       const promociones = await this.findAll({
-        order: [['created_at', 'DESC']]
+        order: [['createdAt', 'DESC']]
       });
       return promociones.map(promocion => {
         const data = promocion.toJSON();
