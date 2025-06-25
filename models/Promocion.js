@@ -258,10 +258,11 @@ class Promocion extends Model {
 // Inicializar el modelo de Sequelize solo si está disponible
 if (sequelize) {
   Promocion.init({
-    // ID único de la promoción
+    // ID único de la promoción (auto-incremental)
     id: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       primaryKey: true,
+      autoIncrement: true,
       allowNull: false
     },
     // ID del servicio al que aplica (coincide con la BD existente)

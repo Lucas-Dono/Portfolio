@@ -22,17 +22,14 @@ CREATE INDEX IF NOT EXISTS idx_promociones_activa ON promociones(activa);
 CREATE INDEX IF NOT EXISTS idx_promociones_tipo ON promociones(tipo);
 CREATE INDEX IF NOT EXISTS idx_promociones_fecha_fin ON promociones("fechaFin");
 
--- Insertar promociones iniciales (las que estaban hardcodeadas)
-INSERT INTO promociones (id, "servicioId", tipo, "cantidadLimite", "cantidadUsada", activa, "createdAt") 
-VALUES 
-    ('promo-basic-gratis', 'landing-page', 'GRATIS', 3, 1, true, CURRENT_TIMESTAMP),
-    ('promo-standard-descuento', 'basic-website', 'DESCUENTO', 5, 2, true, CURRENT_TIMESTAMP)
-ON CONFLICT (id) DO NOTHING;
+-- Insertar promociones iniciales solo si no existen (usando servicioId como identificador único)
+INSERT INTO promociones ("servicioId", tipo, "cantidadLimite", "cantidadUsada", activa, "valorDescuento", "createdAt") 
+SELECT 'landing-page', 'GRATIS', 3, 1, true, NULL, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM promociones WHERE "servicioId" = 'landing-page' AND tipo = 'GRATIS');
 
--- Actualizar el valor de descuento para la promoción de descuento
-UPDATE promociones 
-SET "valorDescuento" = 20 
-WHERE id = 'promo-standard-descuento' AND tipo = 'DESCUENTO';
+INSERT INTO promociones ("servicioId", tipo, "cantidadLimite", "cantidadUsada", activa, "valorDescuento", "createdAt") 
+SELECT 'basic-website', 'DESCUENTO', 5, 2, true, 20, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM promociones WHERE "servicioId" = 'basic-website' AND tipo = 'DESCUENTO');
 
 COMMENT ON TABLE promociones IS 'Tabla de promociones para servicios';
 COMMENT ON COLUMN promociones."servicioId" IS 'ID del servicio al que aplica la promoción';
