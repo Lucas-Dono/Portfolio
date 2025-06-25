@@ -52,17 +52,18 @@ class Promocion extends Model {
         // Convertir fechas de strings a Date objects para compatibilidad
         if (data.fecha_creacion) data.fechaCreacion = new Date(data.fecha_creacion);
         if (data.fecha_expiracion) data.fechaExpiracion = new Date(data.fecha_expiracion);
-        // Mapear nombres de campos snake_case a camelCase
+        // Los datos ya están en formato correcto de la BD
         return {
           id: data.id,
-          servicioId: data.servicio_id,
+          servicioId: data.servicioId,
           tipo: data.tipo,
-          valorDescuento: data.valor_descuento,
-          cantidadLimite: data.cantidad_limite,
-          cantidadUsada: data.cantidad_usada,
+          valorDescuento: data.valorDescuento,
+          cantidadLimite: data.cantidadLimite,
+          cantidadUsada: data.cantidadUsada,
           activa: data.activa,
-          fechaCreacion: data.fechaCreacion || new Date(data.created_at),
-          fechaExpiracion: data.fechaExpiracion || null
+          fechaCreacion: new Date(data.createdAt),
+          fechaInicio: data.fechaInicio ? new Date(data.fechaInicio) : null,
+          fechaFin: data.fechaFin ? new Date(data.fechaFin) : null
         };
       });
     } catch (error) {
@@ -84,16 +85,17 @@ class Promocion extends Model {
         data.id = `promo-${uuidv4()}`;
       }
 
-      // Convertir camelCase a snake_case para la base de datos
+      // Los datos ya están en el formato correcto para la BD
       const dbData = {
         id: data.id,
-        servicio_id: data.servicioId,
+        servicioId: data.servicioId,
         tipo: data.tipo,
-        valor_descuento: data.valorDescuento || null,
-        cantidad_limite: data.cantidadLimite || 1,
-        cantidad_usada: 0,
+        valorDescuento: data.valorDescuento || null,
+        cantidadLimite: data.cantidadLimite || 1,
+        cantidadUsada: 0,
         activa: data.activa !== undefined ? data.activa : true,
-        fecha_expiracion: data.fechaExpiracion || null
+        fechaInicio: data.fechaInicio || null,
+        fechaFin: data.fechaFin || null
       };
 
       // Si la base de datos está deshabilitada, usar el respaldo de archivos
@@ -106,17 +108,18 @@ class Promocion extends Model {
       const promocion = await this.create(dbData);
       const result = promocion.toJSON();
       
-      // Convertir a formato camelCase para el frontend
+      // Los datos ya están en formato correcto
       return {
         id: result.id,
-        servicioId: result.servicio_id,
+        servicioId: result.servicioId,
         tipo: result.tipo,
-        valorDescuento: result.valor_descuento,
-        cantidadLimite: result.cantidad_limite,
-        cantidadUsada: result.cantidad_usada,
+        valorDescuento: result.valorDescuento,
+        cantidadLimite: result.cantidadLimite,
+        cantidadUsada: result.cantidadUsada,
         activa: result.activa,
-        fechaCreacion: new Date(result.created_at),
-        fechaExpiracion: result.fecha_expiracion ? new Date(result.fecha_expiracion) : null
+        fechaCreacion: new Date(result.createdAt),
+        fechaInicio: result.fechaInicio ? new Date(result.fechaInicio) : null,
+        fechaFin: result.fechaFin ? new Date(result.fechaFin) : null
       };
     } catch (error) {
       // Si falla y el respaldo está habilitado, intentar con archivos
@@ -132,15 +135,16 @@ class Promocion extends Model {
   // Método seguro para actualizar promociones con fallback
   static async updateSafe(id, data) {
     try {
-      // Convertir camelCase a snake_case para la base de datos
+      // Los datos ya están en el formato correcto para la BD
       const dbData = {};
-      if (data.servicioId !== undefined) dbData.servicio_id = data.servicioId;
+      if (data.servicioId !== undefined) dbData.servicioId = data.servicioId;
       if (data.tipo !== undefined) dbData.tipo = data.tipo;
-      if (data.valorDescuento !== undefined) dbData.valor_descuento = data.valorDescuento;
-      if (data.cantidadLimite !== undefined) dbData.cantidad_limite = data.cantidadLimite;
-      if (data.cantidadUsada !== undefined) dbData.cantidad_usada = data.cantidadUsada;
+      if (data.valorDescuento !== undefined) dbData.valorDescuento = data.valorDescuento;
+      if (data.cantidadLimite !== undefined) dbData.cantidadLimite = data.cantidadLimite;
+      if (data.cantidadUsada !== undefined) dbData.cantidadUsada = data.cantidadUsada;
       if (data.activa !== undefined) dbData.activa = data.activa;
-      if (data.fechaExpiracion !== undefined) dbData.fecha_expiracion = data.fechaExpiracion;
+      if (data.fechaInicio !== undefined) dbData.fechaInicio = data.fechaInicio;
+      if (data.fechaFin !== undefined) dbData.fechaFin = data.fechaFin;
 
       // Si la base de datos está deshabilitada, usar el respaldo de archivos
       if (DISABLE_DB) {
@@ -208,7 +212,7 @@ class Promocion extends Model {
       // Buscar en la base de datos
       const promocion = await this.findOne({
         where: {
-          servicio_id: servicioId,
+          servicioId: servicioId,
           activa: true
         }
       });
@@ -218,20 +222,21 @@ class Promocion extends Model {
       const data = promocion.toJSON();
       
       // Verificar límites y expiración
-      if (data.cantidad_usada >= data.cantidad_limite) return null;
-      if (data.fecha_expiracion && new Date(data.fecha_expiracion) <= new Date()) return null;
+      if (data.cantidadUsada >= data.cantidadLimite) return null;
+      if (data.fechaFin && new Date(data.fechaFin) <= new Date()) return null;
 
-      // Convertir a formato camelCase
+      // Los datos ya están en formato correcto
       return {
         id: data.id,
-        servicioId: data.servicio_id,
+        servicioId: data.servicioId,
         tipo: data.tipo,
-        valorDescuento: data.valor_descuento,
-        cantidadLimite: data.cantidad_limite,
-        cantidadUsada: data.cantidad_usada,
+        valorDescuento: data.valorDescuento,
+        cantidadLimite: data.cantidadLimite,
+        cantidadUsada: data.cantidadUsada,
         activa: data.activa,
-        fechaCreacion: new Date(data.created_at),
-        fechaExpiracion: data.fecha_expiracion ? new Date(data.fecha_expiracion) : null
+        fechaCreacion: new Date(data.createdAt),
+        fechaInicio: data.fechaInicio ? new Date(data.fechaInicio) : null,
+        fechaFin: data.fechaFin ? new Date(data.fechaFin) : null
       };
     } catch (error) {
       if (ENABLE_FILE_FALLBACK) {
@@ -259,39 +264,43 @@ if (sequelize) {
       primaryKey: true,
       allowNull: false
     },
-    // ID del servicio al que aplica
-    servicio_id: {
+    // ID del servicio al que aplica (coincide con la BD existente)
+    servicioId: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      field: 'servicioId' // Mapear explícitamente al nombre de columna
     },
     // Tipo de promoción
     tipo: {
       type: DataTypes.ENUM('GRATIS', 'DESCUENTO'),
       allowNull: false
     },
-    // Valor del descuento (porcentaje, solo para tipo DESCUENTO)
-    valor_descuento: {
-      type: DataTypes.INTEGER,
+    // Valor del descuento (coincide con la BD existente)
+    valorDescuento: {
+      type: DataTypes.FLOAT,
       allowNull: true,
+      field: 'valorDescuento',
       validate: {
         min: 1,
         max: 100
       }
     },
-    // Cantidad límite de usos
-    cantidad_limite: {
+    // Cantidad límite de usos (coincide con la BD existente)
+    cantidadLimite: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 1,
+      field: 'cantidadLimite',
       validate: {
         min: 1
       }
     },
-    // Cantidad usada actualmente
-    cantidad_usada: {
+    // Cantidad usada actualmente (coincide con la BD existente)
+    cantidadUsada: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
+      field: 'cantidadUsada',
       validate: {
         min: 0
       }
@@ -302,10 +311,17 @@ if (sequelize) {
       allowNull: false,
       defaultValue: true
     },
-    // Fecha de expiración (opcional)
-    fecha_expiracion: {
+    // Fecha de inicio (coincide con la BD existente)
+    fechaInicio: {
       type: DataTypes.DATE,
-      allowNull: true
+      allowNull: true,
+      field: 'fechaInicio'
+    },
+    // Fecha de fin (coincide con la BD existente)
+    fechaFin: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'fechaFin'
     }
   }, {
     sequelize,
@@ -323,14 +339,15 @@ if (sequelize) {
             const data = promocion.toJSON();
             const camelCaseData = {
               id: data.id,
-              servicioId: data.servicio_id,
+              servicioId: data.servicioId,
               tipo: data.tipo,
-              valorDescuento: data.valor_descuento,
-              cantidadLimite: data.cantidad_limite,
-              cantidadUsada: data.cantidad_usada,
+              valorDescuento: data.valorDescuento,
+              cantidadLimite: data.cantidadLimite,
+              cantidadUsada: data.cantidadUsada,
               activa: data.activa,
-              fechaCreacion: new Date(data.created_at),
-              fechaExpiracion: data.fecha_expiracion ? new Date(data.fecha_expiracion) : null
+              fechaCreacion: new Date(data.createdAt),
+              fechaInicio: data.fechaInicio ? new Date(data.fechaInicio) : null,
+              fechaFin: data.fechaFin ? new Date(data.fechaFin) : null
             };
             await fileStorage.create(camelCaseData);
             console.log(`✅ Promoción ${promocion.id} sincronizada con sistema de archivos`);
@@ -347,14 +364,15 @@ if (sequelize) {
             const data = promocion.toJSON();
             const camelCaseData = {
               id: data.id,
-              servicioId: data.servicio_id,
+              servicioId: data.servicioId,
               tipo: data.tipo,
-              valorDescuento: data.valor_descuento,
-              cantidadLimite: data.cantidad_limite,
-              cantidadUsada: data.cantidad_usada,
+              valorDescuento: data.valorDescuento,
+              cantidadLimite: data.cantidadLimite,
+              cantidadUsada: data.cantidadUsada,
               activa: data.activa,
-              fechaCreacion: new Date(data.created_at),
-              fechaExpiracion: data.fecha_expiracion ? new Date(data.fecha_expiracion) : null
+              fechaCreacion: new Date(data.createdAt),
+              fechaInicio: data.fechaInicio ? new Date(data.fechaInicio) : null,
+              fechaFin: data.fechaFin ? new Date(data.fechaFin) : null
             };
             await fileStorage.update(promocion.id, camelCaseData);
             console.log(`✅ Promoción ${promocion.id} actualizada en sistema de archivos`);
@@ -368,16 +386,16 @@ if (sequelize) {
     validate: {
       // Validar que si es descuento, tenga valor de descuento
       validateDiscountValue() {
-        if (this.tipo === 'DESCUENTO' && !this.valor_descuento) {
+        if (this.tipo === 'DESCUENTO' && !this.valorDescuento) {
           throw new Error('Las promociones de tipo DESCUENTO deben tener un valor de descuento');
         }
-        if (this.tipo === 'GRATIS' && this.valor_descuento) {
+        if (this.tipo === 'GRATIS' && this.valorDescuento) {
           throw new Error('Las promociones de tipo GRATIS no deben tener valor de descuento');
         }
       },
       // Validar que cantidad usada no exceda el límite
       validateUsageLimit() {
-        if (this.cantidad_usada > this.cantidad_limite) {
+        if (this.cantidadUsada > this.cantidadLimite) {
           throw new Error('La cantidad usada no puede exceder el límite');
         }
       }

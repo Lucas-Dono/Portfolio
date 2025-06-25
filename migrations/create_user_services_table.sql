@@ -34,6 +34,9 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- Eliminar el trigger si existe y recrearlo
+DROP TRIGGER IF EXISTS update_user_services_updated_at ON user_services;
+
 CREATE TRIGGER update_user_services_updated_at
     BEFORE UPDATE ON user_services
     FOR EACH ROW
