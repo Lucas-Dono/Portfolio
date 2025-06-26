@@ -2309,7 +2309,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
       try {
         // Realizar la llamada a la API para obtener los servicios del usuario
-        const apiUrl = `${API_BASE_URL}/api/user-services`;
+        const apiUrl = `${API_BASE_URL}/user-services`;
         console.log('🔄 Obteniendo servicios del usuario desde:', apiUrl);
 
         const response = await fetch(apiUrl, {
@@ -3775,7 +3775,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       setLoading(true);
 
       // Obtener servicios del usuario desde la API
-      const response = await fetch(`${API_BASE_URL}/api/user-services`, {
+      const response = await fetch(`${API_BASE_URL}/user-services`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
