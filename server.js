@@ -409,9 +409,8 @@ app.use('/api/admin', (req, res, next) => {
   }
 }, adminRoutes);
 
-// Ruta de prueba simple (sin autenticación)
+// Ruta de prueba simple (sin autenticación) - TEMPORAL PARA DEBUG
 app.get('/api/user-services/test', (req, res) => {
-  console.log('🔍 RUTA DE PRUEBA EJECUTADA - /api/user-services/test');
   res.json({ message: 'Endpoint de prueba funcionando', timestamp: new Date().toISOString() });
 });
 
@@ -1117,10 +1116,8 @@ app.post('/api/auth/leads', async (req, res) => {
 // Configuración de fallback para SPA (Single Page Application)
 // Esto debe ir DESPUÉS de todas las rutas de API pero ANTES del puerto
 app.get('*', (req, res) => {
-  console.log('🔍 CATCH-ALL MIDDLEWARE - Ruta:', req.path);
   // No aplicar fallback a rutas de API
   if (req.path.startsWith('/api/')) {
-    console.log('❌ API endpoint not found:', req.path);
     return res.status(404).json({ error: 'API endpoint not found' });
   }
   

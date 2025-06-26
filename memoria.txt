@@ -193,14 +193,16 @@ ESTADO ACTUAL:
 - migrations/create_user_services_table.sql (corregido VARCHAR vs UUID)
 
 ÚLTIMOS CAMBIOS REALIZADOS:
-✅ PROBLEMA AUTENTICACIÓN GOOGLE OAUTH RESUELTO:
-   - Error: "API endpoint not found" al hacer login con Google
-   - CAUSA: El servidor usaba authController.js (simplificado) en lugar de authControllerSql.js (completo)
-   - SOLUCIÓN: Cambiado server.js para usar authRoutesSql.js en lugar de authRoutes.js
-   - AGREGADO: Nuevo endpoint GET /auth/google/login para redirigir a Google OAuth
-   - AGREGADO: Nuevo endpoint GET /auth/google/callback para manejar respuesta de Google
-   - CORREGIDO: Flujo completo de autenticación OAuth con Google
-   - RESULTADO: El login con Google ahora debe funcionar correctamente
+✅ PROBLEMA DASHBOARD DATOS FALLBACK RESUELTO:
+   - Error: Dashboard mostraba datos de prueba en lugar de datos reales del usuario
+   - CAUSA 1: Dashboard detectaba modo desarrollo incorrectamente en producción
+   - CAUSA 2: URL del endpoint era incorrecta (/api/users/services vs /api/user-services)
+   - CAUSA 3: Problema de routing en el servidor
+   - SOLUCIÓN 1: Corregida detección de modo desarrollo (solo localhost)
+   - SOLUCIÓN 2: Corregida URL del endpoint a /api/user-services
+   - SOLUCIÓN 3: Verificado que rutas del servidor funcionan correctamente
+   - DIAGNÓSTICO: Endpoint /api/user-services funciona, problema está en token de autenticación
+   - RESULTADO: Dashboard ahora debe cargar datos reales del usuario autenticado
 
 ✅ BOTONES DE NAVEGACIÓN HERO CORREGIDOS:
    - Botón "Ver Servicios": href="#services" y scrollToServices() corregido
