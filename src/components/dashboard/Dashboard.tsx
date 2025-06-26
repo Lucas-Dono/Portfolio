@@ -2196,8 +2196,17 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       // Solo usar modo desarrollo en localhost, no en producción
       const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       
+      console.log('🔍 DEBUG - loadProjectData iniciado');
+      console.log('🔍 DEBUG - isDevelopment:', isDevelopment);
+      console.log('🔍 DEBUG - hostname:', window.location.hostname);
+      
       // Obtener el token de autenticación
       const token = localStorage.getItem('auth_token');
+      console.log('🔍 DEBUG - token presente:', !!token);
+      if (token) {
+        console.log('🔍 DEBUG - token (primeros 20 chars):', token.substring(0, 20) + '...');
+      }
+      
       if (!token && !isDevelopment) {
         console.error("No hay token de autenticación");
         return;
@@ -2307,10 +2316,16 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         return;
       }
 
+      console.log('🔍 DEBUG - Ejecutando bloque de producción (no desarrollo)');
+      
       try {
         // Realizar la llamada a la API para obtener los servicios del usuario
         const apiUrl = `${API_BASE_URL}/user-services`;
         console.log('🔄 Obteniendo servicios del usuario desde:', apiUrl);
+        console.log('🔍 DEBUG - Headers que se enviarán:', {
+          'Authorization': `Bearer ${token?.substring(0, 20)}...`,
+          'Content-Type': 'application/json'
+        });
 
         const response = await fetch(apiUrl, {
           method: 'GET',
@@ -2319,6 +2334,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
             'Content-Type': 'application/json'
           }
         });
+
+        console.log('🔍 DEBUG - Response status:', response.status);
+        console.log('🔍 DEBUG - Response ok:', response.ok);
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -2425,7 +2443,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
           setHasActiveProjects(false);
         }
       } catch (apiError) {
-        console.error("Error en la llamada a la API:", apiError);
+        console.error("🚨 ERROR EN LA LLAMADA A LA API:", apiError);
+        console.log('🔍 DEBUG - Entrando en bloque catch - usando datos fallback');
         
         // En caso de error en la API, usar datos de prueba para desarrollo
         console.log("Usando datos de prueba como fallback");
