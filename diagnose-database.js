@@ -1,4 +1,4 @@
-const { pool } = require('./config/pgPool.js');
+import { pool } from './config/pgPool.js';
 
 async function diagnoseBatabase() {
     console.log('🔍 DIAGNÓSTICO COMPLETO DE BASE DE DATOS');
