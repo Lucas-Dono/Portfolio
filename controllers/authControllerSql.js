@@ -295,7 +295,7 @@ export const login = async (req, res) => {
 export const googleLogin = async (req, res) => {
     try {
         // La URL de callback debe apuntar al endpoint del servidor, no al HTML del frontend
-        // Forzar HTTPS en producción
+        // En producción, forzar HTTPS
         const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
         const redirectUri = `${protocol}://${req.get('host')}/api/auth/google/callback`;
         
@@ -349,7 +349,7 @@ export const googleCallback = async (req, res) => {
                 client_secret: GOOGLE_CLIENT_SECRET,
                 code,
                 grant_type: 'authorization_code',
-                redirect_uri: `${protocol}://${req.get('host')}/api/auth/google/callback`
+                redirect_uri: `${process.env.NODE_ENV === 'production' ? 'https' : req.protocol}://${req.get('host')}/api/auth/google/callback`
             })
         });
 

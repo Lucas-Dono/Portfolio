@@ -2239,7 +2239,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         } else {
           // No hay datos guardados, usar valores por defecto
           console.log('🔄 No hay datos guardados, mostrando sin proyectos activos');
-          setHasActiveProjects(false);
+                    setHasActiveProjects(false);
           setPreviewImages([]);
         }
 
