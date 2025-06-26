@@ -2193,8 +2193,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   // Función para cargar datos del proyecto desde la API
   const loadProjectData = async () => {
     try {
-      // Si estamos en modo desarrollo, podemos usar datos de prueba directamente
-      const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
+      // Solo usar modo desarrollo en localhost, no en producción
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       
       // Obtener el token de autenticación
       const token = localStorage.getItem('auth_token');
@@ -2309,7 +2309,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
       try {
         // Realizar la llamada a la API para obtener los servicios del usuario
-        const apiUrl = `${API_BASE_URL}/users/services`;
+        const apiUrl = `${API_BASE_URL}/api/user-services`;
         console.log('🔄 Obteniendo servicios del usuario desde:', apiUrl);
 
         const response = await fetch(apiUrl, {
@@ -3775,7 +3775,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       setLoading(true);
 
       // Obtener servicios del usuario desde la API
-      const response = await fetch(`${API_BASE_URL}/services/user`, {
+      const response = await fetch(`${API_BASE_URL}/api/user-services`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
