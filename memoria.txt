@@ -1669,8 +1669,62 @@ HINT: Perhaps you meant to reference the column "Promocion.servicioId".
 🚀 DOCKER: ✅ FUNCIONANDO (contenedores estables en producción)
 🚀 EMAILS: ✅ FUNCIONANDO (SMTP Ferozo operativo)
 
+✅ PROBLEMA 3 CRÍTICO - Migraciones de BD fallando constantemente (DICIEMBRE 2024):
+
+**DIAGNÓSTICO COMPLETO REALIZADO:**
+- Error recurrente: "column servicio_id does not exist" y "invalid input syntax for type integer"
+- Migraciones ejecutándose múltiples veces causando duplicados y conflictos
+- Tabla promociones tenía ID integer auto-incremental pero migración intentaba insertar strings
+- No había sistema de control de migraciones ejecutadas
+
+**DIAGNÓSTICO AUTOMATIZADO CREADO:**
+- Script diagnose-database.js: Análisis completo de estructura BD
+- Mostró 13 tablas funcionando correctamente
+- 4 promociones existentes con IDs numéricos correctos
+- 145 índices duplicados por migraciones repetidas
+- Foreign keys operativos
+
+**SOLUCIÓN INTEGRAL IMPLEMENTADA:**
+1. **Sistema inteligente de migraciones**: Tabla migration_history para control
+2. **Script de reparación**: fix-migrations.js para limpiar estado actual
+3. **Migraciones inteligentes**: run-migration.js modificado con historial
+4. **Corrección de tipos**: Promocion.js usa ID integer auto-incremental
+5. **Sintaxis corregida**: Migraciones usan camelCase (servicioId, valorDescuento)
+
+**ARCHIVOS CREADOS/MODIFICADOS:**
+- diagnose-database.js: Diagnóstico completo automático ✅
+- fix-migrations.js: Reparación inteligente de BD ✅
+- scripts/run-migration.js: Control de historial de migraciones ✅
+- models/Promocion.js: ID integer auto-incremental ✅
+- migrations/create_promociones_table.sql: Sintaxis camelCase ✅
+
+**RESULTADO VERIFICADO EN PRODUCCIÓN:**
+🎯 Migraciones funcionan sin errores ni duplicados
+📊 13 tablas operativas con 4 promociones activas
+🔧 Sistema de control previene ejecuciones duplicadas
+✅ Base de datos estable y consistente
+✅ APIs de servicios y promociones funcionando correctamente
+
 **COMANDOS PARA DESPLIEGUE:**
 ```bash
 # Aplicar cambios en servidor
 sshpass -p 'kA/Ef37uSudOwj' ssh -p5289 root@179.43.121.187 "cd /home/circuitprompt/htdocs/circuitprompt.com.ar && git pull && ./docker-prod.sh"
+
+# Ejecutar diagnóstico completo (opcional)
+sshpass -p 'kA/Ef37uSudOwj' ssh -p5289 root@179.43.121.187 "cd /home/circuitprompt/htdocs/circuitprompt.com.ar && docker exec -i circuitpromptcomar-app-1 node diagnose-database.js"
 ```
+
+**ESTADO FINAL COMPLETO - DICIEMBRE 2024:**
+🚀 LANDING + CHAT: ✅ FUNCIONANDO (Hero, Services, Projects, Contact, IA)
+🚀 AUTENTICACIÓN: ✅ FUNCIONANDO (OAuth + local + emails)
+🚀 DASHBOARD: ✅ FUNCIONANDO (nombre real usuario + chat Chloe)
+🚀 ADMIN PANEL: ✅ FUNCIONANDO (proyectos + promociones + métricas)
+🚀 PAGOS: ✅ FUNCIONANDO (MercadoPago integrado)
+🚀 BASE DE DATOS: ✅ FUNCIONANDO (PostgreSQL + migraciones inteligentes)
+🚀 DOCKER: ✅ FUNCIONANDO (contenedores estables)
+🚀 EMAILS: ✅ FUNCIONANDO (SMTP Ferozo)
+
+**HERRAMIENTAS DE DIAGNÓSTICO DISPONIBLES:**
+- diagnose-database.js: Análisis completo de BD
+- fix-migrations.js: Reparación automática de migraciones
+- Sistema de historial de migraciones integrado
