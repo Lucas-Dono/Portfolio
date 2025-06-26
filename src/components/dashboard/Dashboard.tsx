@@ -2189,6 +2189,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   }, []);
 
   // ===== FUNCIONES AUXILIARES =====
+  
+  
+
   // Función para determinar el tipo de dispositivo basado en el tamaño de pantalla
   const getDeviceType = () => { // eslint-disable-line @typescript-eslint/no-unused-vars
     if (windowSize.width <= 1024) return 'mobile';

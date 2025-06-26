@@ -112,7 +112,9 @@ const HeaderActions = styled.div`
 `;
 
 // Estilos cinematográficos para el chat
-const ChatContainer = styled(motion.div)<{ isOpen: boolean }>`
+const ChatContainer = styled(motion.div).withConfig({
+  shouldForwardProp: (prop) => !['isOpen'].includes(prop)
+})<{ isOpen: boolean }>`
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -152,7 +154,9 @@ const ChatContainer = styled(motion.div)<{ isOpen: boolean }>`
   }
 `;
 
-const ChatHeader = styled.div<{ isOpen: boolean }>`
+const ChatHeader = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isOpen'].includes(prop)
+})<{ isOpen: boolean }>`
   display: ${props => props.isOpen ? 'flex' : 'none'};
   align-items: center;
   justify-content: space-between;
@@ -170,7 +174,9 @@ const ChatTitle = styled.div`
   font-size: 1.1rem;
 `;
 
-const ChatToggle = styled.button<{ isOpen: boolean }>`
+const ChatToggle = styled.button.withConfig({
+  shouldForwardProp: (prop) => !['isOpen'].includes(prop)
+})<{ isOpen: boolean }>`
   position: ${props => props.isOpen ? 'static' : 'absolute'};
   top: ${props => props.isOpen ? 'auto' : '50%'};
   left: ${props => props.isOpen ? 'auto' : '50%'};
@@ -199,7 +205,9 @@ const ChatToggle = styled.button<{ isOpen: boolean }>`
   }
 `;
 
-const ChatBody = styled.div<{ isOpen: boolean }>`
+const ChatBody = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isOpen'].includes(prop)
+})<{ isOpen: boolean }>`
   display: ${props => props.isOpen ? 'flex' : 'none'};
   flex-direction: column;
   height: calc(100% - 70px);
