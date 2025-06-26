@@ -2190,171 +2190,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
 
   // ===== FUNCIONES AUXILIARES =====
   
-  
-
-  // Función para determinar el tipo de dispositivo basado en el tamaño de pantalla
-  const getDeviceType = () => { // eslint-disable-line @typescript-eslint/no-unused-vars
-    if (windowSize.width <= 1024) return 'mobile';
-    return 'desktop';
-  };
-
-  // Función para redirigir al login
-  const redirectToLogin = () => {
-    localStorage.setItem('redirect_after_login', 'dashboard');
-    navigate('/login');
-  };
-
-  // ===== VERIFICACIONES CONDICIONALES =====
-  // Si estamos cargando, mostrar pantalla de carga
-  if (authLoading || loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        background: '#121212',
-        color: '#f5f5f5'
-      }}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="50"
-          height="50"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#00d2ff"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            animation: 'spin 1.5s linear infinite',
-            marginBottom: '1rem'
-          }}
-        >
-          <line x1="12" y1="2" x2="12" y2="6"></line>
-          <line x1="12" y1="18" x2="12" y2="22"></line>
-          <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-          <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-          <line x1="2" y1="12" x2="6" y2="12"></line>
-          <line x1="18" y1="12" x2="22" y2="12"></line>
-          <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-          <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-        </svg>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-        <div>Cargando datos del proyecto...</div>
-      </div>
-    );
-  }
-
-  // Si no está autenticado, redirigir al login
-  if (!isAuthenticated) {
-    redirectToLogin();
-    return null;
-  }
-
-  // ===== TODAS LAS FUNCIONES DESPUÉS =====
-
-  // Lista de respuestas rápidas
-  const quickReplies = hasActiveProjects ? [
-    '¿Cómo va mi proyecto?',
-    '¿Qué incluirá mi sitio?',
-    '¿Cuándo estará listo?',
-    'Quiero hacer un cambio'
-  ] : [
-    '¿Qué servicios ofrecen?',
-    '¿Cuánto cuesta?',
-    'Quiero ver ejemplos',
-    'Necesito ayuda'
-  ];
-
-  // Funciones de manejo de eventos para el layout
-  const handleDragStart = () => {
-    setIsDragging(true);
-  };
-
-  const handleDragStop = (layout: Layout[], oldItem: Layout, newItem: Layout) => {
-    console.log('Elemento arrastrado:', oldItem, 'a nueva posición:', newItem);
-    setLayouts(layout);
-    saveLayout(layout);
-    setIsDragging(false);
-  };
-
-  const handleResizeStart = () => {
-    setIsResizing(true);
-  };
-
-  const handleResizeStop = (layout: Layout[], oldItem: Layout, newItem: Layout) => {
-    console.log('Elemento redimensionado:', oldItem, 'a nuevo tamaño:', newItem);
-    setLayouts(layout);
-    saveLayout(layout);
-    setIsResizing(false);
-  };
-
-  // Función para guardar el layout en localStorage
-  const saveLayout = (newLayout: Layout[]) => {
-    localStorage.setItem('dashboard_layout', JSON.stringify(newLayout));
-  };
-
-  // Mejorar la función handleLayoutChange para manejar mejor el cambio de tamaño
-  const handleLayoutChange = (newLayout: Layout[]) => {
-    // Solo procesar si hay cambios reales en el layout
-    const hasChanged = JSON.stringify(layouts) !== JSON.stringify(newLayout);
-
-    if (hasChanged && newLayout && newLayout.length === defaultLayout.length) {
-      console.log('Layout actualizado:', newLayout);
-      setLayouts(newLayout);
-
-      // Solo guardar en localStorage si el cambio fue generado por el usuario
-      // (para evitar sobreescribir cuando es generado por cambios de ventana)
-      if (isDragging || isResizing) {
-        saveLayout(newLayout);
-      }
-    }
-  };
-
-  // Función para restablecer el layout a la configuración original
-  const resetLayout = () => {
-    const isMobile = windowSize.width <= 768;
-
-    // Calcular la proporción óptima para la altura de los componentes
-    // basada en la altura real de la ventana
-    const availableHeight = windowSize.height - 150;
-    const rowsPerScreen = isMobile ? 12 : 8;
-    const optimalRowHeight = Math.floor(availableHeight / rowsPerScreen);
-
-    // Ajustar la altura de los componentes si es necesario para no desbordar
-    let adjustedLayout;
-
-    if (isMobile) {
-      adjustedLayout = [...mobileLayout];
-    } else {
-      // Para pantalla grande, ajustar la altura de los componentes laterales
-      // para que no se salgan de la pantalla
-      const sidebarHeight = Math.min(7, Math.floor(availableHeight / optimalRowHeight) - 1);
-
-      adjustedLayout = [
-        { i: 'projectStatus', x: 1, y: 0, w: 4, h: 3, minW: 2, minH: 1 },
-        { i: 'preview', x: 1, y: 3, w: 4, h: 4, minW: 2, minH: 1 },
-        { i: 'assistant', x: 5, y: 0, w: 1, h: sidebarHeight, minW: 1, minH: 2 },
-        { i: 'sites', x: 0, y: 0, w: 1, h: sidebarHeight, minW: 1, minH: 2 }
-      ];
-    }
-
-    setLayouts(adjustedLayout);
-    saveLayout(adjustedLayout);
-
-    // Eliminar del localStorage para forzar el uso del default la próxima vez
-    localStorage.removeItem('dashboard_layout');
-  };
-
-  // Cargar datos del proyecto
-  const loadProjectData = async () => { // eslint-disable-line @typescript-eslint/no-unused-vars
+  // Función para cargar datos del proyecto desde la API
+  const loadProjectData = async () => {
     try {
       // Si estamos en modo desarrollo, podemos usar datos de prueba directamente
       const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
@@ -2402,7 +2239,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
         } else {
           // No hay datos guardados, usar valores por defecto
           console.log('🔄 No hay datos guardados, mostrando sin proyectos activos');
-                    setHasActiveProjects(false);
+          setHasActiveProjects(false);
           setPreviewImages([]);
         }
 
@@ -2666,6 +2503,169 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       setLoading(false);
     }
   };
+
+  // Función para determinar el tipo de dispositivo basado en el tamaño de pantalla
+  const getDeviceType = () => { // eslint-disable-line @typescript-eslint/no-unused-vars
+    if (windowSize.width <= 1024) return 'mobile';
+    return 'desktop';
+  };
+
+  // Función para redirigir al login
+  const redirectToLogin = () => {
+    localStorage.setItem('redirect_after_login', 'dashboard');
+    navigate('/login');
+  };
+
+  // ===== VERIFICACIONES CONDICIONALES =====
+  // Si estamos cargando, mostrar pantalla de carga
+  if (authLoading || loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        background: '#121212',
+        color: '#f5f5f5'
+      }}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="50"
+          height="50"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#00d2ff"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            animation: 'spin 1.5s linear infinite',
+            marginBottom: '1rem'
+          }}
+        >
+          <line x1="12" y1="2" x2="12" y2="6"></line>
+          <line x1="12" y1="18" x2="12" y2="22"></line>
+          <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+          <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+          <line x1="2" y1="12" x2="6" y2="12"></line>
+          <line x1="18" y1="12" x2="22" y2="12"></line>
+          <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+          <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+        </svg>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+        <div>Cargando datos del proyecto...</div>
+      </div>
+    );
+  }
+
+  // Si no está autenticado, redirigir al login
+  if (!isAuthenticated) {
+    redirectToLogin();
+    return null;
+  }
+
+  // ===== TODAS LAS FUNCIONES DESPUÉS =====
+
+  // Lista de respuestas rápidas
+  const quickReplies = hasActiveProjects ? [
+    '¿Cómo va mi proyecto?',
+    '¿Qué incluirá mi sitio?',
+    '¿Cuándo estará listo?',
+    'Quiero hacer un cambio'
+  ] : [
+    '¿Qué servicios ofrecen?',
+    '¿Cuánto cuesta?',
+    'Quiero ver ejemplos',
+    'Necesito ayuda'
+  ];
+
+  // Funciones de manejo de eventos para el layout
+  const handleDragStart = () => {
+    setIsDragging(true);
+  };
+
+  const handleDragStop = (layout: Layout[], oldItem: Layout, newItem: Layout) => {
+    console.log('Elemento arrastrado:', oldItem, 'a nueva posición:', newItem);
+    setLayouts(layout);
+    saveLayout(layout);
+    setIsDragging(false);
+  };
+
+  const handleResizeStart = () => {
+    setIsResizing(true);
+  };
+
+  const handleResizeStop = (layout: Layout[], oldItem: Layout, newItem: Layout) => {
+    console.log('Elemento redimensionado:', oldItem, 'a nuevo tamaño:', newItem);
+    setLayouts(layout);
+    saveLayout(layout);
+    setIsResizing(false);
+  };
+
+  // Función para guardar el layout en localStorage
+  const saveLayout = (newLayout: Layout[]) => {
+    localStorage.setItem('dashboard_layout', JSON.stringify(newLayout));
+  };
+
+  // Mejorar la función handleLayoutChange para manejar mejor el cambio de tamaño
+  const handleLayoutChange = (newLayout: Layout[]) => {
+    // Solo procesar si hay cambios reales en el layout
+    const hasChanged = JSON.stringify(layouts) !== JSON.stringify(newLayout);
+
+    if (hasChanged && newLayout && newLayout.length === defaultLayout.length) {
+      console.log('Layout actualizado:', newLayout);
+      setLayouts(newLayout);
+
+      // Solo guardar en localStorage si el cambio fue generado por el usuario
+      // (para evitar sobreescribir cuando es generado por cambios de ventana)
+      if (isDragging || isResizing) {
+        saveLayout(newLayout);
+      }
+    }
+  };
+
+  // Función para restablecer el layout a la configuración original
+  const resetLayout = () => {
+    const isMobile = windowSize.width <= 768;
+
+    // Calcular la proporción óptima para la altura de los componentes
+    // basada en la altura real de la ventana
+    const availableHeight = windowSize.height - 150;
+    const rowsPerScreen = isMobile ? 12 : 8;
+    const optimalRowHeight = Math.floor(availableHeight / rowsPerScreen);
+
+    // Ajustar la altura de los componentes si es necesario para no desbordar
+    let adjustedLayout;
+
+    if (isMobile) {
+      adjustedLayout = [...mobileLayout];
+    } else {
+      // Para pantalla grande, ajustar la altura de los componentes laterales
+      // para que no se salgan de la pantalla
+      const sidebarHeight = Math.min(7, Math.floor(availableHeight / optimalRowHeight) - 1);
+
+      adjustedLayout = [
+        { i: 'projectStatus', x: 1, y: 0, w: 4, h: 3, minW: 2, minH: 1 },
+        { i: 'preview', x: 1, y: 3, w: 4, h: 4, minW: 2, minH: 1 },
+        { i: 'assistant', x: 5, y: 0, w: 1, h: sidebarHeight, minW: 1, minH: 2 },
+        { i: 'sites', x: 0, y: 0, w: 1, h: sidebarHeight, minW: 1, minH: 2 }
+      ];
+    }
+
+    setLayouts(adjustedLayout);
+    saveLayout(adjustedLayout);
+
+    // Eliminar del localStorage para forzar el uso del default la próxima vez
+    localStorage.removeItem('dashboard_layout');
+  };
+
+
 
   // Función para agregar un mensaje al chat
   const addMessage = (role: 'user' | 'assistant', content: string) => {
