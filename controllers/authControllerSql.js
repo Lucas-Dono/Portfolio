@@ -291,6 +291,155 @@ export const login = async (req, res) => {
     }
 };
 
+// Controller para redirección a Google OAuth
+export const googleLogin = async (req, res) => {
+    try {
+        // La URL de callback debe apuntar al endpoint del servidor, no al HTML del frontend
+        const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+        
+        // Construir URL de redirección de Google OAuth
+        const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+        googleAuthUrl.searchParams.append('client_id', GOOGLE_CLIENT_ID);
+        googleAuthUrl.searchParams.append('redirect_uri', redirectUri);
+        googleAuthUrl.searchParams.append('response_type', 'code');
+        googleAuthUrl.searchParams.append('scope', 'openid email profile');
+        googleAuthUrl.searchParams.append('access_type', 'offline');
+        googleAuthUrl.searchParams.append('prompt', 'consent');
+
+        console.log('🔗 Redirigiendo a Google OAuth:', googleAuthUrl.toString());
+        console.log('🔄 Redirect URI:', redirectUri);
+        
+        // Redireccionar a Google OAuth
+        res.redirect(googleAuthUrl.toString());
+    } catch (error) {
+        console.error('Error al iniciar autenticación con Google:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Error al iniciar autenticación con Google'
+        });
+    }
+};
+
+// Controller para callback de Google OAuth
+export const googleCallback = async (req, res) => {
+    try {
+        const { code, error, state } = req.query;
+
+        if (error) {
+            console.error('Error de Google OAuth:', error);
+            const errorUrl = `/html/auth-callback.html?error=${encodeURIComponent(error)}`;
+            return res.redirect(errorUrl);
+        }
+
+        if (!code) {
+            const errorUrl = `/html/auth-callback.html?error=${encodeURIComponent('No se recibió código de autorización')}`;
+            return res.redirect(errorUrl);
+        }
+
+        // Intercambiar código por token de acceso
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                client_id: GOOGLE_CLIENT_ID,
+                client_secret: GOOGLE_CLIENT_SECRET,
+                code,
+                grant_type: 'authorization_code',
+                redirect_uri: `${req.protocol}://${req.get('host')}/api/auth/google/callback`
+            })
+        });
+
+        const tokenData = await tokenResponse.json();
+
+        if (!tokenData.access_token) {
+            console.error('Error al obtener token de Google:', tokenData);
+            const errorUrl = `/html/auth-callback.html?error=${encodeURIComponent('Error al obtener token de acceso')}`;
+            return res.redirect(errorUrl);
+        }
+
+        // Obtener información del usuario de Google
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: {
+                Authorization: `Bearer ${tokenData.access_token}`
+            }
+        });
+
+        if (!userInfoResponse.ok) {
+            console.error('Error al obtener información del usuario de Google');
+            const errorUrl = `/html/auth-callback.html?error=${encodeURIComponent('Error al obtener información del usuario')}`;
+            return res.redirect(errorUrl);
+        }
+
+        const googleUserInfo = await userInfoResponse.json();
+
+        // Buscar si el usuario ya existe
+        let user = await UserSql.findOne({
+            where: {
+                provider: 'google',
+                providerId: googleUserInfo.sub
+            }
+        });
+
+        let isNewUser = false;
+
+        if (user) {
+            // Actualizar información si es necesario
+            if (googleUserInfo.picture && user.avatar !== googleUserInfo.picture) {
+                user.avatar = googleUserInfo.picture;
+                await user.save();
+            }
+        } else {
+            // Intentar buscar el usuario por email
+            user = await UserSql.findOne({
+                where: { email: googleUserInfo.email }
+            });
+
+            if (user) {
+                // Usuario encontrado con el mismo email, actualizar para vincular a Google
+                user.provider = 'google';
+                user.providerId = googleUserInfo.sub;
+                if (googleUserInfo.picture) {
+                    user.avatar = googleUserInfo.picture;
+                }
+                await user.save();
+            } else {
+                // Crear nuevo usuario
+                isNewUser = true;
+                user = await UserSql.create({
+                    name: googleUserInfo.name,
+                    email: googleUserInfo.email,
+                    provider: 'google',
+                    providerId: googleUserInfo.sub,
+                    avatar: googleUserInfo.picture || '',
+                    emailVerified: true, // Los usuarios de Google ya tienen el email verificado
+                    termsAccepted: true, // Asumir que los términos fueron aceptados en el frontend
+                    termsAcceptedAt: new Date()
+                });
+            }
+        }
+
+        // Actualizar la fecha de último login
+        user.lastLogin = new Date();
+        await user.save();
+
+        // Generar token JWT
+        const jwtToken = generateToken(user.id, 'google', user.role);
+
+        // Redireccionar al callback HTML con los datos del usuario
+        const callbackUrl = `/html/auth-callback.html?token=${encodeURIComponent(jwtToken)}&userid=${encodeURIComponent(user.id)}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&avatar=${encodeURIComponent(user.avatar || '')}&provider=google`;
+        
+        console.log('✅ Autenticación con Google exitosa, redirigiendo a:', callbackUrl);
+        res.redirect(callbackUrl);
+
+    } catch (error) {
+        console.error('Error en callback de Google OAuth:', error);
+        const errorUrl = `/html/auth-callback.html?error=${encodeURIComponent('Error en el proceso de autenticación')}`;
+        res.redirect(errorUrl);
+    }
+};
+
 // Controller para autenticación con Google
 export const googleAuth = async (req, res) => {
     try {

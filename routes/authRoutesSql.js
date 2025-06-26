@@ -3,6 +3,8 @@ import {
     register,
     login,
     googleAuth,
+    googleLogin,
+    googleCallback,
     githubAuth,
     getMe,
     authMiddleware,
@@ -21,6 +23,8 @@ const router = express.Router();
 // Rutas públicas de autenticación
 router.post('/register', register);
 router.post('/login', login);
+router.get('/google/login', googleLogin); // Para redirección inicial a Google OAuth
+router.get('/google/callback', googleCallback); // Para manejar el callback de Google OAuth
 router.post('/google', googleAuth);
 router.post('/github', githubAuth);
 router.get('/github', githubAuth); // Para manejar el callback de GitHub

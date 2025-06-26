@@ -193,10 +193,26 @@ ESTADO ACTUAL:
 - migrations/create_user_services_table.sql (corregido VARCHAR vs UUID)
 
 ÚLTIMOS CAMBIOS REALIZADOS:
+✅ PROBLEMA AUTENTICACIÓN GOOGLE OAUTH RESUELTO:
+   - Error: "API endpoint not found" al hacer login con Google
+   - CAUSA: El servidor usaba authController.js (simplificado) en lugar de authControllerSql.js (completo)
+   - SOLUCIÓN: Cambiado server.js para usar authRoutesSql.js en lugar de authRoutes.js
+   - AGREGADO: Nuevo endpoint GET /auth/google/login para redirigir a Google OAuth
+   - AGREGADO: Nuevo endpoint GET /auth/google/callback para manejar respuesta de Google
+   - CORREGIDO: Flujo completo de autenticación OAuth con Google
+   - RESULTADO: El login con Google ahora debe funcionar correctamente
+
 ✅ BOTONES DE NAVEGACIÓN HERO CORREGIDOS:
    - Botón "Ver Servicios": href="#services" y scrollToServices() corregido
    - Botón "Proyectos": href="#projects" con onClick y preventDefault() añadido
    - Ambos botones ahora funcionan correctamente con scroll suave
+
+✅ ERROR LOADPROJECTDATA SOLUCIONADO (Dashboard.tsx):
+   - PROBLEMA: ReferenceError: can't access lexical declaration 'loadProjectData' before initialization
+   - CAUSA: Función loadProjectData definida después de su uso en useEffect loadUserData
+   - SOLUCIÓN: Movida función loadProjectData a sección FUNCIONES AUXILIARES antes de useEffect
+   - LIMPIEZA: Eliminada función loadProjectData duplicada que causaba conflictos
+   - RESULTADO: Dashboard funciona correctamente sin errores de inicialización
 
 ✅ PROBLEMAS DE TERMINAL SOLUCIONADOS (Diciembre 2024):
    - Se presentaron errores en las últimas 3 ediciones debido a problemas de terminal
