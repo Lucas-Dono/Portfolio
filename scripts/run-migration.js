@@ -10,6 +10,15 @@ async function runMigrations() {
     try {
         console.log('🔄 Ejecutando migraciones...');
         
+        // Crear tabla de historial de migraciones si no existe
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS migration_history (
+                id SERIAL PRIMARY KEY,
+                migration_name VARCHAR(255) UNIQUE NOT NULL,
+                executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+        
         // Lista de archivos de migración en orden
         const migrationFiles = [
             '../migrations/refund_requests.sql',
@@ -19,6 +28,19 @@ async function runMigrations() {
         ];
         
         for (const migrationFile of migrationFiles) {
+            const migrationName = path.basename(migrationFile);
+            
+            // Verificar si la migración ya fue ejecutada
+            const historyCheck = await pool.query(
+                'SELECT * FROM migration_history WHERE migration_name = $1',
+                [migrationName]
+            );
+            
+            if (historyCheck.rows.length > 0) {
+                console.log(`⏭️ Migración ya ejecutada: ${migrationFile} - Saltando...`);
+                continue;
+            }
+            
             const migrationPath = path.join(__dirname, migrationFile);
             
             if (fs.existsSync(migrationPath)) {
@@ -28,11 +50,24 @@ async function runMigrations() {
                 
                 try {
                     await pool.query(migrationSQL);
+                    
+                    // Marcar migración como completada
+                    await pool.query(
+                        'INSERT INTO migration_history (migration_name) VALUES ($1)',
+                        [migrationName]
+                    );
+                    
                     console.log(`✅ Migración completada: ${migrationFile}`);
                 } catch (migrationError) {
                     // Manejar errores específicos que no son críticos
                     if (migrationError.code === '42P07' && migrationError.message.includes('already exists')) {
-                        console.log(`⚠️ Elementos ya existen en migración: ${migrationFile} - Continuando...`);
+                        console.log(`⚠️ Elementos ya existen en migración: ${migrationFile} - Marcando como completada...`);
+                        
+                        // Marcar como completada aunque haya fallado por elementos existentes
+                        await pool.query(
+                            'INSERT INTO migration_history (migration_name) VALUES ($1) ON CONFLICT DO NOTHING',
+                            [migrationName]
+                        );
                     } else if (migrationError.code === '42P01' && migrationError.message.includes('does not exist')) {
                         console.log(`⚠️ Tabla base no existe para migración: ${migrationFile} - Saltando...`);
                     } else {
