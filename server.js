@@ -409,6 +409,11 @@ app.use('/api/admin', (req, res, next) => {
   }
 }, adminRoutes);
 
+// Ruta de prueba simple (sin autenticación)
+app.get('/api/user-services/test', (req, res) => {
+  res.json({ message: 'Endpoint de prueba funcionando', timestamp: new Date().toISOString() });
+});
+
 // Rutas de servicios de usuario
 app.post('/api/user-services', authenticateToken, registerUserService);
 app.get('/api/user-services', authenticateToken, getUserServices);
