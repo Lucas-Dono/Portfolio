@@ -2317,7 +2317,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
       }
 
       console.log('🔍 DEBUG - Ejecutando bloque de producción (no desarrollo)');
-      
+
       try {
         // Realizar la llamada a la API para obtener los servicios del usuario
         const apiUrl = `${API_BASE_URL}/user-services`;

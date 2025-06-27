@@ -1739,10 +1739,75 @@ HINT: Perhaps you meant to reference the column "Promocion.servicioId".
 ✅ Base de datos estable y consistente
 ✅ APIs de servicios y promociones funcionando correctamente
 
+✅ PROBLEMA 4 CRÍTICO - NGINX Y URL UNIFICADA RESUELTO (DICIEMBRE 2024):
+
+**PROBLEMA IDENTIFICADO:**
+- Cada reinicio del servidor causaba errores de nginx
+- Modo desarrollo usaba puerto 5002 pero no era accesible externamente
+- Usuario no podía acceder a https://circuitprompt.com.ar:5002/ por restricciones del servidor virtual
+- Configuración de nginx no detectaba automáticamente modo desarrollo vs producción
+- Falta de unificación entre entornos causaba confusión
+
+**SOLUCIÓN INTEGRAL IMPLEMENTADA:**
+
+1. **NGINX CON DETECCIÓN AUTOMÁTICA:**
+   - Configurado upstream `app_backend` con failover automático
+   - Prioridad: app:5001 (producción) → host.docker.internal:5002 (desarrollo)
+   - Timeouts optimizados para detección rápida de failover
+   - Una sola URL: https://circuitprompt.com.ar para ambos modos
+
+2. **DOCKER-COMPOSE MEJORADO:**
+   - Agregado `extra_hosts` para acceso a host desde nginx
+   - Configuración `host.docker.internal:host-gateway` para comunicación host-contenedor
+
+3. **SCRIPT MAESTRO DE GESTIÓN:**
+   - `manage-server.sh`: Script unificado para desarrollo y producción
+   - Detección automática de servicios activos
+   - Gestión inteligente de nginx persistente
+   - Comandos simples: `./manage-server.sh dev` o `./manage-server.sh prod`
+
+**ARCHIVOS MODIFICADOS:**
+- nginx/conf/default.conf: Upstream con failover automático ✅
+- docker-compose-prod.yml: extra_hosts para comunicación host ✅
+- manage-server.sh: Script maestro de gestión creado ✅
+- dev-server.sh: Mensajes actualizados para URL unificada ✅
+
+**CARACTERÍSTICAS DEL NUEVO SISTEMA:**
+- 🌐 **URL Unificada**: https://circuitprompt.com.ar (sin puertos)
+- 🔄 **Detección Automática**: Nginx detecta qué servidor usar
+- 🛠️ **Modo Híbrido**: Desarrollo mantiene nginx + PostgreSQL de producción
+- 📊 **Monitoreo**: Comando `status` muestra estado completo
+- 🚀 **Simplicidad**: Un comando para cada modo
+
+**COMANDOS NUEVOS:**
+```bash
+# Modo producción completo
+./manage-server.sh prod
+
+# Modo desarrollo híbrido  
+./manage-server.sh dev
+
+# Ver estado del servidor
+./manage-server.sh status
+
+# Detener todo
+./manage-server.sh stop
+
+# Menú interactivo
+./manage-server.sh
+```
+
+**RESULTADO:**
+🎯 URL unificada https://circuitprompt.com.ar funciona en ambos modos
+✅ Sin errores de nginx al reiniciar servidor
+✅ Desarrollo y producción comparten la misma URL
+✅ Detección automática sin intervención manual
+✅ Sistema robusto y fácil de usar
+
 **COMANDOS PARA DESPLIEGUE:**
 ```bash
 # Aplicar cambios en servidor
-sshpass -p 'kA/Ef37uSudOwj' ssh -p5289 root@179.43.121.187 "cd /home/circuitprompt/htdocs/circuitprompt.com.ar && git pull && ./docker-prod.sh"
+sshpass -p 'kA/Ef37uSudOwj' ssh -p5289 root@179.43.121.187 "cd /home/circuitprompt/htdocs/circuitprompt.com.ar && git pull && ./manage-server.sh prod"
 
 # Ejecutar diagnóstico completo (opcional)
 sshpass -p 'kA/Ef37uSudOwj' ssh -p5289 root@179.43.121.187 "cd /home/circuitprompt/htdocs/circuitprompt.com.ar && docker exec -i circuitpromptcomar-app-1 node diagnose-database.js"

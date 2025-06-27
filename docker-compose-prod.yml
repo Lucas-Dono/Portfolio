@@ -109,6 +109,8 @@ services:
     networks:
       - portfolio_frontend
       - portfolio_internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: [ "CMD", "nginx", "-t" ]
       interval: 30s

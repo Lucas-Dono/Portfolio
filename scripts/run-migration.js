@@ -102,7 +102,7 @@ async function runMigrations(shouldClosePool = false) {
         // Solo cerrar el pool si se ejecuta como script independiente
         if (shouldClosePool) {
             console.log('🔒 Cerrando pool de conexiones...');
-            await pool.end();
+        await pool.end();
         }
     }
 }
