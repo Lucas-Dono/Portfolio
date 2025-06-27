@@ -207,6 +207,38 @@ ESTADO ACTUAL:
      6. Aplicado en servidor: git pull + reinicio modo desarrollo
    - RESULTADO: OAuth GitHub y Google funcionando correctamente en desarrollo
 
+✅ MEJORA CRÍTICA: MANAGE-SERVER.SH ROBUSTO Y PROFESIONAL - IMPLEMENTADO:
+   - PROBLEMA: Gestión básica de puertos causaba conflictos y pérdida de tiempo
+   - CAUSA: Falta de detección automática y liberación inteligente de puertos
+   - SOLUCIÓN COMPLETA IMPLEMENTADA:
+     1. **Detección y Liberación Automática de Puertos** (basada en docker-prod.sh):
+        - Verificación inteligente de puertos según modo (dev: 5002,5433 | prod: 5001,5433)
+        - Terminación graceful (SIGTERM) seguida de forzada (SIGKILL) si es necesario
+        - Identificación del proceso usando cada puerto antes de terminarlo
+     2. **Limpieza Inteligente de Procesos**:
+        - Eliminación de procesos Node.js zombi
+        - Limpieza de contenedores Docker detenidos
+        - Eliminación de archivos temporales
+     3. **Diagnóstico Completo del Sistema**:
+        - Verificación de Docker, puertos, servicios, archivos críticos
+        - Reporte de espacio en disco y conectividad
+        - Estado detallado de todos los componentes
+     4. **Recuperación Automática de Errores**:
+        - Proceso de 5 pasos para resolver problemas automáticamente
+        - Reinicio inteligente de servicios críticos
+        - Diagnóstico final post-recuperación
+     5. **Menú Mejorado y Documentación**:
+        - 10 opciones incluyendo diagnóstico y recuperación
+        - Documentación completa con ejemplos
+        - Múltiples aliases para comandos (prod/production, dev/development)
+   - CARACTERÍSTICAS AVANZADAS:
+     ✅ Detección y liberación automática de puertos
+     ✅ Limpieza inteligente de procesos zombi
+     ✅ Diagnóstico completo del sistema
+     ✅ Recuperación automática de errores
+     ✅ Gestión robusta de Docker y nginx
+   - RESULTADO: Gestión profesional que previene pérdida de tiempo y errores manuales
+
 ✅ PROBLEMA POOL POSTGRESQL CERRADO PREMATURAMENTE - RESUELTO:
    - Error: "Cannot use a pool after calling end on the pool"
    - CAUSA: Script de migraciones cerraba el pool después de ejecutarse desde el servidor
