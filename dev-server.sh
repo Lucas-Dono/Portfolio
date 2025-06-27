@@ -47,6 +47,12 @@ start_dev() {
         npm install --legacy-peer-deps
     fi
     
+    # Compilar frontend si no existe dist
+    if [ ! -d "dist" ] || [ ! -f "dist/index.html" ]; then
+        echo -e "${YELLOW}🏗️ Compilando frontend...${NC}"
+        npm run build
+    fi
+    
     # Variables de entorno para desarrollo
     export NODE_ENV=development
     export PORT=5002
