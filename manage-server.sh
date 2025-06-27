@@ -94,11 +94,34 @@ modo_produccion() {
     echo -e "${YELLOW}🛑 Deteniendo servidores de desarrollo...${NC}"
     pkill -f "node.*server.js" || true
     
-    # Iniciar producción completa
-    ./docker-prod.sh
+    # Detener contenedores existentes
+    echo -e "${BLUE}🛑 Deteniendo contenedores existentes...${NC}"
+    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml down
     
-    echo -e "${GREEN}✅ Modo producción activo${NC}"
-    echo -e "${CYAN}🌐 URL: https://circuitprompt.com.ar${NC}"
+    # Crear directorios necesarios
+    mkdir -p ./data/nginx_logs ./data/logs ./data/uploads ./data/postgres
+    
+    # Iniciar producción completa
+    echo -e "${BLUE}🚀 Iniciando contenedores de producción...${NC}"
+    export NODE_ENV=production
+    export PORT=5001
+    export DOCKER_BUILDKIT=1
+    export COMPOSE_DOCKER_CLI_BUILD=1
+    
+    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml up -d --build
+    
+    # Esperar que los servicios estén listos
+    echo -e "${BLUE}⏳ Esperando que los servicios estén listos...${NC}"
+    sleep 15
+    
+    # Verificar estado
+    if $DOCKER_COMPOSE -f docker-compose-prod.yml ps | grep -q "healthy\|running"; then
+        echo -e "${GREEN}✅ Modo producción activo${NC}"
+        echo -e "${CYAN}🌐 URL: https://circuitprompt.com.ar${NC}"
+    else
+        echo -e "${RED}❌ Error al iniciar producción${NC}"
+        return 1
+    fi
 }
 
 # Función para modo desarrollo
