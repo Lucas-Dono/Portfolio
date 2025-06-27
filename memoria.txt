@@ -194,6 +194,19 @@ ESTADO ACTUAL:
 
 ÚLTIMOS CAMBIOS REALIZADOS:
 
+✅ PROBLEMA OAUTH EN MODO DESARROLLO - RESUELTO:
+   - Error: GitHub OAuth redirigía a callback básico que mostraba solo JSON
+   - Error: Google OAuth devolvía "Error 401: invalid_client"
+   - CAUSA: Modo desarrollo usaba variables OAuth de prueba en lugar de las reales
+   - SOLUCIÓN IMPLEMENTADA:
+     1. Creado .env.development con variables OAuth reales (copiadas de .env.production)
+     2. Modificado dev-server.sh para cargar variables desde .env.development
+     3. Agregadas funciones githubLogin() y githubCallback() en authControllerSql.js
+     4. Corregido manejo de callback GitHub para GET con query parameters
+     5. Actualizadas rutas OAuth: /github/login, /github/callback
+     6. Aplicado en servidor: git pull + reinicio modo desarrollo
+   - RESULTADO: OAuth GitHub y Google funcionando correctamente en desarrollo
+
 ✅ PROBLEMA POOL POSTGRESQL CERRADO PREMATURAMENTE - RESUELTO:
    - Error: "Cannot use a pool after calling end on the pool"
    - CAUSA: Script de migraciones cerraba el pool después de ejecutarse desde el servidor
