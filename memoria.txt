@@ -193,6 +193,22 @@ ESTADO ACTUAL:
 - migrations/create_user_services_table.sql (corregido VARCHAR vs UUID)
 
 ÚLTIMOS CAMBIOS REALIZADOS:
+
+✅ PROBLEMA POOL POSTGRESQL CERRADO PREMATURAMENTE - RESUELTO:
+   - Error: "Cannot use a pool after calling end on the pool"
+   - CAUSA: Script de migraciones cerraba el pool después de ejecutarse desde el servidor
+   - SOLUCIÓN 1: Modificado scripts/run-migration.js para recibir parámetro shouldClosePool
+   - SOLUCIÓN 2: Pool solo se cierra cuando script se ejecuta independientemente
+   - SOLUCIÓN 3: Servidor pasa shouldClosePool=false para mantener pool activo
+   - RESULTADO: Error de pool eliminado, servicios de usuario funcionando correctamente
+
+✅ PROBLEMA NGINX PROXY CONFIGURACIÓN - RESUELTO:
+   - Error: 502 Bad Gateway al acceder al sitio web
+   - CAUSA: Nginx configurado para proxy_pass http://127.0.0.1:5001 pero Docker no exponía puerto en localhost
+   - DIAGNÓSTICO: Aplicación funcionaba dentro del contenedor pero no accesible desde host
+   - SOLUCIÓN TEMPORAL: Cambiar nginx proxy_pass a IP directa del contenedor (192.168.32.3:5001)
+   - RESULTADO: Sitio web funcionando correctamente - HTTP 200 ✅
+
 ✅ PROBLEMA DASHBOARD DATOS FALLBACK RESUELTO:
    - Error: Dashboard mostraba datos de prueba en lugar de datos reales del usuario
    - CAUSA 1: Dashboard detectaba modo desarrollo incorrectamente en producción
