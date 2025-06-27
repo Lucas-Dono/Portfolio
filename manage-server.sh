@@ -40,45 +40,48 @@ verificar_docker() {
 
 # Función para verificar estado de nginx
 verificar_nginx() {
-    echo -e "${BLUE}🔍 Verificando estado de nginx...${NC}"
+    echo -e "${BLUE}🔍 Verificando estado de nginx del sistema...${NC}"
     
-    if docker ps | grep -q nginx; then
-        echo -e "${GREEN}✅ Nginx corriendo en Docker${NC}"
+    if pgrep nginx > /dev/null; then
+        echo -e "${GREEN}✅ Nginx del sistema corriendo${NC}"
         
         # Verificar configuración
-        if docker exec $(docker ps -q -f name=nginx) nginx -t &> /dev/null; then
+        if nginx -t &> /dev/null; then
             echo -e "${GREEN}✅ Configuración de nginx válida${NC}"
         else
             echo -e "${RED}❌ Error en configuración de nginx${NC}"
             return 1
         fi
     else
-        echo -e "${YELLOW}⚠️ Nginx no está corriendo${NC}"
+        echo -e "${YELLOW}⚠️ Nginx del sistema no está corriendo${NC}"
         return 1
     fi
     
     return 0
 }
 
-# Función para iniciar nginx si no está corriendo
+# Función para iniciar/reiniciar nginx del sistema
 iniciar_nginx() {
-    echo -e "${BLUE}🚀 Iniciando nginx...${NC}"
+    echo -e "${BLUE}🚀 Verificando nginx del sistema...${NC}"
     
-    # Crear directorios necesarios
-    mkdir -p ./data/nginx_logs
-    mkdir -p ./nginx/certbot/conf
-    mkdir -p ./nginx/certbot/www
+    # Verificar si nginx está corriendo
+    if ! pgrep nginx > /dev/null; then
+        echo -e "${YELLOW}⚠️ Nginx no está corriendo, intentando iniciar...${NC}"
+        systemctl start nginx || service nginx start
+        sleep 3
+    fi
     
-    # Iniciar solo nginx y certbot
-    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml up -d nginx certbot
+    # Recargar configuración
+    echo -e "${BLUE}🔄 Recargando configuración de nginx...${NC}"
+    systemctl reload nginx || service nginx reload
     
-    sleep 5
+    sleep 2
     
     if verificar_nginx; then
-        echo -e "${GREEN}✅ Nginx iniciado correctamente${NC}"
+        echo -e "${GREEN}✅ Nginx del sistema funcionando correctamente${NC}"
         return 0
     else
-        echo -e "${RED}❌ Error al iniciar nginx${NC}"
+        echo -e "${RED}❌ Error con nginx del sistema${NC}"
         return 1
     fi
 }
@@ -96,26 +99,31 @@ modo_produccion() {
     
     # Detener contenedores existentes
     echo -e "${BLUE}🛑 Deteniendo contenedores existentes...${NC}"
-    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml down
+    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-no-nginx.yml down 2>/dev/null || true
     
     # Crear directorios necesarios
-    mkdir -p ./data/nginx_logs ./data/logs ./data/uploads ./data/postgres
+    mkdir -p ./data/logs ./data/uploads ./data/postgres
     
-    # Iniciar producción completa
+    # Asegurar que nginx del sistema esté funcionando
+    if ! verificar_nginx; then
+        iniciar_nginx || return 1
+    fi
+    
+    # Iniciar producción (sin nginx)
     echo -e "${BLUE}🚀 Iniciando contenedores de producción...${NC}"
     export NODE_ENV=production
     export PORT=5001
     export DOCKER_BUILDKIT=1
     export COMPOSE_DOCKER_CLI_BUILD=1
     
-    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml up -d --build
+    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-no-nginx.yml up -d --build
     
     # Esperar que los servicios estén listos
     echo -e "${BLUE}⏳ Esperando que los servicios estén listos...${NC}"
     sleep 15
     
     # Verificar estado
-    if $DOCKER_COMPOSE -f docker-compose-prod.yml ps | grep -q "healthy\|running"; then
+    if $DOCKER_COMPOSE -f docker-compose-no-nginx.yml ps | grep -q "healthy\|running"; then
         echo -e "${GREEN}✅ Modo producción activo${NC}"
         echo -e "${CYAN}🌐 URL: https://circuitprompt.com.ar${NC}"
     else
@@ -143,7 +151,7 @@ modo_desarrollo() {
     # Asegurar que PostgreSQL esté corriendo
     if ! docker ps | grep -q postgres; then
         echo -e "${BLUE}🗄️ Iniciando PostgreSQL...${NC}"
-        $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml up -d postgres
+        $DOCKER_COMPOSE --env-file .env.production -f docker-compose-no-nginx.yml up -d postgres
         sleep 10
     fi
     
@@ -162,10 +170,10 @@ estado_servidor() {
     echo -e "${BLUE}=====================${NC}"
     
     # Verificar nginx
-    if docker ps | grep -q nginx; then
-        echo -e "${GREEN}✅ Nginx: Activo${NC}"
+    if pgrep nginx > /dev/null; then
+        echo -e "${GREEN}✅ Nginx (Sistema): Activo${NC}"
     else
-        echo -e "${RED}❌ Nginx: Inactivo${NC}"
+        echo -e "${RED}❌ Nginx (Sistema): Inactivo${NC}"
     fi
     
     # Verificar PostgreSQL
@@ -217,25 +225,28 @@ detener_todo() {
     
     # Detener contenedores Docker
     echo -e "${YELLOW}Deteniendo contenedores Docker...${NC}"
-    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-prod.yml down
+    $DOCKER_COMPOSE --env-file .env.production -f docker-compose-no-nginx.yml down 2>/dev/null || true
     
     echo -e "${GREEN}✅ Todos los servicios detenidos${NC}"
 }
 
 # Función para reiniciar nginx
 reiniciar_nginx() {
-    echo -e "${BLUE}🔄 REINICIANDO NGINX${NC}"
+    echo -e "${BLUE}🔄 REINICIANDO NGINX DEL SISTEMA${NC}"
     
-    # Detener nginx
-    docker stop $(docker ps -q -f name=nginx) 2>/dev/null || true
+    # Reiniciar nginx del sistema
+    systemctl restart nginx || service nginx restart
     
     # Esperar un momento
-    sleep 2
+    sleep 3
     
-    # Iniciar nginx
-    iniciar_nginx
-    
-    echo -e "${GREEN}✅ Nginx reiniciado${NC}"
+    # Verificar estado
+    if verificar_nginx; then
+        echo -e "${GREEN}✅ Nginx del sistema reiniciado${NC}"
+    else
+        echo -e "${RED}❌ Error al reiniciar nginx${NC}"
+        return 1
+    fi
 }
 
 # Función para logs
@@ -251,7 +262,7 @@ ver_logs() {
     read -p "Opción (1-5): " log_choice
     
     case $log_choice in
-        1) docker logs -f $(docker ps -q -f name=nginx) ;;
+        1) tail -f /var/log/nginx/error.log ;;
         2) docker logs -f $(docker ps -q -f name=app) ;;
         3) tail -f /tmp/dev-server.log ;;
         4) docker logs -f $(docker ps -q -f name=postgres) ;;
