@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import GlobalStyles from './styles/GlobalStyles';
 import { ScrollProvider, useScroll } from './contexts/ScrollContext';
+import DevModeIndicator from './components/DevModeIndicator';
 import Intro from './components/sections/Intro';
 import Hero from './components/sections/Hero';
 import About from './components/sections/About';
@@ -828,6 +829,7 @@ function App() {
   return (
     <>
       <GlobalStyles />
+      <DevModeIndicator />
       <AppRoutes />
     </>
   );

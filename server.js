@@ -54,6 +54,8 @@ import metricsRoutes from './routes/metricsRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 // Importar rutas de chat híbrido
 import hybridChatRoutes from './routes/hybridChatRoutes.js';
+// Importar rutas de desarrollo
+import devRoutes from './routes/devRoutes.js';
 
 // Importar controladores de pago
 import { processPayment, createPreference, handleWebhook, processApiPayment } from './controllers/paymentController.js';
@@ -103,6 +105,17 @@ connectDB().then(async (sequelizeInstance) => {
       await createTestNotifications();
     } catch (error) {
       console.error('❌ Error inicializando notificaciones de prueba:', error);
+    }
+
+    // Inicializar usuario dev en modo desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        const { ensureDevUser } = await import('./controllers/devUserController.js');
+        await ensureDevUser();
+        console.log('🔧 Usuario de desarrollo inicializado');
+      } catch (error) {
+        console.error('❌ Error inicializando usuario dev:', error);
+      }
     }
   } else {
     console.error('❌ No se pudo inicializar la base de datos PostgreSQL y no hay modo fallback habilitado. El servidor podría no funcionar correctamente.');
@@ -371,6 +384,8 @@ app.use('/api/notifications', notificationRoutes);
 
 // Usar las rutas de chat híbrido
 app.use('/api/hybrid-chat', hybridChatRoutes);
+// Rutas de desarrollo (solo en modo desarrollo)
+app.use('/api/dev', devRoutes);
 
 // Rutas de administración
 app.use('/api/admin', (req, res, next) => {

@@ -294,10 +294,23 @@ export const login = async (req, res) => {
 // Controller para redirección a Google OAuth
 export const googleLogin = async (req, res) => {
     try {
-        // La URL de callback debe apuntar al endpoint del servidor, no al HTML del frontend
-        // En producción, forzar HTTPS
-        const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
-        const redirectUri = `${protocol}://${req.get('host')}/api/auth/google/callback`;
+        // Configurar URL de callback según el entorno
+        let redirectUri;
+        
+        if (process.env.NODE_ENV === 'production') {
+            // En producción, usar siempre HTTPS y el dominio principal
+            redirectUri = 'https://circuitprompt.com.ar/api/auth/google/callback';
+        } else {
+            // En desarrollo, usar la URL configurada o localhost
+            const protocol = req.protocol;
+            const host = req.get('host');
+            redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+            
+            // Si estamos en desarrollo y no es localhost, usar el dominio principal
+            if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
+                redirectUri = 'https://circuitprompt.com.ar/api/auth/google/callback';
+            }
+        }
         
         // Construir URL de redirección de Google OAuth
         const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -349,7 +362,9 @@ export const googleCallback = async (req, res) => {
                 client_secret: GOOGLE_CLIENT_SECRET,
                 code,
                 grant_type: 'authorization_code',
-                redirect_uri: `${process.env.NODE_ENV === 'production' ? 'https' : req.protocol}://${req.get('host')}/api/auth/google/callback`
+                redirect_uri: process.env.NODE_ENV === 'production' 
+                    ? 'https://circuitprompt.com.ar/api/auth/google/callback'
+                    : `${req.protocol}://${req.get('host')}/api/auth/google/callback`
             })
         });
 
@@ -571,10 +586,23 @@ export const googleAuth = async (req, res) => {
 // Controller para redirección a GitHub OAuth
 export const githubLogin = async (req, res) => {
     try {
-        const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
+        // Configurar URL de callback según el entorno
+        let redirectUri;
         
-        // La URL de callback debe apuntar al endpoint del servidor, no al HTML del frontend
-        const redirectUri = `${protocol}://${req.get('host')}/api/auth/github/callback`;
+        if (process.env.NODE_ENV === 'production') {
+            // En producción, usar siempre HTTPS y el dominio principal
+            redirectUri = 'https://circuitprompt.com.ar/api/auth/github/callback';
+        } else {
+            // En desarrollo, usar la URL configurada o localhost
+            const protocol = req.protocol;
+            const host = req.get('host');
+            redirectUri = `${protocol}://${host}/api/auth/github/callback`;
+            
+            // Si estamos en desarrollo y no es localhost, usar el dominio principal
+            if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
+                redirectUri = 'https://circuitprompt.com.ar/api/auth/github/callback';
+            }
+        }
         
         // Construir URL de redirección de GitHub OAuth
         const githubAuthUrl = new URL('https://github.com/login/oauth/authorize');

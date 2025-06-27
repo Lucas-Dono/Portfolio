@@ -196,8 +196,40 @@ ESTADO ACTUAL:
 
 ✅ PROBLEMA OAUTH EN MODO DESARROLLO - RESUELTO:
    - Error: GitHub OAuth redirigía a callback básico que mostraba solo JSON
-   - Error: Google OAuth devolvía "Error 401: invalid_client"
-   - CAUSA: Modo desarrollo usaba variables OAuth de prueba en lugar de las reales
+   - Error: Google OAuth devolvía "Error 401: invalid_client" por redirect_uri_mismatch
+   - CAUSA: Modo desarrollo usaba variables OAuth de prueba y URLs incorrectas
+
+✅ SOLUCIÓN OAUTH IMPLEMENTADA:
+   1. **Archivo .env.development**: Variables OAuth reales adaptadas para desarrollo
+   2. **dev-server.sh modificado**: Carga variables desde .env.development
+   3. **Controllers OAuth actualizados**: URLs de callback dinámicas según entorno
+   4. **Rutas OAuth específicas**: Login y callback separados para GitHub/Google
+
+✅ NUEVA FUNCIONALIDAD: USUARIO DE DESARROLLO AUTOMÁTICO
+   **Archivos creados:**
+   - controllers/devUserController.js: Sistema completo de usuario dev
+   - routes/devRoutes.js: Rutas /api/dev/ para testing
+   - src/components/DevLoginButton.tsx: Botón login dev (solo en desarrollo)
+   - src/components/DevModeIndicator.tsx: Indicador visual modo desarrollo
+   
+   **Características del Usuario Dev:**
+   - Email: dev@circuitprompt.com.ar
+   - Acceso completo: Dashboard, compras, servicios, admin
+   - Misma base de datos que usuarios reales para detectar errores
+   - Solo disponible cuando NODE_ENV=development
+   - Inicialización automática al arrancar servidor
+   - Avatar distintivo con badge DEV
+   
+   **Endpoints disponibles:**
+   - POST /api/dev/login: Login directo como usuario dev
+   - GET /api/dev/user: Información del usuario dev
+   - GET /api/dev/callback: Callback simulado OAuth
+   - POST /api/dev/init: Inicializar usuario dev
+   
+   **Integración frontend:**
+   - DevLoginButton aparece automáticamente en página login (solo modo dev)
+   - DevModeIndicator visible en esquina superior derecha
+   - Compatibilidad total con sistema OAuth existente
    - SOLUCIÓN IMPLEMENTADA:
      1. Creado .env.development con variables OAuth reales (copiadas de .env.production)
      2. Modificado dev-server.sh para cargar variables desde .env.development

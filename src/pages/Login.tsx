@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import GlobalBackground from '../components/ui/GlobalBackground';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 import GithubLoginButton from '../components/GithubLoginButton';
+import DevLoginButton from '../components/DevLoginButton';
 import { useAuth } from '../context/AuthContext';
 
 // Estilos - Similares a los de Register pero sin las pestañas
@@ -457,12 +458,19 @@ const Login: React.FC = () => {
                 redirectUrl={redirectUrl}
               />
 
-              <GithubLoginButton
-                onSuccess={handleLoginSuccess}
-                onError={handleLoginError}
-                disabled={loading}
-                redirectUrl={redirectUrl}
-              />
+                          <GithubLoginButton 
+              onSuccess={handleLoginSuccess}
+              onError={handleLoginError}
+              disabled={loading}
+              redirectUrl={redirectUrl}
+            />
+
+            {/* Botón de desarrollo - solo visible en modo dev */}
+            <DevLoginButton
+              onSuccess={handleLoginSuccess}
+              onError={handleLoginError}
+              disabled={loading}
+            />
             </SocialLoginButtons>
 
             <RegisterLink to="/register">
