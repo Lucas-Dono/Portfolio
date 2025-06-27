@@ -90,7 +90,7 @@ connectDB().then(async (sequelizeInstance) => {
         console.log('🔄 Ejecutando migraciones de base de datos...');
         // Importar dinámicamente el script de migraciones
         const { default: runMigrations } = await import('./scripts/run-migration.js');
-        await runMigrations();
+        await runMigrations(false); // No cerrar el pool cuando se ejecuta desde el servidor
         console.log('✅ Migraciones completadas exitosamente');
       } catch (error) {
         console.error('❌ Error ejecutando migraciones:', error);

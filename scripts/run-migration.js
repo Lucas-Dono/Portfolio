@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function runMigrations() {
+async function runMigrations(shouldClosePool = false) {
     try {
         console.log('🔄 Ejecutando migraciones...');
         
@@ -99,13 +99,17 @@ async function runMigrations() {
         console.error('❌ Error ejecutando migraciones:', error);
         throw error;
     } finally {
-        await pool.end();
+        // Solo cerrar el pool si se ejecuta como script independiente
+        if (shouldClosePool) {
+            console.log('🔒 Cerrando pool de conexiones...');
+            await pool.end();
+        }
     }
 }
 
 // Ejecutar si se llama directamente
 if (import.meta.url === `file://${process.argv[1]}`) {
-    runMigrations().catch(console.error);
+    runMigrations(true).catch(console.error);
 }
 
 export default runMigrations; 
