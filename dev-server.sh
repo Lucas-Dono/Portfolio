@@ -53,22 +53,25 @@ start_dev() {
         npm run build
     fi
     
-    # Variables de entorno para desarrollo
-    export NODE_ENV=development
-    export PORT=5002
-    export DATABASE_URL="postgres://postgres:postgres@localhost:5433/portfolio"
-    export JWT_SECRET="dev-jwt-secret-key"
-    export OPENAI_API_KEY="${OPENAI_API_KEY:-sk-test}"
-    export GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-test}"
-    export GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-test}"
-    export GOOGLE_PRIVATE_KEY="${GOOGLE_PRIVATE_KEY:-test-private-key}"
-    export GITHUB_CLIENT_ID="${GITHUB_CLIENT_ID:-test}"
-    export GITHUB_CLIENT_SECRET="${GITHUB_CLIENT_SECRET:-test}"
-    export MP_ACCESS_TOKEN="${MP_ACCESS_TOKEN:-test}"
-    export MP_PUBLIC_KEY="${MP_PUBLIC_KEY:-test}"
-    export GMAIL_USER="${GMAIL_USER:-test}"
-    export GMAIL_PASS="${GMAIL_PASS:-test}"
-    export WHATSAPP_ENABLED="${WHATSAPP_ENABLED:-false}"
+    # Cargar variables de entorno desde .env.development
+    if [ -f ".env.development" ]; then
+        echo -e "${GREEN}📄 Cargando variables desde .env.development${NC}"
+        set -a  # Exportar automáticamente todas las variables
+        source .env.development
+        set +a  # Desactivar exportación automática
+    else
+        echo -e "${RED}❌ Archivo .env.development no encontrado${NC}"
+        echo -e "${YELLOW}📄 Creando .env.development con configuración básica...${NC}"
+        # Crear archivo básico si no existe
+        cat > .env.development << EOF
+NODE_ENV=development
+PORT=5002
+DATABASE_URL=postgres://postgres:postgres@localhost:5433/portfolio
+JWT_SECRET=dev-jwt-secret-key
+WHATSAPP_ENABLED=false
+EOF
+        source .env.development
+    fi
     
     echo -e "${GREEN}🌍 Variables de entorno configuradas para desarrollo${NC}"
     echo -e "${BLUE}📍 Puerto: ${PORT}${NC}"

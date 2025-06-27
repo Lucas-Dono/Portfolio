@@ -6,6 +6,8 @@ import {
     googleLogin,
     googleCallback,
     githubAuth,
+    githubLogin,
+    githubCallback,
     getMe,
     authMiddleware,
     adminMiddleware,
@@ -26,8 +28,9 @@ router.post('/login', login);
 router.get('/google/login', googleLogin); // Para redirección inicial a Google OAuth
 router.get('/google/callback', googleCallback); // Para manejar el callback de Google OAuth
 router.post('/google', googleAuth);
-router.post('/github', githubAuth);
-router.get('/github', githubAuth); // Para manejar el callback de GitHub
+router.get('/github/login', githubLogin); // Para redirección inicial a GitHub OAuth
+router.get('/github/callback', githubCallback); // Para manejar el callback de GitHub OAuth
+router.post('/github', githubAuth); // Para autenticación POST desde el frontend
 
 // Rutas de verificación de email
 router.get('/verify-email/:token', verifyEmail);

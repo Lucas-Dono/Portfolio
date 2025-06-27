@@ -568,18 +568,176 @@ export const googleAuth = async (req, res) => {
     }
 };
 
-// Controller para autenticación con GitHub
+// Controller para redirección a GitHub OAuth
+export const githubLogin = async (req, res) => {
+    try {
+        const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
+        
+        // La URL de callback debe apuntar al endpoint del servidor, no al HTML del frontend
+        const redirectUri = `${protocol}://${req.get('host')}/api/auth/github/callback`;
+        
+        // Construir URL de redirección de GitHub OAuth
+        const githubAuthUrl = new URL('https://github.com/login/oauth/authorize');
+        githubAuthUrl.searchParams.append('client_id', GITHUB_CLIENT_ID);
+        githubAuthUrl.searchParams.append('redirect_uri', redirectUri);
+        githubAuthUrl.searchParams.append('scope', 'user:email');
+        githubAuthUrl.searchParams.append('state', 'github-auth');
+        
+        console.log('🔗 Redirigiendo a GitHub OAuth:', githubAuthUrl.toString());
+        
+        // Redireccionar a GitHub OAuth
+        res.redirect(githubAuthUrl.toString());
+    } catch (error) {
+        console.error('Error de GitHub OAuth:', error);
+        const errorUrl = `/html/auth-callback.html?error=${encodeURIComponent(error)}`;
+        res.redirect(errorUrl);
+    }
+};
+
+// Controller para callback de GitHub OAuth
+export const githubCallback = async (req, res) => {
+    try {
+        const { code, error } = req.query;
+        
+        if (error) {
+            console.error('Error de GitHub OAuth:', error);
+            const errorUrl = `/html/auth-callback.html?error=${encodeURIComponent(error)}`;
+            return res.redirect(errorUrl);
+        }
+        
+        if (!code) {
+            const errorUrl = `/html/auth-callback.html?error=${encodeURIComponent('No se recibió código de autorización')}`;
+            return res.redirect(errorUrl);
+        }
+
+        // Intercambiar el código por un token de acceso
+        const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                client_id: GITHUB_CLIENT_ID,
+                client_secret: GITHUB_CLIENT_SECRET,
+                code
+            })
+        });
+
+        const tokenData = await tokenResponse.json();
+        if (!tokenData.access_token) {
+            const errorUrl = `/html/auth-callback.html?error=${encodeURIComponent('Error al obtener token de acceso')}`;
+            return res.redirect(errorUrl);
+        }
+
+        // Obtener información del usuario de GitHub
+        const userResponse = await fetch('https://api.github.com/user', {
+            headers: {
+                'Authorization': `token ${tokenData.access_token}`
+            }
+        });
+
+        if (!userResponse.ok) {
+            const errorUrl = `/html/auth-callback.html?error=${encodeURIComponent('Error al obtener información del usuario')}`;
+            return res.redirect(errorUrl);
+        }
+
+        const githubUserInfo = await userResponse.json();
+
+        // Obtener el email si no viene en la información básica
+        let userEmail = githubUserInfo.email;
+
+        if (!userEmail) {
+            const emailsResponse = await fetch('https://api.github.com/user/emails', {
+                headers: {
+                    'Authorization': `token ${tokenData.access_token}`
+                }
+            });
+
+            if (emailsResponse.ok) {
+                const emails = await emailsResponse.json();
+                const primaryEmail = emails.find(email => email.primary);
+                userEmail = primaryEmail ? primaryEmail.email : emails[0]?.email;
+            }
+        }
+
+        if (!userEmail) {
+            const errorUrl = `/html/auth-callback.html?error=${encodeURIComponent('No se pudo obtener un email de la cuenta de GitHub')}`;
+            return res.redirect(errorUrl);
+        }
+
+        // Buscar si el usuario ya existe (por providerId de GitHub)
+        let user = await UserSql.findOne({
+            where: {
+                provider: 'github',
+                providerId: githubUserInfo.id.toString()
+            }
+        });
+
+        let isNewUser = false;
+
+        if (user) {
+            // Actualizar información si es necesario
+            if (githubUserInfo.avatar_url && user.avatar !== githubUserInfo.avatar_url) {
+                user.avatar = githubUserInfo.avatar_url;
+                await user.save();
+            }
+        } else {
+            // Intentar buscar el usuario por email (para vincular cuentas)
+            user = await UserSql.findOne({
+                where: { email: userEmail }
+            });
+
+            if (user) {
+                // Usuario encontrado con el mismo email, actualizar para vincular a GitHub
+                user.provider = 'github';
+                user.providerId = githubUserInfo.id.toString();
+                if (githubUserInfo.avatar_url) {
+                    user.avatar = githubUserInfo.avatar_url;
+                }
+                await user.save();
+            } else {
+                // Es un usuario nuevo - crear con términos aceptados por defecto para OAuth
+                isNewUser = true;
+
+                // Crear nuevo usuario si no existe
+                user = await UserSql.create({
+                    name: githubUserInfo.name || githubUserInfo.login,
+                    email: userEmail,
+                    provider: 'github',
+                    providerId: githubUserInfo.id.toString(),
+                    avatar: githubUserInfo.avatar_url || '',
+                    emailVerified: true, // Los usuarios de GitHub ya tienen el email verificado
+                    termsAccepted: true,
+                    termsAcceptedAt: new Date()
+                });
+            }
+        }
+
+        // Actualizar la fecha de último login
+        user.lastLogin = new Date();
+        await user.save();
+
+        // Generar token JWT
+        const jwtToken = generateToken(user.id, 'github', user.role);
+
+        // Redireccionar al callback HTML con los datos del usuario
+        const callbackUrl = `/html/auth-callback.html?token=${encodeURIComponent(jwtToken)}&userid=${encodeURIComponent(user.id)}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&avatar=${encodeURIComponent(user.avatar || '')}&provider=github&isnew=${isNewUser}`;
+        
+        console.log('✅ Autenticación con GitHub exitosa, redirigiendo a:', callbackUrl);
+        res.redirect(callbackUrl);
+
+    } catch (error) {
+        console.error('Error en callback de GitHub OAuth:', error);
+        const errorUrl = `/html/auth-callback.html?error=${encodeURIComponent('Error en el proceso de autenticación')}`;
+        res.redirect(errorUrl);
+    }
+};
+
+// Controller para autenticación con GitHub (POST - para el frontend)
 export const githubAuth = async (req, res) => {
     try {
         const { code, termsAccepted } = req.body;
-
-        // Si no hay código, podría ser una solicitud GET para el callback
-        if (!code && req.method === 'GET') {
-            return res.status(200).json({
-                success: true,
-                message: 'Endpoint de callback de GitHub'
-            });
-        }
 
         if (!code) {
             return res.status(400).json({
