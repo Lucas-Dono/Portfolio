@@ -38,6 +38,187 @@ verificar_docker() {
     return 0
 }
 
+# Función para verificar y liberar puertos (basada en docker-prod.sh)
+verificar_puertos() {
+    echo -e "${BLUE}🔍 Verificando puertos necesarios...${NC}"
+    
+    # Array de puertos a verificar según el modo
+    local puertos_a_verificar=()
+    
+    case "$1" in
+        "dev")
+            puertos_a_verificar=(5002 5433)
+            ;;
+        "prod")
+            puertos_a_verificar=(5001 5433)
+            ;;
+        *)
+            puertos_a_verificar=(5001 5002 5433)
+            ;;
+    esac
+    
+    for puerto in "${puertos_a_verificar[@]}"; do
+        if lsof -i :$puerto > /dev/null 2>&1; then
+            echo -e "${YELLOW}⚠️ El puerto $puerto está en uso. Intentando liberarlo...${NC}"
+            
+            # Obtener el PID del proceso que usa el puerto
+            PID=$(lsof -ti :$puerto 2>/dev/null)
+            
+            if [ ! -z "$PID" ]; then
+                # Obtener información del proceso
+                PROCESO=$(ps -p $PID -o comm= 2>/dev/null || echo "proceso desconocido")
+                echo -e "${BLUE}🔄 Deteniendo proceso $PID ($PROCESO) que usa el puerto $puerto${NC}"
+                
+                # Intentar terminar gracefully primero
+                kill -TERM $PID 2>/dev/null || true
+                sleep 3
+                
+                # Si aún está corriendo, forzar terminación
+                if kill -0 $PID 2>/dev/null; then
+                    echo -e "${YELLOW}⚠️ Proceso $PID no respondió a SIGTERM, usando SIGKILL...${NC}"
+                    kill -9 $PID 2>/dev/null || true
+                    sleep 2
+                fi
+                
+                # Verificar si el puerto se liberó
+                if ! lsof -i :$puerto > /dev/null 2>&1; then
+                    echo -e "${GREEN}✅ Puerto $puerto liberado correctamente${NC}"
+                else
+                    echo -e "${RED}❌ No se pudo liberar el puerto $puerto${NC}"
+                    echo -e "${YELLOW}ℹ️ Puede que necesites permisos de administrador o reiniciar el sistema${NC}"
+                    return 1
+                fi
+            fi
+        else
+            echo -e "${GREEN}✅ Puerto $puerto está disponible${NC}"
+        fi
+    done
+    
+    return 0
+}
+
+# Función para limpiar procesos zombi y recursos
+limpiar_procesos() {
+    echo -e "${BLUE}🧹 Limpiando procesos y recursos...${NC}"
+    
+    # Limpiar procesos Node.js zombi
+    echo -e "${BLUE}🔄 Limpiando procesos Node.js zombi...${NC}"
+    pkill -f "node.*server.js" 2>/dev/null || true
+    pkill -f "npm.*start" 2>/dev/null || true
+    
+    # Limpiar contenedores detenidos
+    echo -e "${BLUE}🗑️ Limpiando contenedores detenidos...${NC}"
+    docker container prune -f 2>/dev/null || true
+    
+    # Limpiar archivos temporales
+    echo -e "${BLUE}🗑️ Limpiando archivos temporales...${NC}"
+    rm -f /tmp/dev-server.log 2>/dev/null || true
+    find . -maxdepth 2 -name "*.tmp" -delete 2>/dev/null || true
+    find . -maxdepth 2 -name "*.temp" -delete 2>/dev/null || true
+    
+    echo -e "${GREEN}✅ Limpieza completada${NC}"
+}
+
+# Función para diagnóstico completo del sistema
+diagnostico_sistema() {
+    echo -e "${BLUE}🔍 DIAGNÓSTICO COMPLETO DEL SISTEMA${NC}"
+    echo -e "${BLUE}====================================${NC}"
+    
+    # Verificar Docker
+    echo -e "${CYAN}📦 Docker:${NC}"
+    if docker info &> /dev/null; then
+        echo -e "${GREEN}✅ Docker funcionando${NC}"
+        docker --version
+    else
+        echo -e "${RED}❌ Docker no funciona${NC}"
+    fi
+    
+    # Verificar puertos
+    echo -e "${CYAN}🔌 Puertos:${NC}"
+    for puerto in 5001 5002 5433 80 443; do
+        if lsof -i :$puerto > /dev/null 2>&1; then
+            PROCESO=$(lsof -ti :$puerto | xargs ps -p 2>/dev/null | tail -n +2 | awk '{print $4}' | head -1)
+            echo -e "${YELLOW}⚠️ Puerto $puerto en uso por: $PROCESO${NC}"
+        else
+            echo -e "${GREEN}✅ Puerto $puerto libre${NC}"
+        fi
+    done
+    
+    # Verificar servicios
+    echo -e "${CYAN}🔧 Servicios:${NC}"
+    if pgrep nginx > /dev/null; then
+        echo -e "${GREEN}✅ Nginx corriendo${NC}"
+    else
+        echo -e "${RED}❌ Nginx no está corriendo${NC}"
+    fi
+    
+    if docker ps | grep -q postgres; then
+        echo -e "${GREEN}✅ PostgreSQL corriendo${NC}"
+    else
+        echo -e "${RED}❌ PostgreSQL no está corriendo${NC}"
+    fi
+    
+    # Verificar archivos críticos
+    echo -e "${CYAN}📁 Archivos críticos:${NC}"
+    archivos_criticos=(".env.production" ".env.development" "docker-compose-no-nginx.yml" "dev-server.sh")
+    for archivo in "${archivos_criticos[@]}"; do
+        if [ -f "$archivo" ]; then
+            echo -e "${GREEN}✅ $archivo existe${NC}"
+        else
+            echo -e "${RED}❌ $archivo falta${NC}"
+        fi
+    done
+    
+    # Verificar espacio en disco
+    echo -e "${CYAN}💾 Espacio en disco:${NC}"
+    df -h / | tail -1 | awk '{print "Usado: " $3 "/" $2 " (" $5 ")"}'
+    
+    # Verificar conectividad
+    echo -e "${CYAN}🌐 Conectividad:${NC}"
+    if curl -s -o /dev/null -w "%{http_code}" https://circuitprompt.com.ar | grep -q "200"; then
+        echo -e "${GREEN}✅ Sitio web responde correctamente${NC}"
+    else
+        echo -e "${RED}❌ Sitio web no responde${NC}"
+    fi
+}
+
+# Función para recuperación automática de errores
+recuperacion_automatica() {
+    echo -e "${YELLOW}🔄 RECUPERACIÓN AUTOMÁTICA DE ERRORES${NC}"
+    echo -e "${BLUE}=====================================${NC}"
+    
+    # Paso 1: Limpiar procesos y recursos
+    echo -e "${BLUE}Paso 1: Limpiando procesos y recursos...${NC}"
+    limpiar_procesos
+    
+    # Paso 2: Verificar y liberar puertos
+    echo -e "${BLUE}Paso 2: Liberando puertos...${NC}"
+    verificar_puertos
+    
+    # Paso 3: Reiniciar servicios críticos
+    echo -e "${BLUE}Paso 3: Reiniciando servicios críticos...${NC}"
+    
+    # Reiniciar nginx si no está funcionando
+    if ! pgrep nginx > /dev/null; then
+        echo -e "${YELLOW}🔄 Reiniciando nginx...${NC}"
+        systemctl restart nginx 2>/dev/null || service nginx restart 2>/dev/null || true
+    fi
+    
+    # Paso 4: Verificar Docker
+    echo -e "${BLUE}Paso 4: Verificando Docker...${NC}"
+    if ! docker info &> /dev/null; then
+        echo -e "${YELLOW}🔄 Intentando iniciar Docker...${NC}"
+        systemctl start docker 2>/dev/null || service docker start 2>/dev/null || true
+        sleep 5
+    fi
+    
+    # Paso 5: Diagnóstico final
+    echo -e "${BLUE}Paso 5: Diagnóstico final...${NC}"
+    diagnostico_sistema
+    
+    echo -e "${GREEN}✅ Recuperación automática completada${NC}"
+}
+
 # Función para verificar estado de nginx
 verificar_nginx() {
     echo -e "${BLUE}🔍 Verificando estado de nginx del sistema...${NC}"
@@ -92,10 +273,10 @@ modo_produccion() {
     echo -e "${BLUE}Iniciando entorno completo de producción...${NC}"
     
     verificar_docker || return 1
+    verificar_puertos "prod" || return 1
     
-    # Detener cualquier servidor de desarrollo
-    echo -e "${YELLOW}🛑 Deteniendo servidores de desarrollo...${NC}"
-    pkill -f "node.*server.js" || true
+    # Limpieza previa
+    limpiar_procesos
     
     # Detener contenedores existentes
     echo -e "${BLUE}🛑 Deteniendo contenedores existentes...${NC}"
@@ -138,6 +319,10 @@ modo_desarrollo() {
     echo -e "${BLUE}Iniciando entorno híbrido desarrollo...${NC}"
     
     verificar_docker || return 1
+    verificar_puertos "dev" || return 1
+    
+    # Limpieza previa
+    limpiar_procesos
     
     # Detener contenedor de aplicación de producción si existe
     echo -e "${YELLOW}🛑 Deteniendo contenedor de aplicación de producción...${NC}"
@@ -291,6 +476,15 @@ case "${1:-menu}" in
     logs)
         ver_logs
         ;;
+    diagnostico|diagnosis)
+        diagnostico_sistema
+        ;;
+    fix|recuperar)
+        recuperacion_automatica
+        ;;
+    clean|limpiar)
+        limpiar_procesos
+        ;;
     menu)
         echo "Opciones disponibles:"
         echo "1. Modo Producción (completo)"
@@ -299,9 +493,12 @@ case "${1:-menu}" in
         echo "4. Detener todos los servicios"
         echo "5. Reiniciar nginx"
         echo "6. Ver logs"
-        echo "7. Salir"
+        echo "7. Diagnóstico completo"
+        echo "8. Recuperación automática"
+        echo "9. Limpiar procesos y recursos"
+        echo "10. Salir"
         echo ""
-        read -p "Selecciona una opción (1-7): " choice
+        read -p "Selecciona una opción (1-10): " choice
         
         case $choice in
             1) modo_produccion ;;
@@ -310,21 +507,51 @@ case "${1:-menu}" in
             4) detener_todo ;;
             5) reiniciar_nginx ;;
             6) ver_logs ;;
-            7) echo -e "${GREEN}👋 ¡Hasta luego!${NC}"; exit 0 ;;
+            7) diagnostico_sistema ;;
+            8) recuperacion_automatica ;;
+            9) limpiar_procesos ;;
+            10) echo -e "${GREEN}👋 ¡Hasta luego!${NC}"; exit 0 ;;
             *) echo -e "${RED}❌ Opción inválida${NC}"; exit 1 ;;
         esac
         ;;
     *)
-        echo "Uso: $0 {prod|dev|status|stop|restart-nginx|logs|menu}"
+        echo -e "${CYAN}========================================${NC}"
+        echo -e "${CYAN}   CircuitPrompt Server Manager${NC}"
+        echo -e "${CYAN}   Gestión Robusta y Automática${NC}"
+        echo -e "${CYAN}========================================${NC}"
         echo ""
-        echo "Comandos:"
-        echo "  prod          - Modo producción completo"
-        echo "  dev           - Modo desarrollo híbrido"
-        echo "  status        - Ver estado del servidor"
-        echo "  stop          - Detener todos los servicios"
-        echo "  restart-nginx - Reiniciar solo nginx"
-        echo "  logs          - Ver logs del sistema"
-        echo "  menu          - Mostrar menú interactivo"
+        echo -e "${GREEN}Uso: $0 {comando}${NC}"
+        echo ""
+        echo -e "${YELLOW}Comandos principales:${NC}"
+        echo -e "${BLUE}  prod, production     ${NC}- Iniciar modo producción completo"
+        echo -e "${BLUE}  dev, development     ${NC}- Iniciar modo desarrollo híbrido"
+        echo -e "${BLUE}  status, estado       ${NC}- Ver estado detallado del servidor"
+        echo ""
+        echo -e "${YELLOW}Comandos de gestión:${NC}"
+        echo -e "${BLUE}  stop, detener        ${NC}- Detener todos los servicios"
+        echo -e "${BLUE}  restart-nginx        ${NC}- Reiniciar nginx del sistema"
+        echo -e "${BLUE}  logs                 ${NC}- Ver logs del sistema"
+        echo ""
+        echo -e "${YELLOW}Comandos de diagnóstico:${NC}"
+        echo -e "${BLUE}  diagnostico, diagnosis${NC}- Diagnóstico completo del sistema"
+        echo -e "${BLUE}  fix, recuperar       ${NC}- Recuperación automática de errores"
+        echo -e "${BLUE}  clean, limpiar       ${NC}- Limpiar procesos y recursos"
+        echo ""
+        echo -e "${YELLOW}Otros:${NC}"
+        echo -e "${BLUE}  menu                 ${NC}- Mostrar menú interactivo"
+        echo ""
+        echo -e "${CYAN}Características avanzadas:${NC}"
+        echo -e "${GREEN}✅ Detección y liberación automática de puertos${NC}"
+        echo -e "${GREEN}✅ Limpieza inteligente de procesos zombi${NC}"
+        echo -e "${GREEN}✅ Diagnóstico completo del sistema${NC}"
+        echo -e "${GREEN}✅ Recuperación automática de errores${NC}"
+        echo -e "${GREEN}✅ Gestión robusta de Docker y nginx${NC}"
+        echo ""
+        echo -e "${YELLOW}Ejemplos:${NC}"
+        echo -e "${BLUE}  ./manage-server.sh dev${NC}        - Modo desarrollo"
+        echo -e "${BLUE}  ./manage-server.sh prod${NC}       - Modo producción"
+        echo -e "${BLUE}  ./manage-server.sh fix${NC}        - Arreglar problemas"
+        echo -e "${BLUE}  ./manage-server.sh diagnostico${NC} - Ver diagnóstico"
         echo ""
         echo -e "${CYAN}URL unificada: https://circuitprompt.com.ar${NC}"
         exit 1
